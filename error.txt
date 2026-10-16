@@ -1,3 +1,108 @@
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25897,163): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26004,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26018,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26020,142): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26026,169): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26038,173): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26069,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26084,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26086,142): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26090,171): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26115,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26146,154): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26148,172): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26150,172): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26161,166): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26162,186): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26803,39): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(27528,40): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28028,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28106,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28123,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28132,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(27760,8): warning CS1717: Asignación a la misma variable. ¿Quería asignar otro elemento?
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(48742,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(48746,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(48750,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(48753,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(48756,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(48759,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(48762,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28625,262): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28654,163): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28657,133): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28666,262): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49115,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49119,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49125,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49131,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49132,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49135,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49139,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49143,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49147,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49151,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49155,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49159,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49163,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49167,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49171,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49176,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49179,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49183,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49188,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49191,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49195,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49200,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49204,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49208,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49212,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49216,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49220,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49225,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49229,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49249,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49256,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49260,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49353,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49458,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49462,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(49467,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28907,331): error CS1929: 'NumericsExtensions' no contiene una definición para 'Forward' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Vector3).Forward' requiere un receptor del tipo 'System.Numerics.Vector3'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(50090,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(50094,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29595,37): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29697,203): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29725,201): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29777,220): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29822,215): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29853,8): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29878,113): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(50392,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(50771,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51219,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51599,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51606,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51610,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51623,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51627,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51630,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51636,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51639,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51645,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51651,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51657,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51660,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51663,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51666,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51669,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51672,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51675,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51678,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51681,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51684,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51687,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51690,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51693,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51696,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(51699,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
@@ -62,6 +167,7 @@
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(52319,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(52381,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(52385,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(30789,43): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(52440,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(52444,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(52448,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
@@ -117,7 +223,6 @@
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(54488,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(54497,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(54506,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(29292,23): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(55000,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(55016,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(55018,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
@@ -157,46 +262,9 @@
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(55566,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(55570,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(55575,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\Player.cs(39891,22): error CS1929: 'NumericsExtensions' no contiene una definición para 'Zero' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Point).Zero' requiere un receptor del tipo 'System.Drawing.Point'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(55813,3): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(55993,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25267,38): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25272,38): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25583,264): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25596,51): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25608,9): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25614,9): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25618,9): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25623,9): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25629,9): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25775,143): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25784,126): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25791,166): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25852,128): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25895,144): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(25897,163): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26004,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26018,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26020,142): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26026,169): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26038,173): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26069,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26084,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26086,142): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26090,171): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26115,146): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26146,154): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26148,172): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26150,172): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26161,166): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26162,186): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26803,39): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(26899,33): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(27528,40): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28028,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28106,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28123,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28132,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(27760,8): warning CS1717: Asignación a la misma variable. ¿Quería asignar otro elemento?
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(56252,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(56255,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(56258,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
@@ -212,23 +280,6 @@
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(56311,7): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(56314,7): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(56317,7): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28625,262): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28654,163): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28657,133): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28666,262): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(28907,331): error CS1929: 'NumericsExtensions' no contiene una definición para 'Forward' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Vector3).Forward' requiere un receptor del tipo 'System.Numerics.Vector3'
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(32509,44): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(32509,78): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29595,37): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29697,203): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29725,201): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29777,220): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29822,215): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29853,8): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(29878,113): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(33287,34): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(33288,34): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(30789,43): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(59315,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(59477,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(59494,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
@@ -307,12 +358,43 @@
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(60451,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(60483,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(60515,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(39891,22): error CS1929: 'NumericsExtensions' no contiene una definición para 'Zero' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Point).Zero' requiere un receptor del tipo 'System.Drawing.Point'
-    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(62861,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(41668,24): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(31416,10): warning CS0219: La variable 'flag53' está asignada pero su valor nunca se usa
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(36881,11): warning CS0219: La variable 'flag92' está asignada pero su valor nunca se usa
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(36909,11): warning CS0219: La variable 'flag93' está asignada pero su valor nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35010,26): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35185,24): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35192,24): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35862,136): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37090,29): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37170,184): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37183,29): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37683,12): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37749,29): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37960,114): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37961,109): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37964,118): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37982,142): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37983,137): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37984,124): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38252,29): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38474,23): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38496,27): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38506,27): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38613,29): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38629,96): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38631,22): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38641,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38649,23): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(39227,28): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(39804,483): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(62861,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(41164,38): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(35285,20): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(33348,6): warning CS1717: Asignación a la misma variable. ¿Quería asignar otro elemento?
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42030,36): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42412,36): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42480,36): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42548,36): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(65570,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(65579,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(65583,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
@@ -339,103 +421,30 @@
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(65994,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(65998,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(66040,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
+    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(45936,3): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(66357,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(66361,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(46463,49): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(68789,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(46658,23): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(45631,13): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(45680,33): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(45743,17): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(45748,23): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(47044,41): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(47044,78): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(47269,21): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35010,26): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35185,24): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35192,24): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35814,23): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(35862,136): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37090,29): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37170,184): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37183,29): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37683,12): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37749,29): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37960,114): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37961,109): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37964,118): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37982,142): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37983,137): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(37984,124): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38095,29): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38095,64): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38252,29): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38474,23): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38496,27): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38506,27): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38613,29): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38629,96): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38631,22): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38641,12): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(38649,23): error CS0019: El operador '&' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(39227,28): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(39794,11): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(39804,483): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(45936,3): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(47693,20): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(40453,24): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(40464,22): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(41164,38): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(35285,20): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(33348,6): warning CS1717: Asignación a la misma variable. ¿Quería asignar otro elemento?
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(46260,37): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(46252,4): warning CS0162: Se detectó código inaccesible
+    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57148,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(71827,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42030,36): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(48175,17): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(48177,27): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42412,36): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42480,36): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42548,36): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42614,27): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42674,27): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42700,29): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(42944,27): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.SpriteEffects'
+    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57523,3): warning SYSLIB0022: 'RijndaelManaged' está obsoleto: 'The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.' (https://aka.ms/dotnet-warnings/SYSLIB0022)
+    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57523,41): warning SYSLIB0022: 'RijndaelManaged' está obsoleto: 'The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.' (https://aka.ms/dotnet-warnings/SYSLIB0022)
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(49313,36): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
+    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57863,4): warning SYSLIB0022: 'RijndaelManaged' está obsoleto: 'The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.' (https://aka.ms/dotnet-warnings/SYSLIB0022)
+    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57863,42): warning SYSLIB0022: 'RijndaelManaged' está obsoleto: 'The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.' (https://aka.ms/dotnet-warnings/SYSLIB0022)
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(74484,89): error CS1929: 'NumericsExtensions' no contiene una definición para 'Zero' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Point).Zero' requiere un receptor del tipo 'System.Drawing.Point'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(74663,18): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(74784,88): error CS1929: 'NumericsExtensions' no contiene una definición para 'Zero' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Point).Zero' requiere un receptor del tipo 'System.Drawing.Point'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(46260,37): error CS0019: El operador '^' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(46252,4): warning CS0162: Se detectó código inaccesible
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(48053,28): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(48057,29): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(48059,46): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(48524,22): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(48583,22): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57148,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(49313,36): error CS0019: El operador '|' no se puede aplicar a operandos del tipo 'SpriteEffects' y 'int'
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57523,3): warning SYSLIB0022: 'RijndaelManaged' está obsoleto: 'The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.' (https://aka.ms/dotnet-warnings/SYSLIB0022)
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57523,41): warning SYSLIB0022: 'RijndaelManaged' está obsoleto: 'The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.' (https://aka.ms/dotnet-warnings/SYSLIB0022)
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57863,4): warning SYSLIB0022: 'RijndaelManaged' está obsoleto: 'The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.' (https://aka.ms/dotnet-warnings/SYSLIB0022)
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(57863,42): warning SYSLIB0022: 'RijndaelManaged' está obsoleto: 'The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.' (https://aka.ms/dotnet-warnings/SYSLIB0022)
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(59046,8): error CS0117: 'Entity' no contiene una definición para '_002Ector'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(51039,42): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(51047,42): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(51072,33): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
     C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(50089,16): error CS1929: 'NumericsExtensions' no contiene una definición para 'Zero' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Point).Zero' requiere un receptor del tipo 'System.Drawing.Point'
-    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(51188,25): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(51191,23): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(51358,22): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(89956,8): warning CS0219: La variable 'flag' está asignada pero su valor nunca se usa
     C:\Users\pc\Documents\manifests\Terraria\Main.cs(59427,16): error CS1540: No se puede obtener acceso al miembro protegido 'Game.Draw(GameTime)' a través de un calificador del tipo 'Game'; el calificador debe ser del tipo 'Main' (o derivado de este)
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(63774,18): error CS1929: 'NumericsExtensions' no contiene una definición para 'Zero' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Point).Zero' requiere un receptor del tipo 'System.Drawing.Point'
-    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(56254,21): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(65203,114): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(64167,122): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(64298,29): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
+    C:\Users\pc\Documents\manifests\Terraria\WorldGen.cs(89956,8): warning CS0219: La variable 'flag' está asignada pero su valor nunca se usa
     C:\Users\pc\Documents\manifests\Terraria\Main.cs(69578,16): error CS1540: No se puede obtener acceso al miembro protegido 'Game.EndDraw()' a través de un calificador del tipo 'Game'; el calificador debe ser del tipo 'Main' (o derivado de este)
     C:\Users\pc\Documents\manifests\Terraria\Main.cs(69859,16): error CS1540: No se puede obtener acceso al miembro protegido 'Game.Draw(GameTime)' a través de un calificador del tipo 'Game'; el calificador debe ser del tipo 'Main' (o derivado de este)
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(79062,69): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(79062,94): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(79267,26): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
-    C:\Users\pc\Documents\manifests\Terraria\NPC.cs(79268,27): error CS0119: 'NumericsExtensions' es tipo, que no es válida en el contexto indicado
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(74580,17): error CS1540: No se puede obtener acceso al miembro protegido 'Game.OnExiting(object, EventArgs)' a través de un calificador del tipo 'Game'; el calificador debe ser del tipo 'Main' (o derivado de este)
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(75407,30): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.GraphicsProfile'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(80632,3): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(80636,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(80649,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
@@ -453,7 +462,6 @@
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81192,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81196,6): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81206,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(74580,17): error CS1540: No se puede obtener acceso al miembro protegido 'Game.OnExiting(object, EventArgs)' a través de un calificador del tipo 'Game'; el calificador debe ser del tipo 'Main' (o derivado de este)
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81216,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81217,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81218,4): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
@@ -480,71 +488,71 @@
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81381,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81399,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
     C:\Users\pc\Documents\manifests\Terraria\NPC.cs(81573,5): warning CS0618: 'Item.NewItem(IEntitySource, int, int, int, int, int, int, bool, int, NewItemOwnership, Vector2?, Item.NewItemModifier)' está obsoleto: 'Unergonomic'
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(75407,30): error CS0030: No se puede convertir el tipo 'bool' en 'Microsoft.Xna.Framework.Graphics.GraphicsProfile'
     C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(86371,23): error CS1929: 'NumericsExtensions' no contiene una definición para 'Zero' y la mejor sobrecarga del método de extensión 'NumericsExtensions.extension(Point).Zero' requiere un receptor del tipo 'System.Drawing.Point'
     C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(87986,44): warning CS8632: La anotación para tipos de referencia que aceptan valores NULL solo debe usarse en el código dentro de un contexto de anotaciones "#nullable".
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(266,40): warning CS0649: El campo 'Main._003C_003EO._003C7_003E__RainbowLaserDraw' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.GameContent.UI.Elements\UIBestiarySortingOptionsGrid.cs(20,14): warning CS0649: El campo 'UIBestiarySortingOptionsGrid._defaultStepIndex' nunca se asigna y siempre tendrá el valor predeterminado 0
-    C:\Users\pc\Documents\manifests\Terraria.Graphics\TileBatch.cs(139,28): warning CS0169: El campo 'TileBatch._nullRectangle' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria.GameContent.Biomes\EnchantedSwordBiome.cs(17,17): warning CS0649: El campo 'EnchantedSwordBiome._chanceOfRealSword' nunca se asigna y siempre tendrá el valor predeterminado 0
-    C:\Users\pc\Documents\manifests\Terraria.Social.WeGame\CoreSocialModule.cs(19,24): warning CS0649: El campo 'CoreSocialModule._003C_003EO._003C2_003E__SaveAndQuitCallBack' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.GameContent.Biomes\EnchantedSwordBiome.cs(14,17): warning CS0649: El campo 'EnchantedSwordBiome._chanceOfEntrance' nunca se asigna y siempre tendrá el valor predeterminado 0
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(280,24): warning CS0649: El campo 'Main._003C_003EO._003C14_003E__Close' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.Testing\DebugOverrides.cs(9,43): warning CS0649: El campo 'DebugOverrides.Overrides' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(284,24): warning CS0649: El campo 'Main._003C_003EO._003C16_003E__CanceledGivingServerPassword' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.GameContent.UI.States\UIWorldGenDebug.cs(835,34): warning CS0169: El campo 'UIWorldGenDebug.SearchButton' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(262,24): warning CS0649: El campo 'Main._003C_003EO._003C5_003E__InvalidateTooltips' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(294,36): warning CS0649: El campo 'Main._003C_003EO._003C21_003E__IsGoodPortAddress' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(288,55): warning CS0649: El campo 'Main._003C_003EO._003C18_003E__OnSubmitServerIP' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.Social.WeGame\OverlaySocialModule.cs(7,15): warning CS0649: El campo 'OverlaySocialModule._gamepadTextInputActive' nunca se asigna y siempre tendrá el valor predeterminado false
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(276,41): warning CS0649: El campo 'Main._003C_003EO._003C12_003E__DrawInterface_12_IngameFancyUI' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(514,35): warning CS0649: El campo 'Projectile._lightningCollisionBounds' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.GameContent.UI.States\UIWorldCreation.cs(99,16): warning CS0649: El campo 'UIWorldCreation.trial' nunca se asigna y siempre tendrá el valor predeterminado 0
-    C:\Users\pc\Documents\manifests\Terraria\Player.cs(293,30): warning CS0649: El campo 'Player.SpecialToolUsageSettings.UsageCondition' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(256,29): warning CS0649: El campo 'Main._003C_003EO._003C2_003E__startDedInputCallBack' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.GameContent.UI.States\UIWorldGenDebug.cs(819,15): warning CS0169: El campo 'UIWorldGenDebug.disableDebugOnClose' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.States\UICheatPanel.cs(17,20): warning CS0169: El campo 'UICheatPanel._buttonContainer' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(252,43): warning CS0649: El campo 'Main._003C_003EO._003C0_003E__WorldListSortMethod' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.Social.Steam\AchievementsSocialModule.cs(12,40): warning CS0169: El campo 'AchievementsSocialModule._userStatsReceived' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(63,23): warning CS0649: El campo 'UIPlayerListItem.playerItem' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(278,24): warning CS0649: El campo 'Main._003C_003EO._003C13_003E__Open' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.Achievements\AchievementManager.cs(22,38): warning CS0649: El campo 'AchievementManager.StoredAchievement.Conditions' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.Server\Game.cs(79,39): warning CS0067: El evento 'Game.Deactivated' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria.Server\Game.cs(81,39): warning CS0067: El evento 'Game.Disposed' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria.Graphics\TileBatch.cs(137,25): warning CS0169: El campo 'TileBatch._vector2Zero' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(292,55): warning CS0649: El campo 'Main._003C_003EO._003C20_003E__OnSubmitServerPort' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(270,40): warning CS0649: El campo 'Main._003C_003EO._003C9_003E__LightningLaserDraw' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(272,41): warning CS0649: El campo 'Main._003C_003EO._003C10_003E__DrawInterface_8_CheckF11UIHideToggle' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(254,44): warning CS0649: El campo 'Main._003C_003EO._003C1_003E__PlayerListSortMethod' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(53,27): warning CS0169: El campo 'UIPlayerListItem._buttonTrashTexture' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(268,40): warning CS0649: El campo 'Main._003C_003EO._003C8_003E__TurretLaserDraw' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(274,41): warning CS0649: El campo 'Main._003C_003EO._003C11_003E__DrawInterface_10_CheckCaptureManager' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.States\UICheatPanel.cs(35,15): warning CS0169: El campo 'UICheatPanel._reallyMousedOver' nunca se usa
     C:\Users\pc\Documents\manifests\Terraria\Main.cs(290,24): warning CS0649: El campo 'Main._003C_003EO._003C19_003E__StartClientGameplay' nunca se asigna y siempre tendrá el valor predeterminado null
     C:\Users\pc\Documents\manifests\Terraria.Social.WeGame\CoreSocialModule.cs(17,24): warning CS0649: El campo 'CoreSocialModule._003C_003EO._003C1_003E__RailEventTick' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.Server\Game.cs(77,39): warning CS0067: El evento 'Game.Activated' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria.UI\BannerClaimingUI.cs(45,14): warning CS0169: El campo 'BannerClaimingUI.previousFocusTime' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(260,24): warning CS0649: El campo 'Main._003C_003EO._003C4_003E__ResetGameCounter' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(266,40): warning CS0649: El campo 'Main._003C_003EO._003C7_003E__RainbowLaserDraw' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Social.WeGame\OverlaySocialModule.cs(7,15): warning CS0649: El campo 'OverlaySocialModule._gamepadTextInputActive' nunca se asigna y siempre tendrá el valor predeterminado false
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(254,44): warning CS0649: El campo 'Main._003C_003EO._003C1_003E__PlayerListSortMethod' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(284,24): warning CS0649: El campo 'Main._003C_003EO._003C16_003E__CanceledGivingServerPassword' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(278,24): warning CS0649: El campo 'Main._003C_003EO._003C13_003E__Open' nunca se asigna y siempre tendrá el valor predeterminado null
     C:\Users\pc\Documents\manifests\Terraria.UtilClient.Features\FancyAfterImage.cs(11,21): warning CS0649: El campo 'FancyAfterImage.UpdateWhenPaused' nunca se asigna y siempre tendrá el valor predeterminado false
-    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(41,16): warning CS0649: El campo 'UIPlayerListItem.trial' nunca se asigna y siempre tendrá el valor predeterminado 0
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(286,24): warning CS0649: El campo 'Main._003C_003EO._003C17_003E__ExitServerPasswordMenu' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(65,24): warning CS0169: El campo 'UIPlayerListItem._trashButton' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(282,55): warning CS0649: El campo 'Main._003C_003EO._003C15_003E__OnSubmitServerPasswordFromRequest' nunca se asigna y siempre tendrá el valor predeterminado null
-    C:\Users\pc\Documents\manifests\Terraria.Server\Game.cs(83,39): warning CS0067: El evento 'Game.Exiting' nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria\Main.cs(258,64): warning CS0649: El campo 'Main._003C_003EO._003C3_003E__SetMonitorOnce' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Social.WeGame\CoreSocialModule.cs(19,24): warning CS0649: El campo 'CoreSocialModule._003C_003EO._003C2_003E__SaveAndQuitCallBack' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Social.Steam\AchievementsSocialModule.cs(12,40): warning CS0169: El campo 'AchievementsSocialModule._userStatsReceived' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.Achievements\AchievementManager.cs(22,38): warning CS0649: El campo 'AchievementManager.StoredAchievement.Conditions' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(63,23): warning CS0649: El campo 'UIPlayerListItem.playerItem' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(260,24): warning CS0649: El campo 'Main._003C_003EO._003C4_003E__ResetGameCounter' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(262,24): warning CS0649: El campo 'Main._003C_003EO._003C5_003E__InvalidateTooltips' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Testing\DebugOverrides.cs(9,43): warning CS0649: El campo 'DebugOverrides.Overrides' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Server\Game.cs(79,39): warning CS0067: El evento 'Game.Deactivated' nunca se usa
     C:\Users\pc\Documents\manifests\Terraria.Net.Sockets\DebugNetworkStream.cs(81,23): warning CS0649: El campo 'DebugNetworkStream._logWriter' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(282,55): warning CS0649: El campo 'Main._003C_003EO._003C15_003E__OnSubmitServerPasswordFromRequest' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(252,43): warning CS0649: El campo 'Main._003C_003EO._003C0_003E__WorldListSortMethod' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(274,41): warning CS0649: El campo 'Main._003C_003EO._003C11_003E__DrawInterface_10_CheckCaptureManager' nunca se asigna y siempre tendrá el valor predeterminado null
     C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(61,17): warning CS0169: El campo 'UIPlayerListItem._buttonLabel' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(294,36): warning CS0649: El campo 'Main._003C_003EO._003C21_003E__IsGoodPortAddress' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(256,29): warning CS0649: El campo 'Main._003C_003EO._003C2_003E__startDedInputCallBack' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(258,64): warning CS0649: El campo 'Main._003C_003EO._003C3_003E__SetMonitorOnce' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.GameContent.UI.States\UIWorldCreation.cs(99,16): warning CS0649: El campo 'UIWorldCreation.trial' nunca se asigna y siempre tendrá el valor predeterminado 0
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(280,24): warning CS0649: El campo 'Main._003C_003EO._003C14_003E__Close' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Graphics\TileBatch.cs(139,28): warning CS0169: El campo 'TileBatch._nullRectangle' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.GameContent.Biomes\EnchantedSwordBiome.cs(14,17): warning CS0649: El campo 'EnchantedSwordBiome._chanceOfEntrance' nunca se asigna y siempre tendrá el valor predeterminado 0
+    C:\Users\pc\Documents\manifests\Terraria.GameContent.UI.States\UIWorldGenDebug.cs(819,15): warning CS0169: El campo 'UIWorldGenDebug.disableDebugOnClose' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.States\UICheatPanel.cs(17,20): warning CS0169: El campo 'UICheatPanel._buttonContainer' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.GameContent.Biomes\EnchantedSwordBiome.cs(17,17): warning CS0649: El campo 'EnchantedSwordBiome._chanceOfRealSword' nunca se asigna y siempre tendrá el valor predeterminado 0
+    C:\Users\pc\Documents\manifests\Terraria.GameContent.UI.States\UIWorldGenDebug.cs(835,34): warning CS0169: El campo 'UIWorldGenDebug.SearchButton' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.GameContent.UI.Elements\UIBestiarySortingOptionsGrid.cs(20,14): warning CS0649: El campo 'UIBestiarySortingOptionsGrid._defaultStepIndex' nunca se asigna y siempre tendrá el valor predeterminado 0
+    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(53,27): warning CS0169: El campo 'UIPlayerListItem._buttonTrashTexture' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(286,24): warning CS0649: El campo 'Main._003C_003EO._003C17_003E__ExitServerPasswordMenu' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(270,40): warning CS0649: El campo 'Main._003C_003EO._003C9_003E__LightningLaserDraw' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(276,41): warning CS0649: El campo 'Main._003C_003EO._003C12_003E__DrawInterface_12_IngameFancyUI' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(288,55): warning CS0649: El campo 'Main._003C_003EO._003C18_003E__OnSubmitServerIP' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.UI\BannerClaimingUI.cs(45,14): warning CS0169: El campo 'BannerClaimingUI.previousFocusTime' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(272,41): warning CS0649: El campo 'Main._003C_003EO._003C10_003E__DrawInterface_8_CheckF11UIHideToggle' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Projectile.cs(514,35): warning CS0649: El campo 'Projectile._lightningCollisionBounds' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Server\Game.cs(81,39): warning CS0067: El evento 'Game.Disposed' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(268,40): warning CS0649: El campo 'Main._003C_003EO._003C8_003E__TurretLaserDraw' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria\Player.cs(293,30): warning CS0649: El campo 'Player.SpecialToolUsageSettings.UsageCondition' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Server\Game.cs(83,39): warning CS0067: El evento 'Game.Exiting' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria\Main.cs(292,55): warning CS0649: El campo 'Main._003C_003EO._003C20_003E__OnSubmitServerPort' nunca se asigna y siempre tendrá el valor predeterminado null
+    C:\Users\pc\Documents\manifests\Terraria.Graphics\TileBatch.cs(137,25): warning CS0169: El campo 'TileBatch._vector2Zero' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(65,24): warning CS0169: El campo 'UIPlayerListItem._trashButton' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.Server\Game.cs(77,39): warning CS0067: El evento 'Game.Activated' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.States\UICheatPanel.cs(35,15): warning CS0169: El campo 'UICheatPanel._reallyMousedOver' nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.UtilClient.UI.Elements\UIPlayerListItem.cs(41,16): warning CS0649: El campo 'UIPlayerListItem.trial' nunca se asigna y siempre tendrá el valor predeterminado 0
+    C:\Users\pc\Documents\manifests\Terraria.UtilClient.Chat.Commands\UtilClientCommands.cs(22,36): warning CS0414: El campo 'UtilClientCommands.FindNextEnumerator' está asignado pero su valor nunca se usa
     C:\Users\pc\Documents\manifests\Terraria.Social.Steam\AchievementsSocialModule.cs(14,15): warning CS0414: El campo 'AchievementsSocialModule._areStatsReceived' está asignado pero su valor nunca se usa
     C:\Users\pc\Documents\manifests\Terraria.UI\BannerClaimingUI.cs(43,14): warning CS0414: El campo 'BannerClaimingUI.previousFocusBanner' está asignado pero su valor nunca se usa
-    C:\Users\pc\Documents\manifests\Terraria.UtilClient.Chat.Commands\UtilClientCommands.cs(22,36): warning CS0414: El campo 'UtilClientCommands.FindNextEnumerator' está asignado pero su valor nunca se usa
+    C:\Users\pc\Documents\manifests\Terraria.Testing\WindowsPerformanceDiagnostics.cs(390,39): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "Registry.CurrentUser" solo se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
     C:\Users\pc\Documents\manifests\Terraria.Testing\WindowsPerformanceDiagnostics.cs(389,51): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "Registry.LocalMachine" solo se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
+    C:\Users\pc\Documents\manifests\Terraria.Testing\WindowsPerformanceDiagnostics.cs(387,34): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "Registry.LocalMachine" solo se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
     C:\Users\pc\Documents\manifests\Terraria.Testing\WindowsPerformanceDiagnostics.cs(371,36): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "RegistryKey.OpenSubKey(string)" solo se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
     C:\Users\pc\Documents\manifests\Terraria.Testing\WindowsPerformanceDiagnostics.cs(376,20): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "RegistryKey.GetValue(string?)" solo se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
-    C:\Users\pc\Documents\manifests\Terraria.Testing\WindowsPerformanceDiagnostics.cs(390,39): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "Registry.CurrentUser" solo se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
-    C:\Users\pc\Documents\manifests\Terraria.Testing\WindowsPerformanceDiagnostics.cs(387,34): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "Registry.LocalMachine" solo se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
-    C:\Users\pc\Documents\manifests\Terraria.Testing\LockstepDebug.cs(81,113): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "PipeTransmissionMode.Message" se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
-    C:\Users\pc\Documents\manifests\Terraria.Utilities\FileUtilities.cs(113,3): warning CA2022: Evitar la lectura inexacta con "System.IO.FileStream.Read(byte[], int, int)" (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2022)
     C:\Users\pc\Documents\manifests\Terraria.Social.WeGame\IPCServer.cs(42,81): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "PipeTransmissionMode.Message" se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
     C:\Users\pc\Documents\manifests\Terraria.Social.WeGame\IPCClient.cs(76,32): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "PipeTransmissionMode.Message" se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
+    C:\Users\pc\Documents\manifests\Terraria.Testing\LockstepDebug.cs(81,113): warning CA1416: Se puede acceder a este sitio de llamada en todas las plataformas. "PipeTransmissionMode.Message" se admite en 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416)
+    C:\Users\pc\Documents\manifests\Terraria.Utilities\FileUtilities.cs(113,3): warning CA2022: Evitar la lectura inexacta con "System.IO.FileStream.Read(byte[], int, int)" (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2022)
 
-Compilación error con 640 errores y 831 advertencias en 17.2s
+Compilación error con 401 errores y 831 advertencias en 15.3s
+PS C:\Users\pc\Documents\manifests> 
