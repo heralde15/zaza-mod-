@@ -29,7 +29,11 @@ internal static class HerosModPanel
         public string Context => "HerosModPanel";
     }
 
-    private enum Tab { Jugador, Aventura, WorldEdit, Mundo, Items, Editor, Buffs, Jefes, NPCs, Proyectiles, Teleport, Jugadores, Permisos, Configuracion }
+    private enum Tab { Jugador, Aventura, Mundo, Editor, Buffs, Jefes, NPCs, Proyectiles, Teleport, Jugadores, Permisos, Configuracion }
+
+    // Subvistas dentro de una sola pestaña Aventura: no crean paneles independientes.
+    private enum AdventureView { Perfil, Items, WorldEdit }
+    private static AdventureView adventureView = AdventureView.Perfil;
 
     private const int BaseWidth = 680;
     private const int BaseHeight = 720;
@@ -137,7 +141,10 @@ internal static class HerosModPanel
     private static bool worldMapNeedsRefresh = true;
     private static bool spanish = true;
 
-    // WorldEdit local: operaciones limitadas a un jugador para no alterar servidores remotos.
+    // WorldEdit adaptado a la API nativa de Terraria Unified.
+    // Se conservan conceptos de selección/relleno/reemplazo/deshacer de las fuentes de referencia,
+    // pero no se copian sus dependencias externas (ModsNetMessages/SkiaSharp) que no existen aquí.
+    // Operaciones limitadas a un jugador para no alterar servidores remotos.
     private static bool weHasPos1, weHasPos2;
     private static Point wePos1, wePos2;
     private static string weTileIdText = "0";
@@ -152,9 +159,7 @@ internal static class HerosModPanel
     {
         Tab.Jugador => Tr("Jugador", "Player"),
         Tab.Aventura => Tr("Aventura", "Adventure"),
-        Tab.WorldEdit => "WorldEdit",
         Tab.Mundo => Tr("Mundo", "World"),
-        Tab.Items => Tr("Items", "Items"),
         Tab.Editor => Tr("Editor", "Editor"),
         Tab.Buffs => Tr("Buffs", "Buffs"),
         Tab.Jefes => Tr("Jefes", "Bosses"),
@@ -319,7 +324,7 @@ internal static class HerosModPanel
             return;
         }
 
-        Tab[] tabs = [Tab.Jugador, Tab.Aventura, Tab.WorldEdit, Tab.Mundo, Tab.Items, Tab.Editor, Tab.Buffs, Tab.Jefes, Tab.NPCs, Tab.Proyectiles, Tab.Teleport, Tab.Jugadores, Tab.Permisos, Tab.Configuracion];
+        Tab[] tabs = [Tab.Jugador, Tab.Aventura, Tab.Mundo, Tab.Editor, Tab.Buffs, Tab.Jefes, Tab.NPCs, Tab.Proyectiles, Tab.Teleport, Tab.Jugadores, Tab.Permisos, Tab.Configuracion];
         const int tabColumns = 6;
         const int tabGap = 4;
         const int tabHeight = 22;
@@ -347,14 +352,8 @@ internal static class HerosModPanel
             case Tab.Aventura:
                 DrawAdventureTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
-            case Tab.WorldEdit:
-                DrawWorldEditTab(sb, pixel, panelRect, ref contentY, mouse);
-                break;
             case Tab.Mundo:
                 DrawWorldTab(sb, pixel, panelRect, ref contentY, mouse);
-                break;
-            case Tab.Items:
-                DrawItemsTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Editor:
                 DrawItemEditorTab(sb, pixel, panelRect, ref contentY, mouse);
@@ -407,6 +406,38 @@ internal static class HerosModPanel
 
     private static void DrawAdventureTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
+        // Barra de sub-vistas integrada en Aventura. Items y WorldEdit no son pestañas superiores.
+        int gap = 6;
+        int subW = (panel.Width - Pad * 2 - gap * 2) / 3;
+        string[] labels = { Tr("Perfil", "Profile"), Tr("Objetos", "Items"), "WorldEdit" };
+        AdventureView[] views = { AdventureView.Perfil, AdventureView.Items, AdventureView.WorldEdit };
+        for (int i = 0; i < views.Length; i++)
+        {
+            var r = new Rectangle(panel.X + Pad + i * (subW + gap), y, subW, 24);
+            Color bg = adventureView == views[i] ? AccentColor : new Color(45, 50, 60);
+            if (DrawButton(sb, pixel, r, labels[i], mouse, bg))
+            {
+                adventureView = views[i];
+                activeField = 0;
+            }
+        }
+        y += 30;
+        switch (adventureView)
+        {
+            case AdventureView.Perfil:
+                DrawAdventureProfile(sb, pixel, panel, ref y, mouse);
+                break;
+            case AdventureView.Items:
+                DrawItemsTab(sb, pixel, panel, ref y, mouse);
+                break;
+            case AdventureView.WorldEdit:
+                DrawWorldEditTab(sb, pixel, panel, ref y, mouse);
+                break;
+        }
+    }
+
+    private static void DrawAdventureProfile(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
         DrawSectionHeader(sb, panel, ref y, Tr("Modo Aventura (solo tu jugador)", "Adventure Mode (your player only)"));
         Utils.DrawBorderString(sb,
             Tr("Perfil personalizado: no cambia el mundo ni a otros jugadores.", "Custom profile: does not change the world or other players."),
@@ -446,22 +477,19 @@ internal static class HerosModPanel
         }
         y += RowH + 10;
 
-        DrawSectionHeader(sb, panel, ref y, Tr("Buscador de objetos", "Item browser"));
-        EnsureItemNames();
-        RefreshBrowser();
-        Utils.DrawBorderString(sb, Tr("Busca por nombre o ID; pulsa un objeto para obtenerlo.", "Search by name or ID; click an item to obtain it."), new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
-        y += 20;
-        var adventureSearchRect = new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH);
-        DrawTextField(sb, pixel, adventureSearchRect, 1, itemQuery, mouse, Tr("Nombre o ID del objeto...", "Item name or ID..."));
-        Utils.DrawBorderString(sb, $"{browserIds.Count} {Tr("resultados", "results")}", new Vector2(panel.Right - Pad - 100, y - 18), Color.Gray, 0.68f);
-        y += RowH + 6;
-        int adventureBrowserHeight = Math.Max(CellSize * 2, panel.Bottom - 34 - y);
-        var adventureBrowserRect = new Rectangle(panel.X + Pad, y, Width - Pad * 2, adventureBrowserHeight);
-        DrawItemBrowser(sb, pixel, adventureBrowserRect, mouse);
-        y += adventureBrowserHeight + 8;
-        Utils.DrawBorderString(sb,
-            Tr("En multijugador el servidor puede rechazar los objetos.", "In multiplayer, the server may reject item changes."),
-            new Vector2(panel.X + Pad, Math.Min(y, panel.Bottom - 20)), Color.LightGray, 0.62f);
+        DrawSectionHeader(sb, panel, ref y, Tr("Compatibilidad", "Compatibility"));
+        string[] notes =
+        {
+            Tr("• Un jugador: los controles locales pueden aplicarse al personaje.", "• Single-player: local controls can apply to your character."),
+            Tr("• Servidor vanilla: el servidor decide qué cambios acepta.", "• Vanilla server: the server decides which changes it accepts."),
+            Tr("• TShock: las acciones remotas requieren permisos y comandos disponibles.", "• TShock: remote actions require permissions and supported commands."),
+            Tr("• No activa Journey Mode real ni cambia la dificultad global.", "• Does not enable real Journey Mode or change global difficulty.")
+        };
+        foreach (string note in notes)
+        {
+            Utils.DrawBorderString(sb, note, new Vector2(panel.X + Pad, y), Color.White, 0.67f);
+            y += 21;
+        }
     }
 
     // ------------------------------------------------------------------ Jugador
@@ -751,7 +779,13 @@ internal static class HerosModPanel
         if (!TryWorldEditSelection(out int x1, out int y1, out int x2, out int y2)) return;
         if (!ushort.TryParse(weTileIdText, out ushort id) || id >= TileID.Count) { SetStatus("ID de bloque inválido."); return; }
         WorldEditSaveUndo(x1, y1, x2, y2);
-        for (int x = x1; x <= x2; x++) for (int y = y1; y <= y2; y++) { var t = Main.tile[x, y]; t.TileType = id; t.HasTile = true; }
+        for (int x = x1; x <= x2; x++)
+        for (int y = y1; y <= y2; y++)
+        {
+            if (Main.tile[x, y].HasTile)
+                WorldGen.KillTile(x, y, false, false, true);
+            WorldGen.PlaceTile(x, y, id, true, true);
+        }
         WorldEditFrame(x1, y1, x2, y2); SetStatus("Selección rellenada.");
     }
 
@@ -759,7 +793,11 @@ internal static class HerosModPanel
     {
         if (!TryWorldEditSelection(out int x1, out int y1, out int x2, out int y2)) return;
         WorldEditSaveUndo(x1, y1, x2, y2);
-        for (int x = x1; x <= x2; x++) for (int y = y1; y <= y2; y++) Main.tile[x, y].HasTile = false;
+        for (int x = x1; x <= x2; x++)
+        for (int y = y1; y <= y2; y++)
+        {
+            WorldGen.KillTile(x, y, false, false, true);
+        }
         WorldEditFrame(x1, y1, x2, y2); SetStatus("Bloques eliminados; paredes conservadas.");
     }
 
@@ -768,14 +806,39 @@ internal static class HerosModPanel
         if (!TryWorldEditSelection(out int x1, out int y1, out int x2, out int y2)) return;
         if (!ushort.TryParse(weReplaceFromText, out ushort from) || from >= TileID.Count || !ushort.TryParse(weReplaceToText, out ushort to) || to >= TileID.Count) { SetStatus("ID origen/destino inválido."); return; }
         WorldEditSaveUndo(x1, y1, x2, y2); int changed = 0;
-        for (int x = x1; x <= x2; x++) for (int y = y1; y <= y2; y++) { var t = Main.tile[x, y]; if (t.HasTile && t.TileType == from) { t.TileType = to; changed++; } }
+        for (int x = x1; x <= x2; x++)
+        for (int y = y1; y <= y2; y++)
+        {
+            if (Main.tile[x, y].HasTile && Main.tile[x, y].TileType == from)
+            {
+                WorldGen.KillTile(x, y, false, false, true);
+                WorldGen.PlaceTile(x, y, to, true, true);
+                changed++;
+            }
+        }
         WorldEditFrame(x1, y1, x2, y2); SetStatus($"Bloques reemplazados: {changed}.");
     }
 
     private static void WorldEditUndo()
     {
         if (Main.netMode != 0 || weUndo.Count == 0) { SetStatus("No hay una edición local para deshacer."); return; }
-        foreach (var v in weUndo) { var t = Main.tile[v.X, v.Y]; t.TileType = v.Type; t.HasTile = v.HasTile; t.WallType = v.Wall; }
+        foreach (var v in weUndo)
+        {
+            if (Main.tile[v.X, v.Y].HasTile)
+                WorldGen.KillTile(v.X, v.Y, false, false, true);
+
+            if (v.HasTile)
+                WorldGen.PlaceTile(v.X, v.Y, v.Type, true, true);
+
+            ushort currentWall = Main.tile[v.X, v.Y].WallType;
+            if (currentWall != v.Wall)
+            {
+                if (currentWall != 0)
+                    WorldGen.KillWall(v.X, v.Y);
+                if (v.Wall != 0)
+                    WorldGen.PlaceWall(v.X, v.Y, v.Wall, true);
+            }
+        }
         WorldEditFrame(weUndoMinX, weUndoMinY, weUndoMaxX, weUndoMaxY); weUndo.Clear(); SetStatus("Última edición deshecha.");
     }
 
