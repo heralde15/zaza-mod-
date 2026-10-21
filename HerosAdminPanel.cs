@@ -13,7 +13,7 @@ using Terraria.UI.Chat;
 namespace Terraria.Unified.Features;
 
 /// <summary>
-/// HERO's Admin. Panel independiente: se abre/cierra con tecla ` (OemTilde). El botón superior cambia NORMAL / DEBUG / CHEAT.
+/// HERO's Admin. Panel independiente: se abre/cierra con Ctrl derecho. Al abrirse activa el modo HACKS. El botón superior cambia NORMAL / DEBUG / CHEAT.
 ///
 /// - Un jugador (netMode 0): las acciones se aplican directamente al juego (igual que antes).
 /// - Las acciones del editor de objetos modifican directamente el Item local y no ejecutan comandos.
@@ -2344,10 +2344,15 @@ internal static class HerosAdminPanel
         if (Main.drawingPlayerChat || activeField != 0)
             return;
 
-        bool grave = Main.keyState.IsKeyDown(Keys.OemTilde) && Main.oldKeyState.IsKeyUp(Keys.OemTilde);
-        if (grave)
+        bool rightCtrl = Main.keyState.IsKeyDown(Keys.RightControl) && Main.oldKeyState.IsKeyUp(Keys.RightControl);
+        if (rightCtrl)
         {
             Visible = !Visible;
+            if (Visible)
+            {
+                toolMode = ToolMode.Cheat;
+                SetStatus(Tr("MODO HACKS activado.", "HACKS MODE enabled."));
+            }
         }
     }
 
