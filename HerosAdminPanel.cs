@@ -857,27 +857,23 @@ internal static class HerosAdminPanel
         DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, fw, RowH), 8101, weTileIdText, mouse, "Tile ID");
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + fw + 6, y, fw, RowH), "Rellenar", mouse, new Color(45, 115, 70)))
         {
-            if (Main.netMode == 0) WorldEditFill();
-            else SetStatus("Fill directo solo está disponible en un jugador; no se enviaron comandos.");
+            WorldEditFill();
         }
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (fw + 6) * 2, y, fw, RowH), "Limpiar", mouse, new Color(125, 65, 55)))
         {
-            if (Main.netMode == 0) WorldEditClear();
-            else SetStatus("Clear directo solo está disponible en un jugador; no se enviaron comandos.");
+            WorldEditClear();
         }
         y += RowH + 5;
         DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, fw, RowH), 8102, weReplaceFromText, mouse, "ID origen");
         DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + fw + 6, y, fw, RowH), 8103, weReplaceToText, mouse, "ID destino");
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (fw + 6) * 2, y, fw, RowH), "Reemplazar", mouse, new Color(85, 85, 145)))
         {
-            if (Main.netMode == 0) WorldEditReplace();
-            else SetStatus("Replace directo solo está disponible en un jugador; no se enviaron comandos.");
+            WorldEditReplace();
         }
         y += RowH + 5;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), "Deshacer", mouse, new Color(100, 85, 55)))
         {
-            if (Main.netMode == 0) WorldEditUndo();
-            else SetStatus("Undo directo solo está disponible en un jugador; no se enviaron comandos.");
+            WorldEditUndo();
         }
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 8, y, half, RowH), "Deseleccionar", mouse))
         {
