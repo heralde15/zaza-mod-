@@ -266,7 +266,7 @@ internal static class HerosModPanel
         var mouse = new Point(Main.mouseX, Main.mouseY);
         var panelRect = new Rectangle((int)position.X, (int)position.Y, Width, Height);
         UpdateWorldEditSelectionDrag(mouse, panelRect);
-        DrawWorldEditSelectionOverlay(sb, pixel);
+        
 
         if (panelRect.Contains(mouse))
             Main.LocalPlayer.mouseInterface = true;
@@ -770,7 +770,7 @@ internal static class HerosModPanel
     private static void UpdateWorldEditSelectionDrag(Point mouse, Rectangle panelRect)
     {
         bool worldEditOpen = Visible && currentTab == Tab.Aventura && adventureView == AdventureView.WorldEdit;
-        if (Main.netMode != 0 || !worldEditOpen || !weDragMode || activeField != 0 || Main.drawingPlayerChat)
+        if (!worldEditOpen || !weDragMode || activeField != 0 || Main.drawingPlayerChat)
         {
             if (!Main.mouseLeft) weDragSelecting = false;
             return;
@@ -821,9 +821,10 @@ internal static class HerosModPanel
         }
     }
 
-    private static void DrawWorldEditSelectionOverlay(SpriteBatch sb, Texture2D pixel)
-    {
-        if (Main.netMode != 0 || !Visible || currentTab != Tab.Aventura || adventureView != AdventureView.WorldEdit || !weHasPos1 || !weHasPos2)
+    public static void DrawWorldEditSelectionOverlay(SpriteBatch sb)
+{
+    Texture2D pixel = TextureAssets.MagicPixel.Value;
+        if (!Visible || currentTab != Tab.Aventura || adventureView != AdventureView.WorldEdit || !weHasPos1 || !weHasPos2)
             return;
 
         int minX = Math.Min(wePos1.X, wePos2.X);
