@@ -147,6 +147,8 @@ internal static class HerosModPanel
     // Operaciones limitadas a un jugador para no alterar servidores remotos.
     private static bool weHasPos1, weHasPos2;
     private static Point wePos1, wePos2;
+    private static bool weDragMode;
+    private static bool weDragSelecting;
     private static string weTileIdText = "0";
     private static string weReplaceFromText = "0";
     private static string weReplaceToText = "1";
@@ -263,6 +265,8 @@ internal static class HerosModPanel
         var pixel = TextureAssets.MagicPixel.Value;
         var mouse = new Point(Main.mouseX, Main.mouseY);
         var panelRect = new Rectangle((int)position.X, (int)position.Y, Width, Height);
+        UpdateWorldEditSelectionDrag(mouse, panelRect);
+        DrawWorldEditSelectionOverlay(sb, pixel);
 
         if (panelRect.Contains(mouse))
             Main.LocalPlayer.mouseInterface = true;
@@ -704,8 +708,23 @@ internal static class HerosModPanel
         Utils.DrawBorderString(sb, "Sin protección de regiones · modo anárquico", new Vector2(panel.X + Pad + 235, y + 4), Color.LightGray, 0.56f);
         y += 30;
 
-        string p1 = weHasPos1 ? $"Pos1: {wePos1.X}, {wePos1.Y}" : "Pos1: sin seleccionar";
-        string p2 = weHasPos2 ? $"Pos2: {wePos2.X}, {wePos2.Y}" : "Pos2: sin seleccionar";
+        int selectButtonWidth = panel.Width - Pad * 2;
+        string selectModeLabel = weDragMode ? "MODO SELECCION: ARRASTRAR (ACTIVO)" : "Activar seleccion con cuadro";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, selectButtonWidth, RowH), selectModeLabel, mouse,
+            weDragMode ? new Color(35, 115, 75) : new Color(45, 75, 115)))
+        {
+            weDragMode = !weDragMode;
+            weDragSelecting = false;
+            SetStatus(weDragMode
+                ? "Seleccion activa: pulsa y arrastra sobre el mundo para dibujar el cuadro."
+                : "Seleccion por arrastre desactivada.");
+        }
+        y += RowH + 5;
+        Utils.DrawBorderString(sb, "Arrastra con el boton izquierdo desde una esquina hasta la otra.",
+            new Vector2(panel.X + Pad, y), weDragMode ? Color.LightGreen : Color.LightGray, 0.65f);
+        y += 19;
+        string p1 = weHasPos1 ? $"POS1 azul: {wePos1.X}, {wePos1.Y}" : "POS1 azul: sin seleccionar";
+        string p2 = weHasPos2 ? $"POS2 naranja: {wePos2.X}, {wePos2.Y}" : "POS2 naranja: sin seleccionar";
         Utils.DrawBorderString(sb, p1, new Vector2(panel.X + Pad, y), Color.LightGreen, 0.7f);
         Utils.DrawBorderString(sb, p2, new Vector2(panel.X + Pad + 260, y), Color.LightSkyBlue, 0.7f);
         y += 23;
@@ -748,6 +767,99 @@ internal static class HerosModPanel
         Utils.DrawBorderString(sb, "Coloca el cursor sobre la primera esquina y marca Pos1; repite para Pos2.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
     }
 
+    private static void UpdateWorldEditSelectionDrag(Point mouse, Rectangle panelRect)
+    {
+        bool worldEditOpen = Visible && currentTab == Tab.Aventura && adventureView == AdventureView.WorldEdit;
+        if (Main.netMode != 0 || !worldEditOpen || !weDragMode || activeField != 0 || Main.drawingPlayerChat)
+        {
+            if (!Main.mouseLeft) weDragSelecting = false;
+            return;
+        }
+
+        // En modo seleccion, evita que el mismo arrastre mine o coloque bloques.
+        Main.LocalPlayer.mouseInterface = true;
+
+        if (!weDragSelecting)
+        {
+            // El gesto solo puede empezar fuera de la ventana del panel.
+            if (panelRect.Contains(mouse) || !Clicked)
+                return;
+
+            Point start = new Point((int)(Main.MouseWorld.X / 16f), (int)(Main.MouseWorld.Y / 16f));
+            if (!IsWorldEditPointValid(start))
+            {
+                SetStatus("No puedes iniciar la seleccion fuera del mundo.");
+                Main.mouseLeftRelease = false;
+                return;
+            }
+
+            wePos1 = start;
+            wePos2 = start;
+            weHasPos1 = weHasPos2 = true;
+            weDragSelecting = true;
+            Main.mouseLeftRelease = false;
+            return;
+        }
+
+        if (Main.mouseLeft)
+        {
+            Point current = new Point((int)(Main.MouseWorld.X / 16f), (int)(Main.MouseWorld.Y / 16f));
+            if (IsWorldEditPointValid(current))
+            {
+                wePos2 = current;
+                weHasPos2 = true;
+            }
+            Main.mouseLeftRelease = false;
+        }
+        else
+        {
+            weDragSelecting = false;
+            long width = Math.Abs((long)wePos2.X - wePos1.X) + 1;
+            long height = Math.Abs((long)wePos2.Y - wePos1.Y) + 1;
+            long area = width * height;
+            SetStatus($"Seleccion lista: {width} x {height} tiles ({area:N0})." + (area > 10000 ? " Supera el limite de 10000." : ""));
+        }
+    }
+
+    private static void DrawWorldEditSelectionOverlay(SpriteBatch sb, Texture2D pixel)
+    {
+        if (Main.netMode != 0 || !Visible || currentTab != Tab.Aventura || adventureView != AdventureView.WorldEdit || !weHasPos1 || !weHasPos2)
+            return;
+
+        int minX = Math.Min(wePos1.X, wePos2.X);
+        int minY = Math.Min(wePos1.Y, wePos2.Y);
+        int maxX = Math.Max(wePos1.X, wePos2.X);
+        int maxY = Math.Max(wePos1.Y, wePos2.Y);
+        int sx = (int)(minX * 16f - Main.screenPosition.X);
+        int sy = (int)(minY * 16f - Main.screenPosition.Y);
+        int width = (maxX - minX + 1) * 16;
+        int height = (maxY - minY + 1) * 16;
+        Rectangle region = new Rectangle(sx, sy, width, height);
+
+        // Relleno tenue para que el usuario vea el area completa.
+        sb.Draw(pixel, region, new Color(45, 150, 255, 38) * 0.45f);
+        Color edge = weDragSelecting ? new Color(255, 235, 90, 245) : new Color(70, 185, 255, 240);
+        const int thickness = 3;
+        sb.Draw(pixel, new Rectangle(region.X, region.Y, region.Width, thickness), edge);
+        sb.Draw(pixel, new Rectangle(region.X, region.Bottom - thickness, region.Width, thickness), edge);
+        sb.Draw(pixel, new Rectangle(region.X, region.Y, thickness, region.Height), edge);
+        sb.Draw(pixel, new Rectangle(region.Right - thickness, region.Y, thickness, region.Height), edge);
+
+        // Marcadores visibles para que no se confundan las esquinas.
+        DrawWorldEditCorner(sb, pixel, wePos1, new Color(35, 155, 255), "1", Main.screenPosition);
+        DrawWorldEditCorner(sb, pixel, wePos2, new Color(255, 145, 35), "2", Main.screenPosition);
+    }
+
+    private static void DrawWorldEditCorner(SpriteBatch sb, Texture2D pixel, Point tile, Color color, string label, Vector2 screenPosition)
+    {
+        int x = (int)(tile.X * 16f - screenPosition.X);
+        int y = (int)(tile.Y * 16f - screenPosition.Y);
+        Rectangle marker = new Rectangle(x, y, 16, 16);
+        sb.Draw(pixel, new Rectangle(marker.X - 3, marker.Y - 3, marker.Width + 6, marker.Height + 6), color);
+        sb.Draw(pixel, marker, Color.White * 0.9f);
+        sb.Draw(pixel, new Rectangle(marker.X + 2, marker.Y + 2, marker.Width - 4, marker.Height - 4), color);
+        Utils.DrawBorderString(sb, label, new Vector2(x + 3, y - 18), color, 0.7f);
+    }
     private static string FilterDigits(string input, int maxLength)
     {
         var chars = new System.Text.StringBuilder(input.Length);
