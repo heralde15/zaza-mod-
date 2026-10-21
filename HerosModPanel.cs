@@ -29,10 +29,10 @@ internal static class HerosModPanel
         public string Context => "HerosModPanel";
     }
 
-    private enum Tab { Jugador, Aventura, Mundo, Editor, Buffs, Jefes, NPCs, Proyectiles, Teleport, Jugadores, Permisos, Configuracion }
+    private enum Tab { Jugador, Aventura, WorldEdit, Mundo, Editor, Buffs, Jefes, NPCs, Proyectiles, Teleport, Jugadores, Permisos, Configuracion }
 
     // Subvistas dentro de una sola pestaña Aventura: no crean paneles independientes.
-    private enum AdventureView { Perfil, Items, WorldEdit }
+    private enum AdventureView { Perfil, Items }
     private static AdventureView adventureView = AdventureView.Perfil;
 
     private const int BaseWidth = 680;
@@ -56,10 +56,10 @@ internal static class HerosModPanel
 
     public static bool Visible { get; set; }
 
-    private enum ServerMode { TShock, Directo }
+    private enum ServerMode { Directo }
 
     // El transporte del servidor se mantiene nativo; este selector cambia el perfil del panel.
-    private static ServerMode serverMode = ServerMode.TShock;
+    private static ServerMode serverMode = ServerMode.Directo;
 
     private enum ToolMode { Normal, Debug, Cheat }
     private static ToolMode toolMode = ToolMode.Normal;
@@ -154,6 +154,11 @@ internal static class HerosModPanel
     private static string weReplaceToText = "1";
     private static readonly List<(int X, int Y, ushort Type, bool HasTile, ushort Wall)> weUndo = new();
     private static int weUndoMinX, weUndoMinY, weUndoMaxX, weUndoMaxY;
+    // Vista de minimapa para selección WorldEdit.
+    private static float weMapZoom = 1f;
+    private static float weMapCenterX = -1f;
+    private static float weMapCenterY = -1f;
+    private static bool weMapPickPos2;
 
     private static string Tr(string es, string en) => spanish ? es : en;
 
@@ -161,6 +166,7 @@ internal static class HerosModPanel
     {
         Tab.Jugador => Tr("Jugador", "Player"),
         Tab.Aventura => Tr("Aventura", "Adventure"),
+        Tab.WorldEdit => "WorldEdit",
         Tab.Mundo => Tr("Mundo", "World"),
         Tab.Editor => Tr("Editor", "Editor"),
         Tab.Buffs => Tr("Buffs", "Buffs"),
@@ -265,7 +271,7 @@ internal static class HerosModPanel
         var pixel = TextureAssets.MagicPixel.Value;
         var mouse = new Point(Main.mouseX, Main.mouseY);
         var panelRect = new Rectangle((int)position.X, (int)position.Y, Width, Height);
-        UpdateWorldEditSelectionDrag(mouse, panelRect);
+        // La selección se gestiona desde el minimapa WorldEdit.
         
 
         if (panelRect.Contains(mouse))
@@ -333,7 +339,7 @@ internal static class HerosModPanel
             return;
         }
 
-        Tab[] tabs = [Tab.Jugador, Tab.Aventura, Tab.Mundo, Tab.Editor, Tab.Buffs, Tab.Jefes, Tab.NPCs, Tab.Proyectiles, Tab.Teleport, Tab.Jugadores, Tab.Permisos, Tab.Configuracion];
+        Tab[] tabs = [Tab.Jugador, Tab.Aventura, Tab.WorldEdit, Tab.Mundo, Tab.Editor, Tab.Buffs, Tab.Jefes, Tab.NPCs, Tab.Proyectiles, Tab.Teleport, Tab.Jugadores, Tab.Permisos, Tab.Configuracion];
         const int tabColumns = 6;
         const int tabGap = 4;
         const int tabHeight = 22;
@@ -360,6 +366,9 @@ internal static class HerosModPanel
                 break;
             case Tab.Aventura:
                 DrawAdventureTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.WorldEdit:
+                DrawWorldEditTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Mundo:
                 DrawWorldTab(sb, pixel, panelRect, ref contentY, mouse);
@@ -417,9 +426,9 @@ internal static class HerosModPanel
     {
         // Barra de sub-vistas integrada en Aventura. Items y WorldEdit no son pestañas superiores.
         int gap = 6;
-        int subW = (panel.Width - Pad * 2 - gap * 2) / 3;
-        string[] labels = { Tr("Perfil", "Profile"), Tr("Objetos", "Items"), "WorldEdit" };
-        AdventureView[] views = { AdventureView.Perfil, AdventureView.Items, AdventureView.WorldEdit };
+        int subW = (panel.Width - Pad * 2 - gap) / 2;
+        string[] labels = { Tr("Perfil", "Profile"), Tr("Objetos", "Items") };
+        AdventureView[] views = { AdventureView.Perfil, AdventureView.Items };
         for (int i = 0; i < views.Length; i++)
         {
             var r = new Rectangle(panel.X + Pad + i * (subW + gap), y, subW, 24);
@@ -438,9 +447,6 @@ internal static class HerosModPanel
                 break;
             case AdventureView.Items:
                 DrawItemsTab(sb, pixel, panel, ref y, mouse);
-                break;
-            case AdventureView.WorldEdit:
-                DrawWorldEditTab(sb, pixel, panel, ref y, mouse);
                 break;
         }
     }
@@ -699,167 +705,189 @@ internal static class HerosModPanel
 
     private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "WORLDEDIT  /  edición de terreno");
-        Color connectionColor = Main.netMode == 1 ? new Color(80, 205, 135) : new Color(130, 180, 245);
-        string connectionText = Main.netMode == 1 ? "SERVIDOR: comandos remotos" : "MODO LOCAL: edición directa";
-        sb.Draw(pixel, new Rectangle(panel.X + Pad, y, panel.Width - Pad * 2, 24), new Color(34, 42, 52));
-        sb.Draw(pixel, new Rectangle(panel.X + Pad, y, 4, 24), connectionColor);
-        Utils.DrawBorderString(sb, connectionText, new Vector2(panel.X + Pad + 11, y + 4), connectionColor, 0.68f);
-        Utils.DrawBorderString(sb, "Sin protección de regiones · modo anárquico", new Vector2(panel.X + Pad + 235, y + 4), Color.LightGray, 0.56f);
-        y += 30;
-
-        int selectButtonWidth = panel.Width - Pad * 2;
-        string selectModeLabel = weDragMode ? "MODO SELECCION: ARRASTRAR (ACTIVO)" : "Activar seleccion con cuadro";
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, selectButtonWidth, RowH), selectModeLabel, mouse,
-            weDragMode ? new Color(35, 115, 75) : new Color(45, 75, 115)))
+        DrawSectionHeader(sb, panel, ref y, "WorldEdit - minimapa y selección");
+        if (Main.netMode != 0)
         {
-            weDragMode = !weDragMode;
-            weDragSelecting = false;
-            SetStatus(weDragMode
-                ? "Seleccion activa: pulsa y arrastra sobre el mundo para dibujar el cuadro."
-                : "Seleccion por arrastre desactivada.");
-        }
-        y += RowH + 5;
-        Utils.DrawBorderString(sb, "Arrastra con el boton izquierdo desde una esquina hasta la otra.",
-            new Vector2(panel.X + Pad, y), weDragMode ? Color.LightGreen : Color.LightGray, 0.65f);
-        y += 19;
-        string p1 = weHasPos1 ? $"POS1 azul: {wePos1.X}, {wePos1.Y}" : "POS1 azul: sin seleccionar";
-        string p2 = weHasPos2 ? $"POS2 naranja: {wePos2.X}, {wePos2.Y}" : "POS2 naranja: sin seleccionar";
-        Utils.DrawBorderString(sb, p1, new Vector2(panel.X + Pad, y), Color.LightGreen, 0.7f);
-        Utils.DrawBorderString(sb, p2, new Vector2(panel.X + Pad + 260, y), Color.LightSkyBlue, 0.7f);
-        y += 23;
-        int half = (panel.Width - Pad * 2 - 8) / 2;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), "Marcar Pos1 (ratón)", mouse))
-        {
-            wePos1 = new Point((int)(Main.MouseWorld.X / 16f), (int)(Main.MouseWorld.Y / 16f));
-            weHasPos1 = IsWorldEditPointValid(wePos1);
-            SetStatus(weHasPos1 ? $"WorldEdit Pos1: {wePos1.X}, {wePos1.Y}" : "Pos1 fuera del mundo.");
-        }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 8, y, half, RowH), "Marcar Pos2 (ratón)", mouse))
-        {
-            wePos2 = new Point((int)(Main.MouseWorld.X / 16f), (int)(Main.MouseWorld.Y / 16f));
-            weHasPos2 = IsWorldEditPointValid(wePos2);
-            SetStatus(weHasPos2 ? $"WorldEdit Pos2: {wePos2.X}, {wePos2.Y}" : "Pos2 fuera del mundo.");
-        }
-        y += RowH + 5;
-        DrawSectionHeader(sb, panel, ref y, "Rellenar con ID de bloque");
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 100, RowH), 8101, weTileIdText, mouse, "Tile ID");
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 108, y, half - 108, RowH), "Rellenar selección", mouse, new Color(45, 115, 75)))
-            WorldEditFill();
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 8, y, half, RowH), "Limpiar bloques", mouse, new Color(145, 55, 45)))
-            WorldEditClear();
-        y += RowH + 7;
-        DrawSectionHeader(sb, panel, ref y, "Reemplazar bloques por ID");
-        int fw = 82;
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, fw, RowH), 8102, weReplaceFromText, mouse, "ID origen");
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + fw + 6, y, fw, RowH), 8103, weReplaceToText, mouse, "ID destino");
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (fw + 6) * 2, y, panel.Width - Pad * 2 - (fw + 6) * 2, RowH), "Reemplazar", mouse, new Color(85, 85, 145)))
-            WorldEditReplace();
-        y += RowH + 7;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), "Deshacer última edición", mouse, new Color(100, 85, 55)))
-            WorldEditUndo();
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 8, y, half, RowH), "Deseleccionar", mouse))
-        {
-            weHasPos1 = weHasPos2 = false;
-            SetStatus("Selección WorldEdit borrada.");
-        }
-        y += RowH + 8;
-        Utils.DrawBorderString(sb, "Coloca el cursor sobre la primera esquina y marca Pos1; repite para Pos2.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
-    }
-
-    private static void UpdateWorldEditSelectionDrag(Point mouse, Rectangle panelRect)
-    {
-        bool worldEditOpen = Visible && currentTab == Tab.Aventura && adventureView == AdventureView.WorldEdit;
-        if (!worldEditOpen || !weDragMode || activeField != 0 || Main.drawingPlayerChat)
-        {
-            if (!Main.mouseLeft) weDragSelecting = false;
-            return;
+            Utils.DrawBorderString(sb, "Vista de selección disponible; edición directa solo en un jugador.", new Vector2(panel.X + Pad, y), Color.Orange, 0.67f);
+            y += 23;
         }
 
-        // En modo seleccion, evita que el mismo arrastre mine o coloque bloques.
-        Main.LocalPlayer.mouseInterface = true;
+        int mapW = panel.Width - Pad * 2;
+        int mapH = Math.Min(190, Math.Max(130, panel.Bottom - y - 260));
+        var mapRect = new Rectangle(panel.X + Pad, y, mapW, mapH);
+        sb.Draw(pixel, mapRect, new Color(12, 16, 25));
+        EnsureWorldMapTexture(sb);
 
-        if (!weDragSelecting)
+        int btnW = (mapW - 16) / 3;
+        var zoomOutRect = new Rectangle(panel.X + Pad, y + 4, btnW, 22);
+        var zoomInRect = new Rectangle(zoomOutRect.Right + 8, y + 4, btnW, 22);
+        var centerRect = new Rectangle(zoomInRect.Right + 8, y + 4, mapW - btnW * 2 - 16, 22);
+        if (DrawButton(sb, pixel, zoomOutRect, "Zoom -", mouse))
+            weMapZoom = Math.Max(1f, weMapZoom / 1.5f);
+        if (DrawButton(sb, pixel, zoomInRect, "Zoom +", mouse))
+            weMapZoom = Math.Min(12f, weMapZoom * 1.5f);
+        if (DrawButton(sb, pixel, centerRect, "Centrar", mouse))
         {
-            // El gesto solo puede empezar fuera de la ventana del panel.
-            if (panelRect.Contains(mouse) || !Clicked)
-                return;
-
-            Point start = new Point((int)(Main.MouseWorld.X / 16f), (int)(Main.MouseWorld.Y / 16f));
-            if (!IsWorldEditPointValid(start))
+            if (weHasPos1 && weHasPos2)
             {
-                SetStatus("No puedes iniciar la seleccion fuera del mundo.");
+                weMapCenterX = (wePos1.X + wePos2.X) * 0.5f;
+                weMapCenterY = (wePos1.Y + wePos2.Y) * 0.5f;
+            }
+            else
+            {
+                weMapCenterX = Main.LocalPlayer.Center.X / 16f;
+                weMapCenterY = Main.LocalPlayer.Center.Y / 16f;
+            }
+        }
+
+        if (weMapCenterX < 0f || weMapCenterY < 0f)
+        {
+            weMapCenterX = Main.LocalPlayer.Center.X / 16f;
+            weMapCenterY = Main.LocalPlayer.Center.Y / 16f;
+        }
+
+        Rectangle drawRect = Rectangle.Empty;
+        Rectangle srcRect = Rectangle.Empty;
+        if (worldMapTexture != null && !worldMapTexture.IsDisposed)
+        {
+            int innerTop = mapRect.Y + 30;
+            var mapInner = new Rectangle(mapRect.X + 4, innerTop, mapRect.Width - 8, mapRect.Bottom - innerTop - 4);
+            float srcW = MapTextureWidth / weMapZoom;
+            float srcH = MapTextureHeight / weMapZoom;
+            float centerPx = weMapCenterX / Math.Max(1f, Main.maxTilesX) * MapTextureWidth;
+            float centerPy = weMapCenterY / Math.Max(1f, Main.maxTilesY) * MapTextureHeight;
+            int srcX = (int)Math.Clamp(centerPx - srcW / 2f, 0f, MapTextureWidth - srcW);
+            int srcY = (int)Math.Clamp(centerPy - srcH / 2f, 0f, MapTextureHeight - srcH);
+            int sourceWidth = Math.Max(1, (int)srcW);
+            int sourceHeight = Math.Max(1, (int)srcH);
+            srcX = Math.Clamp(srcX, 0, Math.Max(0, MapTextureWidth - sourceWidth));
+            srcY = Math.Clamp(srcY, 0, Math.Max(0, MapTextureHeight - sourceHeight));
+            srcRect = new Rectangle(srcX, srcY, sourceWidth, sourceHeight);
+            float fit = Math.Min((float)mapInner.Width / sourceWidth, (float)mapInner.Height / sourceHeight);
+            int drawW = Math.Max(1, (int)(sourceWidth * fit));
+            int drawH = Math.Max(1, (int)(sourceHeight * fit));
+            drawRect = new Rectangle(mapInner.X + (mapInner.Width - drawW) / 2, mapInner.Y + (mapInner.Height - drawH) / 2, drawW, drawH);
+            sb.Draw(worldMapTexture, drawRect, srcRect, Color.White);
+
+            // Dibujar la selección dentro del minimapa.
+            if (weHasPos1 && weHasPos2)
+            {
+                float tx1 = wePos1.X / (float)Math.Max(1, Main.maxTilesX) * MapTextureWidth;
+                float ty1 = wePos1.Y / (float)Math.Max(1, Main.maxTilesY) * MapTextureHeight;
+                float tx2 = (wePos2.X + 1) / (float)Math.Max(1, Main.maxTilesX) * MapTextureWidth;
+                float ty2 = (wePos2.Y + 1) / (float)Math.Max(1, Main.maxTilesY) * MapTextureHeight;
+                int sx1 = drawRect.X + (int)((tx1 - srcRect.X) / srcRect.Width * drawRect.Width);
+                int sy1 = drawRect.Y + (int)((ty1 - srcRect.Y) / srcRect.Height * drawRect.Height);
+                int sx2 = drawRect.X + (int)((tx2 - srcRect.X) / srcRect.Width * drawRect.Width);
+                int sy2 = drawRect.Y + (int)((ty2 - srcRect.Y) / srcRect.Height * drawRect.Height);
+                var selection = Rectangle.Intersect(drawRect, new Rectangle(Math.Min(sx1, sx2), Math.Min(sy1, sy2), Math.Max(2, Math.Abs(sx2 - sx1)), Math.Max(2, Math.Abs(sy2 - sy1))));
+                if (selection.Width > 0 && selection.Height > 0)
+                {
+                    sb.Draw(pixel, new Rectangle(selection.X, selection.Y, selection.Width, 2), Color.LimeGreen);
+                    sb.Draw(pixel, new Rectangle(selection.X, selection.Bottom - 2, selection.Width, 2), Color.LimeGreen);
+                    sb.Draw(pixel, new Rectangle(selection.X, selection.Y, 2, selection.Height), Color.LimeGreen);
+                    sb.Draw(pixel, new Rectangle(selection.Right - 2, selection.Y, 2, selection.Height), Color.LimeGreen);
+                }
+            }
+
+            // Posición del jugador.
+            float playerPx = Main.LocalPlayer.Center.X / 16f / Math.Max(1f, Main.maxTilesX) * MapTextureWidth;
+            float playerPy = Main.LocalPlayer.Center.Y / 16f / Math.Max(1f, Main.maxTilesY) * MapTextureHeight;
+            int playerX = drawRect.X + (int)((playerPx - srcRect.X) / srcRect.Width * drawRect.Width);
+            int playerY = drawRect.Y + (int)((playerPy - srcRect.Y) / srcRect.Height * drawRect.Height);
+            if (drawRect.Contains(playerX, playerY))
+                sb.Draw(pixel, new Rectangle(playerX - 3, playerY - 3, 7, 7), Color.Yellow);
+
+            if (Clicked && drawRect.Contains(mouse))
+            {
                 Main.mouseLeftRelease = false;
-                return;
+                float mapPx = srcRect.X + (mouse.X - drawRect.X) / (float)drawRect.Width * srcRect.Width;
+                float mapPy = srcRect.Y + (mouse.Y - drawRect.Y) / (float)drawRect.Height * srcRect.Height;
+                int tileX = Math.Clamp((int)(mapPx / MapTextureWidth * Main.maxTilesX), 1, Main.maxTilesX - 2);
+                int tileY = Math.Clamp((int)(mapPy / MapTextureHeight * Main.maxTilesY), 1, Main.maxTilesY - 2);
+                var pos = new Point(tileX, tileY);
+                if (weMapPickPos2 || weHasPos1)
+                {
+                    wePos2 = pos;
+                    weHasPos2 = IsWorldEditPointValid(pos);
+                    weMapPickPos2 = false;
+                    SetStatus($"WorldEdit Pos2: {tileX}, {tileY}");
+                }
+                else
+                {
+                    wePos1 = pos;
+                    weHasPos1 = IsWorldEditPointValid(pos);
+                    weMapPickPos2 = true;
+                    SetStatus($"WorldEdit Pos1: {tileX}, {tileY}. Haz clic otra vez para Pos2.");
+                }
+                weMapCenterX = tileX;
+                weMapCenterY = tileY;
             }
-
-            wePos1 = start;
-            wePos2 = start;
-            weHasPos1 = weHasPos2 = true;
-            weDragSelecting = true;
-            Main.mouseLeftRelease = false;
-            return;
-        }
-
-        if (Main.mouseLeft)
-        {
-            Point current = new Point((int)(Main.MouseWorld.X / 16f), (int)(Main.MouseWorld.Y / 16f));
-            if (IsWorldEditPointValid(current))
-            {
-                wePos2 = current;
-                weHasPos2 = true;
-            }
-            Main.mouseLeftRelease = false;
         }
         else
         {
-            weDragSelecting = false;
-            long width = Math.Abs((long)wePos2.X - wePos1.X) + 1;
-            long height = Math.Abs((long)wePos2.Y - wePos1.Y) + 1;
-            long area = width * height;
-            SetStatus($"Seleccion lista: {width} x {height} tiles ({area:N0})." + (area > 10000 ? " Supera el limite de 10000." : ""));
+            Utils.DrawBorderString(sb, "Mapa no disponible; pulsa Recargar mapa en Teleport.", new Vector2(mapRect.X + 8, mapRect.Y + 8), Color.Orange, 0.65f);
         }
-    }
+        y += mapH + 5;
 
-    public static void DrawWorldEditSelectionOverlay(SpriteBatch sb)
-{
-    Texture2D pixel = TextureAssets.MagicPixel.Value;
-        if (!Visible || currentTab != Tab.Aventura || adventureView != AdventureView.WorldEdit || !weHasPos1 || !weHasPos2)
-            return;
+        string p1 = weHasPos1 ? $"Pos1: {wePos1.X}, {wePos1.Y}" : "Pos1: sin seleccionar";
+        string p2 = weHasPos2 ? $"Pos2: {wePos2.X}, {wePos2.Y}" : "Pos2: sin seleccionar";
+        Utils.DrawBorderString(sb, p1, new Vector2(panel.X + Pad, y), Color.LightGreen, 0.68f);
+        Utils.DrawBorderString(sb, p2, new Vector2(panel.X + Pad + mapW / 2, y), Color.LightSkyBlue, 0.68f);
+        y += 22;
 
-        int minX = Math.Min(wePos1.X, wePos2.X);
-        int minY = Math.Min(wePos1.Y, wePos2.Y);
-        int maxX = Math.Max(wePos1.X, wePos2.X);
-        int maxY = Math.Max(wePos1.Y, wePos2.Y);
-        int sx = (int)(minX * 16f - Main.screenPosition.X);
-        int sy = (int)(minY * 16f - Main.screenPosition.Y);
-        int width = (maxX - minX + 1) * 16;
-        int height = (maxY - minY + 1) * 16;
-        Rectangle region = new Rectangle(sx, sy, width, height);
+        int half = (mapW - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), "Marcar Pos1", mouse))
+        {
+            wePos1 = new Point((int)(Main.MouseWorld.X / 16f), (int)(Main.MouseWorld.Y / 16f));
+            weHasPos1 = IsWorldEditPointValid(wePos1);
+            if (weHasPos1) { weMapCenterX = wePos1.X; weMapCenterY = wePos1.Y; }
+            SetStatus(weHasPos1 ? $"Pos1: {wePos1.X}, {wePos1.Y}" : "Pos1 fuera del mundo.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 8, y, half, RowH), "Marcar Pos2", mouse))
+        {
+            wePos2 = new Point((int)(Main.MouseWorld.X / 16f), (int)(Main.MouseWorld.Y / 16f));
+            weHasPos2 = IsWorldEditPointValid(wePos2);
+            if (weHasPos2) { weMapCenterX = wePos2.X; weMapCenterY = wePos2.Y; }
+            SetStatus(weHasPos2 ? $"Pos2: {wePos2.X}, {wePos2.Y}" : "Pos2 fuera del mundo.");
+        }
+        y += RowH + 5;
 
-        // Relleno tenue para que el usuario vea el area completa.
-        sb.Draw(pixel, region, new Color(45, 150, 255, 38) * 0.45f);
-        Color edge = weDragSelecting ? new Color(255, 235, 90, 245) : new Color(70, 185, 255, 240);
-        const int thickness = 3;
-        sb.Draw(pixel, new Rectangle(region.X, region.Y, region.Width, thickness), edge);
-        sb.Draw(pixel, new Rectangle(region.X, region.Bottom - thickness, region.Width, thickness), edge);
-        sb.Draw(pixel, new Rectangle(region.X, region.Y, thickness, region.Height), edge);
-        sb.Draw(pixel, new Rectangle(region.Right - thickness, region.Y, thickness, region.Height), edge);
-
-        // Marcadores visibles para que no se confundan las esquinas.
-        DrawWorldEditCorner(sb, pixel, wePos1, new Color(35, 155, 255), "1", Main.screenPosition);
-        DrawWorldEditCorner(sb, pixel, wePos2, new Color(255, 145, 35), "2", Main.screenPosition);
-    }
-
-    private static void DrawWorldEditCorner(SpriteBatch sb, Texture2D pixel, Point tile, Color color, string label, Vector2 screenPosition)
-    {
-        int x = (int)(tile.X * 16f - screenPosition.X);
-        int y = (int)(tile.Y * 16f - screenPosition.Y);
-        Rectangle marker = new Rectangle(x, y, 16, 16);
-        sb.Draw(pixel, new Rectangle(marker.X - 3, marker.Y - 3, marker.Width + 6, marker.Height + 6), color);
-        sb.Draw(pixel, marker, Color.White * 0.9f);
-        sb.Draw(pixel, new Rectangle(marker.X + 2, marker.Y + 2, marker.Width - 4, marker.Height - 4), color);
-        Utils.DrawBorderString(sb, label, new Vector2(x + 3, y - 18), color, 0.7f);
+        int fw = (mapW - 12) / 3;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, fw, RowH), 8101, weTileIdText, mouse, "Tile ID");
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + fw + 6, y, fw, RowH), "Rellenar", mouse, new Color(45, 115, 70)))
+        {
+            if (Main.netMode == 0) WorldEditFill();
+            else SetStatus("Fill directo solo está disponible en un jugador; no se enviaron comandos.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (fw + 6) * 2, y, fw, RowH), "Limpiar", mouse, new Color(125, 65, 55)))
+        {
+            if (Main.netMode == 0) WorldEditClear();
+            else SetStatus("Clear directo solo está disponible en un jugador; no se enviaron comandos.");
+        }
+        y += RowH + 5;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, fw, RowH), 8102, weReplaceFromText, mouse, "ID origen");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + fw + 6, y, fw, RowH), 8103, weReplaceToText, mouse, "ID destino");
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (fw + 6) * 2, y, fw, RowH), "Reemplazar", mouse, new Color(85, 85, 145)))
+        {
+            if (Main.netMode == 0) WorldEditReplace();
+            else SetStatus("Replace directo solo está disponible en un jugador; no se enviaron comandos.");
+        }
+        y += RowH + 5;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), "Deshacer", mouse, new Color(100, 85, 55)))
+        {
+            if (Main.netMode == 0) WorldEditUndo();
+            else SetStatus("Undo directo solo está disponible en un jugador; no se enviaron comandos.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 8, y, half, RowH), "Deseleccionar", mouse))
+        {
+            weHasPos1 = weHasPos2 = false;
+            weMapPickPos2 = false;
+            SetStatus("Selección WorldEdit borrada.");
+        }
+        y += RowH + 4;
+        Utils.DrawBorderString(sb, "Clic en el mapa: Pos1 y luego Pos2. Verde = selección; amarillo = jugador.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.60f);
+        y += 18;
     }
     private static string FilterDigits(string input, int maxLength)
     {
@@ -2444,33 +2472,10 @@ internal static class HerosModPanel
 
     private static void SendCmd(string command)
     {
-        if (Main.netMode != 1)
-        {
-            SetStatus("Sin conexión a un servidor.");
-            return;
-        }
-
-        // El servidor Unified usa el manejador nativo /heros incluido en este paquete.
-        string raw = (command ?? string.Empty).Trim();
-        if (raw.Length == 0) return;
-        string normalized = raw.StartsWith("/", StringComparison.Ordinal) ? raw.Substring(1) : raw;
-        string payload;
-        if (normalized.StartsWith("time ", StringComparison.OrdinalIgnoreCase)) payload = "/heros time " + normalized.Substring(5);
-        else if (normalized.Equals("butcher", StringComparison.OrdinalIgnoreCase)) payload = "/heros butcher";
-        else if (normalized.StartsWith("spawnmob ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
-        else if (normalized.StartsWith("buff ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
-        else if (normalized.StartsWith("tppos ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
-        else if (normalized.StartsWith("tp ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
-        else if (normalized.StartsWith("tphere ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
-        else if (normalized.StartsWith("heal ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
-        else if (normalized.StartsWith("kill ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
-        else if (normalized.StartsWith("kick ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
-        else if (normalized.Equals("spawn", StringComparison.OrdinalIgnoreCase)) payload = "/heros spawn";
-        else if (normalized.Equals("clear projectiles", StringComparison.OrdinalIgnoreCase)) payload = "/heros clearprojectiles";
-        else if (normalized.Equals("godmode", StringComparison.OrdinalIgnoreCase)) payload = "/heros godmode";
-        else payload = "/" + normalized; // deja pasar comandos estándar que el servidor sí implemente.
-        ChatHelper.SendChatMessageFromClient(ChatManager.Commands.CreateOutgoingMessage(payload));
-        SetStatus($"Comando enviado al servidor: {payload}");
+        // Seguridad: este panel no ejecuta ni envia comandos de chat a TShock
+        // ni a otros servidores. Las acciones remotas requieren una API nativa
+        // autorizada; no se intenta simularlas con texto en el chat.
+        SetStatus("Comandos externos desactivados. Esta accion no tiene implementacion nativa remota.");
     }
 
     /// <summary>Acción que todavía no tiene implementación nativa en el servidor.</summary>
