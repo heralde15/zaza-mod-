@@ -17,8 +17,8 @@ namespace Terraria.Unified.Features;
 ///
 /// - Un jugador (netMode 0): las acciones se aplican directamente al juego (igual que antes).
 /// - Las acciones del editor de objetos modifican directamente el Item local y no ejecutan comandos.
-/// - En multijugador, las acciones compatibles envían comandos reales de TShock.
-/// - No usa el prefijo personalizado /heros. Los comandos no disponibles en TShock se indican en la UI.
+/// - En multijugador, los comandos estándar usan el servidor; las herramientas WorldEdit usan /heros.
+/// - El manejador HerosModServerCommands debe integrarse en el servidor Unified para WorldEdit remoto.
 /// </summary>
 internal static class HerosModPanel
 {
@@ -288,9 +288,14 @@ internal static class HerosModPanel
             Main.mouseLeftRelease = false;
         }
 
-        sb.Draw(pixel, panelRect, new Color(30, 33, 40) * 0.98f);
-        sb.Draw(pixel, titleRect, new Color((int)(AccentColor.R * 0.42f), (int)(AccentColor.G * 0.42f), (int)(AccentColor.B * 0.42f)));
-        Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.Gold, 0.85f);
+        // Capas visuales: sombra, borde de acento, panel y cabecera.
+        sb.Draw(pixel, new Rectangle(panelRect.X + 4, panelRect.Y + 5, panelRect.Width, panelRect.Height), Color.Black * 0.42f);
+        sb.Draw(pixel, new Rectangle(panelRect.X - 1, panelRect.Y - 1, panelRect.Width + 2, panelRect.Height + 2), AccentColor * 0.92f);
+        sb.Draw(pixel, panelRect, new Color(23, 26, 34) * 0.985f);
+        sb.Draw(pixel, titleRect, new Color((int)(AccentColor.R * 0.50f), (int)(AccentColor.G * 0.50f), (int)(AccentColor.B * 0.50f)));
+        sb.Draw(pixel, new Rectangle(titleRect.X, titleRect.Bottom - 2, titleRect.Width, 2), AccentColor);
+        Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.White, 0.88f);
+        Utils.DrawBorderString(sb, "UNIFIED  •  ANARCHY TOOLS", new Vector2(panelRect.X + Pad, panelRect.Y + 21), new Color(220, 225, 235), 0.48f);
 
         string modeText = toolMode switch
         {
@@ -690,15 +695,14 @@ internal static class HerosModPanel
 
     private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "WorldEdit - edición de terreno");
-        if (Main.netMode != 0)
-        {
-            Utils.DrawBorderString(sb, "WorldEdit directo solo funciona en un jugador.", new Vector2(panel.X + Pad, y), Color.OrangeRed, 0.72f);
-            y += 28;
-            Utils.DrawBorderString(sb, "En servidores hace falta un plugin/mod del lado del servidor.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.65f);
-            y += 32;
-            return;
-        }
+        DrawSectionHeader(sb, panel, ref y, "WORLDEDIT  /  edición de terreno");
+        Color connectionColor = Main.netMode == 1 ? new Color(80, 205, 135) : new Color(130, 180, 245);
+        string connectionText = Main.netMode == 1 ? "SERVIDOR: comandos remotos" : "MODO LOCAL: edición directa";
+        sb.Draw(pixel, new Rectangle(panel.X + Pad, y, panel.Width - Pad * 2, 24), new Color(34, 42, 52));
+        sb.Draw(pixel, new Rectangle(panel.X + Pad, y, 4, 24), connectionColor);
+        Utils.DrawBorderString(sb, connectionText, new Vector2(panel.X + Pad + 11, y + 4), connectionColor, 0.68f);
+        Utils.DrawBorderString(sb, "Sin protección de regiones · modo anárquico", new Vector2(panel.X + Pad + 235, y + 4), Color.LightGray, 0.56f);
+        y += 30;
 
         string p1 = weHasPos1 ? $"Pos1: {wePos1.X}, {wePos1.Y}" : "Pos1: sin seleccionar";
         string p2 = weHasPos2 ? $"Pos2: {wePos2.X}, {wePos2.Y}" : "Pos2: sin seleccionar";
@@ -778,6 +782,7 @@ internal static class HerosModPanel
     {
         if (!TryWorldEditSelection(out int x1, out int y1, out int x2, out int y2)) return;
         if (!ushort.TryParse(weTileIdText, out ushort id) || id >= TileID.Count) { SetStatus("ID de bloque inválido."); return; }
+        if (Main.netMode == 1) { SendHerosCmd($"worldedit fill {x1} {y1} {x2} {y2} {id}"); return; }
         WorldEditSaveUndo(x1, y1, x2, y2);
         for (int x = x1; x <= x2; x++)
         for (int y = y1; y <= y2; y++)
@@ -792,6 +797,7 @@ internal static class HerosModPanel
     private static void WorldEditClear()
     {
         if (!TryWorldEditSelection(out int x1, out int y1, out int x2, out int y2)) return;
+        if (Main.netMode == 1) { SendHerosCmd($"worldedit clear {x1} {y1} {x2} {y2}"); return; }
         WorldEditSaveUndo(x1, y1, x2, y2);
         for (int x = x1; x <= x2; x++)
         for (int y = y1; y <= y2; y++)
@@ -805,6 +811,7 @@ internal static class HerosModPanel
     {
         if (!TryWorldEditSelection(out int x1, out int y1, out int x2, out int y2)) return;
         if (!ushort.TryParse(weReplaceFromText, out ushort from) || from >= TileID.Count || !ushort.TryParse(weReplaceToText, out ushort to) || to >= TileID.Count) { SetStatus("ID origen/destino inválido."); return; }
+        if (Main.netMode == 1) { SendHerosCmd($"worldedit replace {x1} {y1} {x2} {y2} {from} {to}"); return; }
         WorldEditSaveUndo(x1, y1, x2, y2); int changed = 0;
         for (int x = x1; x <= x2; x++)
         for (int y = y1; y <= y2; y++)
@@ -821,7 +828,8 @@ internal static class HerosModPanel
 
     private static void WorldEditUndo()
     {
-        if (Main.netMode != 0 || weUndo.Count == 0) { SetStatus("No hay una edición local para deshacer."); return; }
+        if (Main.netMode == 1) { SendHerosCmd("worldedit undo"); return; }
+        if (weUndo.Count == 0) { SetStatus("No hay una edición local para deshacer."); return; }
         foreach (var v in weUndo)
         {
             if (Main.tile[v.X, v.Y].HasTile)
@@ -2147,8 +2155,11 @@ internal static class HerosModPanel
     private static bool DrawButton(SpriteBatch sb, Texture2D pixel, Rectangle rect, string text, Point mouse, Color? customBg = null)
     {
         bool hover = rect.Contains(mouse);
-        Color bg = hover ? new Color(75, 85, 110) : (customBg ?? new Color(50, 55, 68));
+        Color bg = hover ? new Color(76, 88, 112) : (customBg ?? new Color(39, 45, 57));
         sb.Draw(pixel, rect, bg);
+        sb.Draw(pixel, new Rectangle(rect.X, rect.Y + rect.Height - 2, rect.Width, 2), hover ? AccentColor : new Color(18, 21, 28));
+        if (hover)
+            sb.Draw(pixel, new Rectangle(rect.X, rect.Y, 3, rect.Height - 2), AccentColor);
 
         var font = FontAssets.MouseText.Value;
         float scale = 0.7f;
@@ -2306,6 +2317,18 @@ internal static class HerosModPanel
         return "\"" + (name ?? "").Replace("\"", "") + "\"";
     }
 
+    private static void SendHerosCmd(string action)
+    {
+        if (Main.netMode != 1)
+        {
+            SetStatus("El comando remoto /heros requiere un servidor Unified con HerosModServerCommands integrado.");
+            return;
+        }
+        string payload = "/heros " + (action ?? string.Empty).Trim();
+        ChatHelper.SendChatMessageFromClient(ChatManager.Commands.CreateOutgoingMessage(payload));
+        SetStatus("Comando enviado al servidor: " + payload);
+    }
+
     private static void SendCmd(string command)
     {
         if (Main.netMode != 1)
@@ -2314,14 +2337,27 @@ internal static class HerosModPanel
             return;
         }
 
-        // Enviar el comando real sin envolverlo en el prefijo privado /heros.
-        string payload = (command ?? string.Empty).Trim();
-        if (payload.Length == 0)
-            return;
-        if (!payload.StartsWith("/", StringComparison.Ordinal))
-            payload = "/" + payload;
+        // El servidor Unified usa el manejador nativo /heros incluido en este paquete.
+        string raw = (command ?? string.Empty).Trim();
+        if (raw.Length == 0) return;
+        string normalized = raw.StartsWith("/", StringComparison.Ordinal) ? raw.Substring(1) : raw;
+        string payload;
+        if (normalized.StartsWith("time ", StringComparison.OrdinalIgnoreCase)) payload = "/heros time " + normalized.Substring(5);
+        else if (normalized.Equals("butcher", StringComparison.OrdinalIgnoreCase)) payload = "/heros butcher";
+        else if (normalized.StartsWith("spawnmob ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
+        else if (normalized.StartsWith("buff ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
+        else if (normalized.StartsWith("tppos ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
+        else if (normalized.StartsWith("tp ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
+        else if (normalized.StartsWith("tphere ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
+        else if (normalized.StartsWith("heal ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
+        else if (normalized.StartsWith("kill ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
+        else if (normalized.StartsWith("kick ", StringComparison.OrdinalIgnoreCase)) payload = "/heros " + normalized;
+        else if (normalized.Equals("spawn", StringComparison.OrdinalIgnoreCase)) payload = "/heros spawn";
+        else if (normalized.Equals("clear projectiles", StringComparison.OrdinalIgnoreCase)) payload = "/heros clearprojectiles";
+        else if (normalized.Equals("godmode", StringComparison.OrdinalIgnoreCase)) payload = "/heros godmode";
+        else payload = "/" + normalized; // deja pasar comandos estándar que el servidor sí implemente.
         ChatHelper.SendChatMessageFromClient(ChatManager.Commands.CreateOutgoingMessage(payload));
-        SetStatus($"Comando enviado a TShock: {payload}");
+        SetStatus($"Comando enviado al servidor: {payload}");
     }
 
     /// <summary>Acción que todavía no tiene implementación nativa en el servidor.</summary>
