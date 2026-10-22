@@ -214,7 +214,7 @@ internal static partial class HerosModPanel
         snapshot.MaxLife = p.statLifeMax;
         snapshot.Mana = p.statMana;
         snapshot.MaxMana = p.statManaMax;
-        snapshot.SelectedSlot = p.selectedItem;
+        snapshot.SelectedSlot = p.selectedItemIndex;
         snapshot.Defense = p.statDefense;
         snapshot.TileX = (int)(p.position.X / 16f);
         snapshot.TileY = (int)(p.position.Y / 16f);
@@ -242,7 +242,7 @@ internal static partial class HerosModPanel
         p.statManaMax = snapshot.MaxMana;
         p.statLife = Math.Clamp(snapshot.Life, 1, Math.Max(1, p.statLifeMax2));
         p.statMana = Math.Clamp(snapshot.Mana, 0, Math.Max(0, p.statManaMax2));
-        p.selectedItem = Math.Clamp(snapshot.SelectedSlot, 0, p.inventory.Length - 1);
+        p.selectedItemIndex = Math.Clamp(snapshot.SelectedSlot, 0, p.inventory.Length - 1);
         p.statDefense = snapshot.Defense;
         p.moveSpeed = snapshot.MoveSpeed;
         p.runAcceleration = snapshot.RunAcceleration;
