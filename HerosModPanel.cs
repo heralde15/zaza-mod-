@@ -2098,6 +2098,14 @@ internal static partial class HerosModPanel
             teleportX = Main.GetInputText(teleportX);
         else if (activeField == 27)
             teleportY = Main.GetInputText(teleportY);
+        else if (activeField == 31)
+            profileNameInput = Main.GetInputText(profileNameInput);
+        else if (activeField == 32)
+            bookmarkXInput = Main.GetInputText(bookmarkXInput);
+        else if (activeField == 33)
+            bookmarkYInput = Main.GetInputText(bookmarkYInput);
+        else if (activeField == 34)
+            bookmarkNameInput = Main.GetInputText(bookmarkNameInput);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
