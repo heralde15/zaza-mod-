@@ -129,7 +129,157 @@ internal static class HerosModPanel
         ("Info de región", "/region info {target}"),
         ("Cambiar clave servidor", "/serverpassword {target}"),
         ("Buscar actualizaciones", "/checkupdates"),
-        ("Info del mundo", "/world")
+        ("Info del mundo", "/world"),
+        ("MODERACIÓN · Kick jugador", "/kick {target} {reason}"),
+        ("MODERACIÓN · Ban jugador", "/ban {target} {reason}"),
+        ("MODERACIÓN · Silenciar", "/mute {target}"),
+        ("MODERACIÓN · Quitar silencio", "/unmute {target}"),
+        ("MODERACIÓN · Perfil jugador", "/userinfo {target}"),
+        ("MODERACIÓN · Lista conectados", "/playing"),
+        ("MODERACIÓN · Kick global (plugin)", "/kickall {reason}"),
+        ("MODERACIÓN · Advertencia (plugin)", "/warn {target} {reason}"),
+        ("MODERACIÓN · Historial (plugin)", "/history {target}"),
+        ("MODERACIÓN · Ayuda moderación", "/help"),
+        ("USUARIOS · Listar usuarios", "/user list"),
+        ("USUARIOS · Ver usuario", "/user info {target}"),
+        ("USUARIOS · Crear usuario (admin)", "/user add {target}"),
+        ("USUARIOS · Eliminar usuario (admin)", "/user del {target}"),
+        ("USUARIOS · Listar grupos", "/group list"),
+        ("USUARIOS · Ver grupo (plugin)", "/group {target}"),
+        ("USUARIOS · Asignar grupo (plugin)", "/user group {target}"),
+        ("USUARIOS · Permisos grupo (plugin)", "/group perm {target}"),
+        ("USUARIOS · Añadir permiso (plugin)", "/group addperm {target}"),
+        ("USUARIOS · Quitar permiso (plugin)", "/group delperm {target}"),
+        ("REGIONES · Listar regiones", "/region list"),
+        ("REGIONES · Info región", "/region info {target}"),
+        ("REGIONES · Proteger región (plugin)", "/region protect {target}"),
+        ("REGIONES · Eliminar región (admin)", "/region delete {target}"),
+        ("REGIONES · Ajustar región (plugin)", "/region set {target}"),
+        ("REGIONES · Añadir miembro (plugin)", "/region add {target}"),
+        ("REGIONES · Quitar miembro (plugin)", "/region remove {target}"),
+        ("REGIONES · Listar regiones", "/region list"),
+        ("REGIONES · Ver protección (plugin)", "/region info {target}"),
+        ("REGIONES · Ayuda regiones", "/help region"),
+        ("TIEMPO · Poner día", "/time day"),
+        ("TIEMPO · Poner noche", "/time night"),
+        ("TIEMPO · Mediodía", "/time noon"),
+        ("TIEMPO · Medianoche", "/time midnight"),
+        ("TIEMPO · Consultar hora (plugin)", "/time"),
+        ("TIEMPO · Hora personalizada (plugin)", "/time {target}"),
+        ("TIEMPO · Restablecer día", "/time day"),
+        ("TIEMPO · Cambiar a noche", "/time night"),
+        ("TIEMPO · Ayuda tiempo", "/help time"),
+        ("TIEMPO · Info mundo", "/world"),
+        ("CLIMA · Iniciar lluvia", "/rain start"),
+        ("CLIMA · Detener lluvia", "/rain stop"),
+        ("CLIMA · Clima (plugin)", "/rain"),
+        ("CLIMA · Iniciar tormenta", "/rain start"),
+        ("CLIMA · Parar tormenta", "/rain stop"),
+        ("CLIMA · Luna de sangre", "/bloodmoon"),
+        ("CLIMA · Eclipse solar", "/eclipse"),
+        ("CLIMA · Info clima (plugin)", "/world"),
+        ("CLIMA · Ayuda clima", "/help rain"),
+        ("CLIMA · Estado mundo", "/world"),
+        ("EVENTOS · Invasión goblin", "/invasion goblin"),
+        ("EVENTOS · Invasión pirata", "/invasion pirate"),
+        ("EVENTOS · Invasión helada", "/invasion frost"),
+        ("EVENTOS · Invasión marciana", "/invasion martian"),
+        ("EVENTOS · Luna calabaza", "/invasion pumpkin"),
+        ("EVENTOS · Luna helada", "/invasion frostmoon"),
+        ("EVENTOS · Evento Solar", "/invasion solar"),
+        ("EVENTOS · Evento Vortex", "/invasion vortex"),
+        ("EVENTOS · Evento Nebula", "/invasion nebula"),
+        ("EVENTOS · Evento Stardust", "/invasion stardust"),
+        ("PROGRESIÓN · Activar Hardmode", "/hardmode"),
+        ("PROGRESIÓN · Crecer plantas", "/grow"),
+        ("PROGRESIÓN · Invocar meteorito", "/dropmeteor"),
+        ("PROGRESIÓN · Asentar líquidos", "/settle"),
+        ("PROGRESIÓN · Eliminar enemigos", "/butcher"),
+        ("PROGRESIÓN · Progreso (plugin)", "/progress"),
+        ("PROGRESIÓN · Estado mundo", "/world"),
+        ("PROGRESIÓN · Ayuda progresión", "/help"),
+        ("PROGRESIÓN · Info mundo", "/world"),
+        ("PROGRESIÓN · Actualizar datos (plugin)", "/world"),
+        ("TELETRANSPORTE · Ir al spawn", "/spawn"),
+        ("TELETRANSPORTE · Volver a casa", "/home"),
+        ("TELETRANSPORTE · Volver atrás", "/back"),
+        ("TELETRANSPORTE · Listar warps", "/warp list"),
+        ("TELETRANSPORTE · Usar warp", "/warp {target}"),
+        ("TELETRANSPORTE · Teletransportar", "/tp {target}"),
+        ("TELETRANSPORTE · Traer jugador", "/tphere {target}"),
+        ("TELETRANSPORTE · TP aleatorio (plugin)", "/tpr"),
+        ("TELETRANSPORTE · Guardar hogar (plugin)", "/home set"),
+        ("TELETRANSPORTE · Ayuda teletransporte", "/help tp"),
+        ("JUGADOR · Curar jugador", "/heal {target}"),
+        ("JUGADOR · Eliminar jugador", "/kill {target}"),
+        ("JUGADOR · Empujar jugador", "/slap {target}"),
+        ("JUGADOR · Ver perfil", "/userinfo {target}"),
+        ("JUGADOR · Cambiar equipo (plugin)", "/team {target}"),
+        ("JUGADOR · Dificultad (plugin)", "/difficulty"),
+        ("JUGADOR · Modo dios (plugin)", "/godmode {target}"),
+        ("JUGADOR · Reaparecer (plugin)", "/respawn {target}"),
+        ("JUGADOR · Estadísticas (plugin)", "/stats {target}"),
+        ("JUGADOR · Ayuda jugador", "/help"),
+        ("OBJETOS · Dar objeto (plugin)", "/give {target}"),
+        ("OBJETOS · Crear objeto (plugin)", "/item {target}"),
+        ("OBJETOS · Dar monedas (plugin)", "/give {target}"),
+        ("OBJETOS · Dar munición (plugin)", "/give {target}"),
+        ("OBJETOS · Dar pociones (plugin)", "/give {target}"),
+        ("OBJETOS · Dar materiales (plugin)", "/give {target}"),
+        ("OBJETOS · Dar bloques (plugin)", "/give {target}"),
+        ("OBJETOS · Dar accesorio (plugin)", "/give {target}"),
+        ("OBJETOS · Dar arma (plugin)", "/give {target}"),
+        ("OBJETOS · Ayuda objetos", "/help item"),
+        ("NPC · Eliminar enemigos", "/butcher"),
+        ("NPC · Invocar NPC (plugin)", "/spawnmob {target}"),
+        ("NPC · Eliminar NPC (plugin)", "/butcher"),
+        ("NPC · Invocar jefe (plugin)", "/spawnmob {target}"),
+        ("NPC · Lista NPC (plugin)", "/npc list"),
+        ("NPC · Limpiar NPC", "/butcher"),
+        ("NPC · Spawn rate (plugin)", "/spawnrate"),
+        ("NPC · Máximo NPC (plugin)", "/maxspawns"),
+        ("NPC · Ayuda NPC", "/help spawnmob"),
+        ("NPC · Estado mundo", "/world"),
+        ("SERVIDOR · Lista jugadores", "/who"),
+        ("SERVIDOR · Quién juega", "/playing"),
+        ("SERVIDOR · Ver reglas", "/rules"),
+        ("SERVIDOR · Mensaje del día", "/motd"),
+        ("SERVIDOR · Ayuda general", "/help"),
+        ("SERVIDOR · Info mundo", "/world"),
+        ("SERVIDOR · Buscar actualizaciones", "/checkupdates"),
+        ("SERVIDOR · Info servidor (plugin)", "/serverinfo"),
+        ("SERVIDOR · Versión servidor (plugin)", "/version"),
+        ("SERVIDOR · Lista comandos", "/help"),
+        ("CONFIGURACIÓN · Cambiar contraseña", "/serverpassword {target}"),
+        ("CONFIGURACIÓN · Recargar config (plugin)", "/reload"),
+        ("CONFIGURACIÓN · Lista blanca (plugin)", "/whitelist"),
+        ("CONFIGURACIÓN · Añadir lista blanca (plugin)", "/whitelist add {target}"),
+        ("CONFIGURACIÓN · Quitar lista blanca (plugin)", "/whitelist remove {target}"),
+        ("CONFIGURACIÓN · Cambiar MOTD (plugin)", "/motd {target}"),
+        ("CONFIGURACIÓN · Editar reglas (plugin)", "/rules {target}"),
+        ("CONFIGURACIÓN · Ver permisos (plugin)", "/checkperm {target}"),
+        ("CONFIGURACIÓN · Ayuda admin", "/help"),
+        ("CONFIGURACIÓN · Buscar actualizaciones", "/checkupdates"),
+        ("ECONOMÍA · Ver saldo (plugin)", "/balance {target}"),
+        ("ECONOMÍA · Consulta economía (plugin)", "/eco {target}"),
+        ("ECONOMÍA · Dar dinero (plugin)", "/eco give {target}"),
+        ("ECONOMÍA · Quitar dinero (plugin)", "/eco take {target}"),
+        ("ECONOMÍA · Establecer saldo (plugin)", "/eco set {target}"),
+        ("ECONOMÍA · Ranking dinero (plugin)", "/baltop"),
+        ("ECONOMÍA · Tienda (plugin)", "/shop"),
+        ("ECONOMÍA · Ver precio (plugin)", "/price {target}"),
+        ("ECONOMÍA · Transferir dinero (plugin)", "/pay {target}"),
+        ("ECONOMÍA · Ayuda economía (plugin)", "/help eco"),
+        ("UTILIDADES · Ver ping (plugin)", "/ping {target}"),
+        ("UTILIDADES · Limpiar chat (plugin)", "/clear"),
+        ("UTILIDADES · Anuncio (plugin)", "/announce {target}"),
+        ("UTILIDADES · Mensaje global (plugin)", "/broadcast {target}"),
+        ("UTILIDADES · Ver logs (plugin)", "/logs"),
+        ("UTILIDADES · Historial (plugin)", "/history {target}"),
+        ("UTILIDADES · Estadísticas (plugin)", "/stats"),
+        ("UTILIDADES · Lista plugins (plugin)", "/plugins"),
+        ("UTILIDADES · Versión (plugin)", "/version"),
+        ("UTILIDADES · Ayuda utilidades", "/help")
     };
 
 
@@ -1427,11 +1577,11 @@ internal static class HerosModPanel
         SetStatus($"Undo completado: restaurados {count} tiles.");
     }
 
-    // ------------------------------------------------------------------ Herramientas adicionales: 50 acciones paginadas
+    // ------------------------------------------------------------------ Herramientas adicionales: 200 acciones categorizadas
 
     private static void DrawToolsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Centro de moderación y administración · 50 herramientas");
+        DrawSectionHeader(sb, panel, ref y, "Centro de herramientas · 200 acciones por categorías");
         Utils.DrawBorderString(sb, "Objetivo (jugador/warp/región/clave):", new Vector2(panel.X + Pad, y), Color.White, 0.66f);
         Utils.DrawBorderString(sb, "Motivo (kick/ban):", new Vector2(panel.X + 330, y), Color.White, 0.66f);
         y += 18;
@@ -1439,7 +1589,7 @@ internal static class HerosModPanel
         DrawTextField(sb, pixel, new Rectangle(panel.X + 320, y, 300, 25), 5, moderationReason, mouse, "Motivo opcional...");
         y += 32;
 
-        int pageSize = 10;
+        int pageSize = 12;
         int first = toolsPage * pageSize;
         int cols = 2;
         int buttonW = (Width - Pad * 2 - 8) / cols;
@@ -1452,12 +1602,15 @@ internal static class HerosModPanel
             int col = localIndex % cols;
             int row = localIndex / cols;
             var rect = new Rectangle(panel.X + Pad + col * (buttonW + 8), y + row * 29, buttonW, 25);
-            Color color = index < 10 ? new Color(112, 55, 62)
-                : index < 20 ? new Color(45, 86, 120)
-                : index < 30 ? new Color(92, 76, 43)
-                : index < 40 ? new Color(92, 58, 112)
-                : new Color(48, 91, 75);
-            if (DrawButton(sb, pixel, rect, $"{index + 1:00}. {extraTools[index].label}", mouse, color))
+            string toolLabel = extraTools[index].label;
+            Color color = toolLabel.StartsWith("MODERACIÓN") || toolLabel.StartsWith("USUARIOS") || toolLabel.StartsWith("REGIONES") ? new Color(112, 55, 62)
+                : toolLabel.StartsWith("TIEMPO") || toolLabel.StartsWith("CLIMA") || toolLabel.StartsWith("EVENTOS") || toolLabel.StartsWith("PROGRESIÓN") ? new Color(45, 86, 120)
+                : toolLabel.StartsWith("TELETRANSPORTE") || toolLabel.StartsWith("JUGADOR") ? new Color(48, 91, 75)
+                : toolLabel.StartsWith("OBJETOS") || toolLabel.StartsWith("NPC") ? new Color(92, 76, 43)
+                : toolLabel.StartsWith("SERVIDOR") || toolLabel.StartsWith("CONFIGURACIÓN") ? new Color(75, 75, 88)
+                : toolLabel.StartsWith("ECONOMÍA") ? new Color(92, 58, 112)
+                : new Color(50, 55, 68);
+            if (DrawButton(sb, pixel, rect, $"{index + 1:000}. {extraTools[index].label}", mouse, color))
                 RunExtraTool(index);
         }
 
@@ -1466,7 +1619,7 @@ internal static class HerosModPanel
             toolsPage = Math.Max(0, toolsPage - 1);
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 138, navY, 130, 23), "Siguiente", mouse))
             toolsPage = Math.Min((extraTools.Length - 1) / pageSize, toolsPage + 1);
-        Utils.DrawBorderString(sb, $"Página {toolsPage + 1}/5 · {extraTools.Length} acciones",
+        Utils.DrawBorderString(sb, $"Página {toolsPage + 1}/{(extraTools.Length + pageSize - 1) / pageSize} · {extraTools.Length} acciones",
             new Vector2(panel.X + Pad + 285, navY + 4), new Color(180, 205, 235), 0.72f);
         Utils.DrawBorderString(sb, "Solo se envían comandos; el servidor y sus permisos deciden si se ejecutan.",
             new Vector2(panel.X + Pad, panel.Bottom - 43), new Color(235, 195, 120), 0.61f);
