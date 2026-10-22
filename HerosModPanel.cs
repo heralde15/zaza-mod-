@@ -386,18 +386,15 @@ internal static partial class HerosModPanel
             local.statDefense = defenseOverride;
         }
 
-        if (godmodeEnabled && local.active && !IsServer)
+        if (godmodeEnabled && local.active)
         {
-            // Mismo comportamiento del God Mode de Zaza: activa el flag creativo,
-            // mantiene vida/maná al máximo y elimina debuffs. El servidor conserva autoridad.
+            // God Mode local sin el bloqueo por modo de panel/red.
+            // En multijugador, la invulnerabilidad real requiere que el servidor aplique esta lógica.
             local.creativeGodMode = true;
             local.statLife = Math.Max(1, local.statLifeMax2);
             local.statMana = Math.Max(0, local.statManaMax2);
-            if (Main.netMode == 0)
-            {
-                local.immune = true;
-                local.immuneTime = Math.Max(local.immuneTime, 2);
-            }
+            local.immune = true;
+            local.immuneTime = Math.Max(local.immuneTime, 2);
             for (int i = local.buffType.Length - 1; i >= 0; i--)
             {
                 int buff = local.buffType[i];
@@ -410,7 +407,7 @@ internal static partial class HerosModPanel
             local.creativeGodMode = false;
         }
 
-        if (adventureUnrestrictedEnabled && local.active && Main.netMode == 0)
+        if (adventureUnrestrictedEnabled && local.active)
         {
             ApplyUnrestrictedAdventurePermissions(true);
         }
@@ -714,30 +711,25 @@ internal static partial class HerosModPanel
         Color godColor = godmodeEnabled ? UiAccent : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), godText, mouse, godColor))
         {
-            if (IsServer)
+            godmodeEnabled = !godmodeEnabled;
+            var p = Main.LocalPlayer;
+            p.creativeGodMode = godmodeEnabled;
+            if (godmodeEnabled)
             {
-                SetStatus("God Mode local no puede activarse en modo COMANDOS; usa modo DIRECTO o un comando del servidor.");
+                p.statLife = Math.Max(1, p.statLifeMax2);
+                p.statMana = Math.Max(0, p.statManaMax2);
+                p.immune = true;
+                p.immuneTime = Math.Max(p.immuneTime, 2);
             }
             else
             {
-                godmodeEnabled = !godmodeEnabled;
-                var p = Main.LocalPlayer;
-                p.creativeGodMode = godmodeEnabled;
-                if (godmodeEnabled)
-                {
-                    p.statLife = Math.Max(1, p.statLifeMax2);
-                    p.statMana = Math.Max(0, p.statManaMax2);
-                    if (Main.netMode == 0)
-                    {
-                        p.immune = true;
-                        p.immuneTime = Math.Max(p.immuneTime, 2);
-                    }
-                }
-                SyncSelf();
-                SetStatus(godmodeEnabled
-                    ? "God Mode Zaza activado: vida/maná máximos y limpieza de debuffs. En multijugador el servidor puede sobrescribirlo."
-                    : "God Mode Zaza desactivado.");
+                p.immune = false;
+                p.immuneTime = 0;
             }
+            SyncSelf();
+            SetStatus(godmodeEnabled
+                ? "God Mode Zaza activado sin bloqueo por modo de panel. Para imponerlo en multijugador, el servidor debe ejecutar también el mod."
+                : "God Mode Zaza desactivado.");
         }
 
         string flyText = flyEnabled ? "Vuelo Libre: [ON]" : "Vuelo Libre: [OFF]";
@@ -759,22 +751,13 @@ internal static partial class HerosModPanel
         string adventureText = adventureUnrestrictedEnabled ? "Aventura sin restricciones: ACTIVADA" : "Aventura sin restricciones: desactivada";
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), adventureText, mouse, adventureUnrestrictedEnabled ? new Color(40, 115, 75) : UiTabColor))
         {
-            if (Main.netMode != 0)
-            {
-                SetStatus("La configuración de poderes de Aventura/Viaje requiere ser anfitrión o usar permisos del servidor.");
-            }
-            else if (Main.GameMode != GameModeId.Creative || Main.LocalPlayer.difficulty != 3)
-            {
-                SetStatus("Esta opción requiere un mundo de Modo Viaje/Aventura. No cambia la dificultad del mundo automáticamente.");
-            }
-            else
-            {
-                adventureUnrestrictedEnabled = !adventureUnrestrictedEnabled;
-                bool applied = ApplyUnrestrictedAdventurePermissions(adventureUnrestrictedEnabled);
-                SetStatus(applied
-                    ? (adventureUnrestrictedEnabled ? "Poderes de Aventura/Viaje desbloqueados para todos." : "Se restauraron los niveles de permiso predeterminados de los poderes.")
-                    : "No se pudieron cambiar los permisos de poderes en esta versión; no se alteró el mundo.");
-            }
+            adventureUnrestrictedEnabled = !adventureUnrestrictedEnabled;
+            bool applied = ApplyUnrestrictedAdventurePermissions(adventureUnrestrictedEnabled);
+            SetStatus(applied
+                ? (adventureUnrestrictedEnabled
+                    ? "Permisos de poderes creativos puestos en nivel abierto, sin exigir modo Viaje. En multijugador el servidor debe aplicar también estos permisos."
+                    : "Permisos de poderes creativos configurados de nuevo para el anfitrión.")
+                : "No se pudieron cambiar los permisos de poderes en esta versión; comprueba la API de CreativePowerManager.");
         }
         y += RowH + 6;
 
