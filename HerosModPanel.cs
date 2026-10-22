@@ -23,7 +23,7 @@ namespace Terraria.Unified.Features;
 ///   jugadores NO se pueden hacer asi: necesitan TShock (modo COMANDOS) o ser el host.
 ///   El boton de arriba cambia de modo.
 /// </summary>
-internal static class HerosModPanel
+internal static partial class HerosModPanel
 {
     private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
 
@@ -437,7 +437,7 @@ internal static class HerosModPanel
         }
 
         Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.EditorVida, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia];
+                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Perfiles];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
         for (int i = 0; i < tabs.Length; i++)
@@ -456,6 +456,7 @@ internal static class HerosModPanel
                 Tab.EditorVida => "Editor Vida",
                 Tab.WorldEdit => "WorldEdit",
                 Tab.Teleport => "Teleport",
+                Tab.Perfiles => "Perfiles",
                 _ => tabs[i].ToString()
             };
             if (DrawButton(sb, pixel, tabRect, tabLabel, mouse, tabColor) && !selected)
@@ -506,6 +507,9 @@ internal static class HerosModPanel
                 break;
             case Tab.Guia:
                 DrawGuideTab(sb, pixel, panelRect, ref contentY);
+                break;
+            case Tab.Perfiles:
+                DrawProfilesTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
         }
 
