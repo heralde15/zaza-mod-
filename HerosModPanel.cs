@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Xna.Framework;
@@ -24,12 +24,12 @@ namespace Terraria.Unified.Features;
 ///   jugadores NO se pueden hacer asi: necesitan TShock (modo COMANDOS) o ser el host.
 ///   El boton de arriba cambia de modo.
 /// </summary>
-internal static class HerosModPanel
+internal static partial class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Personalizar }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar }
 
     private const int Width = 760;
-    private const int Height = 640;
+    private const int Height = 800;
     private const int Pad = 10;
     private const int RowH = 26;
 
@@ -37,28 +37,31 @@ internal static class HerosModPanel
 
     private enum ServerMode { Comandos, Directo }
 
-    // Tres contextos de ejecución mostrados por la UI. Un jugador se determina
-    // automáticamente por Main.netMode; en multijugador se alternan los otros dos.
-    private enum ExecutionMode { UnJugador, ServidorConPermisos, ServidorDirecto }
-
     /// <summary>
-    /// Comandos = enviar comandos a TShock, que valida los permisos.
-    /// Directo = acciones locales del cliente en servidores vanilla/anárquicos;
-    /// el servidor puede rechazarlas o no sincronizarlas.
+    /// Comandos = mandar comandos de chat a TShock (el servidor decide segun tus permisos).
+    /// Directo  = el cliente actua por si mismo (servidores vanilla / anarquicos).
     /// </summary>
     private static ServerMode serverMode = ServerMode.Comandos;
 
     private static bool InMultiplayer => Main.netMode == 1;
-    private static ExecutionMode CurrentExecutionMode => !InMultiplayer
-        ? ExecutionMode.UnJugador
-        : serverMode == ServerMode.Comandos
-            ? ExecutionMode.ServidorConPermisos
-            : ExecutionMode.ServidorDirecto;
 
-    /// <summary>true = conectado a servidor usando comandos de TShock.</summary>
-    private static bool IsServer => CurrentExecutionMode == ExecutionMode.ServidorConPermisos;
+    /// <summary>true = en un servidor y usando comandos de TShock.</summary>
+    private static bool IsServer => Main.netMode == 1 && serverMode == ServerMode.Comandos;
 
     private static Tab currentTab = Tab.Jugador;
+    // Apariencia del panel; solo cambia el dibujo, no altera las funciones del mod.
+    private static int uiTheme = 5;
+    private static bool uiHighContrast;
+    private static readonly Color[] UiAccents =
+    {
+        new Color(70, 130, 180), // Azul
+        new Color(80, 165, 115), // Verde
+        new Color(160, 105, 205), // Violeta
+        new Color(210, 125, 65), // Naranja
+        new Color(205, 80, 95), // Rojo
+        new Color(255, 105, 190), // Anime Sakura
+        new Color(110, 220, 255), // Anime Cyan
+    };
     private static Vector2 position = new(120f, 80f);
     private static bool dragging;
     private static Vector2 dragOffset;
@@ -69,20 +72,6 @@ internal static class HerosModPanel
     private const float FlySpeed = 12f;
 
     private static int activeField;
-    // Personalización local del panel: no cambia la lógica de las herramientas existentes.
-    private static string uiImagePath = "";
-    private static bool uiUseImage = false;
-    private static bool uiImageLoaded = false;
-    private static Texture2D uiImageTexture;
-    private static int uiTheme = 0;
-    private static int uiOpacity = 92;
-    private static bool uiCompactHeader = false;
-    private static bool uiShowStatus = true;
-    private static bool uiShowDecorations = true;
-    private static bool uiSettingsLoaded = false;
-    private static Keys uiToggleKey = Keys.OemTilde;
-    private static bool waitingForToggleKey = false;
-    private static string uiSettingsPath => Path.Combine(Main.SavePath, "HerosModUI.txt");
     private static string itemQuery = "";
     private static string itemAmount = "1";
     private static string itemPrefix = "-1";
@@ -91,15 +80,39 @@ internal static class HerosModPanel
     private static string moderationReason = "";
     private static int toolsPage;
     private static string editorSlot = "1";
+    private static string schematicFileName = "construccion";
     private static string editorDamage = "";
     private static string editorDefense = "";
     private static string editorUseTime = "";
     private static string editorStack = "";
     private static string editorValue = "";
+    private static string editorType = "1";
+    private static string editorPrefix = "0";
+    private static string editorKnockback = "";
+    private static string editorCrit = "";
+    private static string editorUseAnimation = "";
+    private static string editorShootSpeed = "";
+    private static string editorProjectile = "0";
+    private static string editorRarity = "";
+    private static string editorMana = "0";
+    private static string editorUseStyle = "1";
+    private static string editorAmmo = "0";
+    private static string editorScale = "1";
+    private static bool editorAutoReuse;
+    private static bool editorConsumable;
+    private static bool editorFavorite;
+    private static string teleportX = "";
+    private static string teleportY = "";
+    private static bool worldEditSetPos1Next = true;
+    private static string lifeCurrent = "";
+    private static string lifeMaximum = "";
+    private static string manaCurrent = "";
+    private static string manaMaximum = "";
     private static Point? worldPos1;
     private static Point? worldPos2;
     private static string worldTileType = "1";
     private static string worldReplaceType = "0";
+    private static string worldSchematicStatus = "Marca POS1 y POS2 para exportar.";
     private static int worldEditUndoType = -1;
     private static readonly List<(int x, int y, Tile tile)> worldEditUndo = new();
 
@@ -154,7 +167,157 @@ internal static class HerosModPanel
         ("Info de región", "/region info {target}"),
         ("Cambiar clave servidor", "/serverpassword {target}"),
         ("Buscar actualizaciones", "/checkupdates"),
-        ("Info del mundo", "/world")
+        ("Info del mundo", "/world"),
+        ("MODERACIÓN · Kick jugador", "/kick {target} {reason}"),
+        ("MODERACIÓN · Ban jugador", "/ban {target} {reason}"),
+        ("MODERACIÓN · Silenciar", "/mute {target}"),
+        ("MODERACIÓN · Quitar silencio", "/unmute {target}"),
+        ("MODERACIÓN · Perfil jugador", "/userinfo {target}"),
+        ("MODERACIÓN · Lista conectados", "/playing"),
+        ("MODERACIÓN · Kick global (plugin)", "/kickall {reason}"),
+        ("MODERACIÓN · Advertencia (plugin)", "/warn {target} {reason}"),
+        ("MODERACIÓN · Historial (plugin)", "/history {target}"),
+        ("MODERACIÓN · Ayuda moderación", "/help"),
+        ("USUARIOS · Listar usuarios", "/user list"),
+        ("USUARIOS · Ver usuario", "/user info {target}"),
+        ("USUARIOS · Crear usuario (admin)", "/user add {target}"),
+        ("USUARIOS · Eliminar usuario (admin)", "/user del {target}"),
+        ("USUARIOS · Listar grupos", "/group list"),
+        ("USUARIOS · Ver grupo (plugin)", "/group {target}"),
+        ("USUARIOS · Asignar grupo (plugin)", "/user group {target}"),
+        ("USUARIOS · Permisos grupo (plugin)", "/group perm {target}"),
+        ("USUARIOS · Añadir permiso (plugin)", "/group addperm {target}"),
+        ("USUARIOS · Quitar permiso (plugin)", "/group delperm {target}"),
+        ("REGIONES · Listar regiones", "/region list"),
+        ("REGIONES · Info región", "/region info {target}"),
+        ("REGIONES · Proteger región (plugin)", "/region protect {target}"),
+        ("REGIONES · Eliminar región (admin)", "/region delete {target}"),
+        ("REGIONES · Ajustar región (plugin)", "/region set {target}"),
+        ("REGIONES · Añadir miembro (plugin)", "/region add {target}"),
+        ("REGIONES · Quitar miembro (plugin)", "/region remove {target}"),
+        ("REGIONES · Listar regiones", "/region list"),
+        ("REGIONES · Ver protección (plugin)", "/region info {target}"),
+        ("REGIONES · Ayuda regiones", "/help region"),
+        ("TIEMPO · Poner día", "/time day"),
+        ("TIEMPO · Poner noche", "/time night"),
+        ("TIEMPO · Mediodía", "/time noon"),
+        ("TIEMPO · Medianoche", "/time midnight"),
+        ("TIEMPO · Consultar hora (plugin)", "/time"),
+        ("TIEMPO · Hora personalizada (plugin)", "/time {target}"),
+        ("TIEMPO · Restablecer día", "/time day"),
+        ("TIEMPO · Cambiar a noche", "/time night"),
+        ("TIEMPO · Ayuda tiempo", "/help time"),
+        ("TIEMPO · Info mundo", "/world"),
+        ("CLIMA · Iniciar lluvia", "/rain start"),
+        ("CLIMA · Detener lluvia", "/rain stop"),
+        ("CLIMA · Clima (plugin)", "/rain"),
+        ("CLIMA · Iniciar tormenta", "/rain start"),
+        ("CLIMA · Parar tormenta", "/rain stop"),
+        ("CLIMA · Luna de sangre", "/bloodmoon"),
+        ("CLIMA · Eclipse solar", "/eclipse"),
+        ("CLIMA · Info clima (plugin)", "/world"),
+        ("CLIMA · Ayuda clima", "/help rain"),
+        ("CLIMA · Estado mundo", "/world"),
+        ("EVENTOS · Invasión goblin", "/invasion goblin"),
+        ("EVENTOS · Invasión pirata", "/invasion pirate"),
+        ("EVENTOS · Invasión helada", "/invasion frost"),
+        ("EVENTOS · Invasión marciana", "/invasion martian"),
+        ("EVENTOS · Luna calabaza", "/invasion pumpkin"),
+        ("EVENTOS · Luna helada", "/invasion frostmoon"),
+        ("EVENTOS · Evento Solar", "/invasion solar"),
+        ("EVENTOS · Evento Vortex", "/invasion vortex"),
+        ("EVENTOS · Evento Nebula", "/invasion nebula"),
+        ("EVENTOS · Evento Stardust", "/invasion stardust"),
+        ("PROGRESIÓN · Activar Hardmode", "/hardmode"),
+        ("PROGRESIÓN · Crecer plantas", "/grow"),
+        ("PROGRESIÓN · Invocar meteorito", "/dropmeteor"),
+        ("PROGRESIÓN · Asentar líquidos", "/settle"),
+        ("PROGRESIÓN · Eliminar enemigos", "/butcher"),
+        ("PROGRESIÓN · Progreso (plugin)", "/progress"),
+        ("PROGRESIÓN · Estado mundo", "/world"),
+        ("PROGRESIÓN · Ayuda progresión", "/help"),
+        ("PROGRESIÓN · Info mundo", "/world"),
+        ("PROGRESIÓN · Actualizar datos (plugin)", "/world"),
+        ("TELETRANSPORTE · Ir al spawn", "/spawn"),
+        ("TELETRANSPORTE · Volver a casa", "/home"),
+        ("TELETRANSPORTE · Volver atrás", "/back"),
+        ("TELETRANSPORTE · Listar warps", "/warp list"),
+        ("TELETRANSPORTE · Usar warp", "/warp {target}"),
+        ("TELETRANSPORTE · Teletransportar", "/tp {target}"),
+        ("TELETRANSPORTE · Traer jugador", "/tphere {target}"),
+        ("TELETRANSPORTE · TP aleatorio (plugin)", "/tpr"),
+        ("TELETRANSPORTE · Guardar hogar (plugin)", "/home set"),
+        ("TELETRANSPORTE · Ayuda teletransporte", "/help tp"),
+        ("JUGADOR · Curar jugador", "/heal {target}"),
+        ("JUGADOR · Eliminar jugador", "/kill {target}"),
+        ("JUGADOR · Empujar jugador", "/slap {target}"),
+        ("JUGADOR · Ver perfil", "/userinfo {target}"),
+        ("JUGADOR · Cambiar equipo (plugin)", "/team {target}"),
+        ("JUGADOR · Dificultad (plugin)", "/difficulty"),
+        ("JUGADOR · Modo dios (plugin)", "/godmode {target}"),
+        ("JUGADOR · Reaparecer (plugin)", "/respawn {target}"),
+        ("JUGADOR · Estadísticas (plugin)", "/stats {target}"),
+        ("JUGADOR · Ayuda jugador", "/help"),
+        ("OBJETOS · Dar objeto (plugin)", "/give {target}"),
+        ("OBJETOS · Crear objeto (plugin)", "/item {target}"),
+        ("OBJETOS · Dar monedas (plugin)", "/give {target}"),
+        ("OBJETOS · Dar munición (plugin)", "/give {target}"),
+        ("OBJETOS · Dar pociones (plugin)", "/give {target}"),
+        ("OBJETOS · Dar materiales (plugin)", "/give {target}"),
+        ("OBJETOS · Dar bloques (plugin)", "/give {target}"),
+        ("OBJETOS · Dar accesorio (plugin)", "/give {target}"),
+        ("OBJETOS · Dar arma (plugin)", "/give {target}"),
+        ("OBJETOS · Ayuda objetos", "/help item"),
+        ("NPC · Eliminar enemigos", "/butcher"),
+        ("NPC · Invocar NPC (plugin)", "/spawnmob {target}"),
+        ("NPC · Eliminar NPC (plugin)", "/butcher"),
+        ("NPC · Invocar jefe (plugin)", "/spawnmob {target}"),
+        ("NPC · Lista NPC (plugin)", "/npc list"),
+        ("NPC · Limpiar NPC", "/butcher"),
+        ("NPC · Spawn rate (plugin)", "/spawnrate"),
+        ("NPC · Máximo NPC (plugin)", "/maxspawns"),
+        ("NPC · Ayuda NPC", "/help spawnmob"),
+        ("NPC · Estado mundo", "/world"),
+        ("SERVIDOR · Lista jugadores", "/who"),
+        ("SERVIDOR · Quién juega", "/playing"),
+        ("SERVIDOR · Ver reglas", "/rules"),
+        ("SERVIDOR · Mensaje del día", "/motd"),
+        ("SERVIDOR · Ayuda general", "/help"),
+        ("SERVIDOR · Info mundo", "/world"),
+        ("SERVIDOR · Buscar actualizaciones", "/checkupdates"),
+        ("SERVIDOR · Info servidor (plugin)", "/serverinfo"),
+        ("SERVIDOR · Versión servidor (plugin)", "/version"),
+        ("SERVIDOR · Lista comandos", "/help"),
+        ("CONFIGURACIÓN · Cambiar contraseña", "/serverpassword {target}"),
+        ("CONFIGURACIÓN · Recargar config (plugin)", "/reload"),
+        ("CONFIGURACIÓN · Lista blanca (plugin)", "/whitelist"),
+        ("CONFIGURACIÓN · Añadir lista blanca (plugin)", "/whitelist add {target}"),
+        ("CONFIGURACIÓN · Quitar lista blanca (plugin)", "/whitelist remove {target}"),
+        ("CONFIGURACIÓN · Cambiar MOTD (plugin)", "/motd {target}"),
+        ("CONFIGURACIÓN · Editar reglas (plugin)", "/rules {target}"),
+        ("CONFIGURACIÓN · Ver permisos (plugin)", "/checkperm {target}"),
+        ("CONFIGURACIÓN · Ayuda admin", "/help"),
+        ("CONFIGURACIÓN · Buscar actualizaciones", "/checkupdates"),
+        ("ECONOMÍA · Ver saldo (plugin)", "/balance {target}"),
+        ("ECONOMÍA · Consulta economía (plugin)", "/eco {target}"),
+        ("ECONOMÍA · Dar dinero (plugin)", "/eco give {target}"),
+        ("ECONOMÍA · Quitar dinero (plugin)", "/eco take {target}"),
+        ("ECONOMÍA · Establecer saldo (plugin)", "/eco set {target}"),
+        ("ECONOMÍA · Ranking dinero (plugin)", "/baltop"),
+        ("ECONOMÍA · Tienda (plugin)", "/shop"),
+        ("ECONOMÍA · Ver precio (plugin)", "/price {target}"),
+        ("ECONOMÍA · Transferir dinero (plugin)", "/pay {target}"),
+        ("ECONOMÍA · Ayuda economía (plugin)", "/help eco"),
+        ("UTILIDADES · Ver ping (plugin)", "/ping {target}"),
+        ("UTILIDADES · Limpiar chat (plugin)", "/clear"),
+        ("UTILIDADES · Anuncio (plugin)", "/announce {target}"),
+        ("UTILIDADES · Mensaje global (plugin)", "/broadcast {target}"),
+        ("UTILIDADES · Ver logs (plugin)", "/logs"),
+        ("UTILIDADES · Historial (plugin)", "/history {target}"),
+        ("UTILIDADES · Estadísticas (plugin)", "/stats"),
+        ("UTILIDADES · Lista plugins (plugin)", "/plugins"),
+        ("UTILIDADES · Versión (plugin)", "/version"),
+        ("UTILIDADES · Ayuda utilidades", "/help")
     };
 
 
@@ -190,16 +353,22 @@ internal static class HerosModPanel
         var local = Main.LocalPlayer;
 
         // En servidor las funciones solo-cliente quedan apagadas (el servidor manda).
-        if (IsServer && (godmodeEnabled || flyEnabled))
+        if (IsServer && flyEnabled)
         {
-            godmodeEnabled = false;
             flyEnabled = false;
-            local.creativeGodMode = false;
         }
 
         if (godmodeEnabled && local.active)
         {
+            // Refuerzo de god mode local; un servidor puede sobrescribirlo.
             local.creativeGodMode = true;
+            if (Main.netMode == 0)
+            {
+                local.statLife = local.statLifeMax2;
+                local.statMana = local.statManaMax2;
+                local.immune = true;
+                local.immuneTime = Math.Max(local.immuneTime, 2);
+            }
             for (int i = 0; i < local.buffType.Length; i++)
             {
                 if (local.buffType[i] > 0 && Main.debuff[local.buffType[i]])
@@ -244,26 +413,27 @@ internal static class HerosModPanel
         UpdateLogic();
         HandleToggleKey();
 
+        var pixel = TextureAssets.MagicPixel.Value;
+        DrawWorldSelectionOverlay(sb, pixel);
+
         if (!Visible)
             return;
 
         hoverTip = null;
-
-        var pixel = TextureAssets.MagicPixel.Value;
         var mouse = new Point(Main.mouseX, Main.mouseY);
         var panelRect = new Rectangle((int)position.X, (int)position.Y, Width, Height);
 
         if (panelRect.Contains(mouse))
             Main.LocalPlayer.mouseInterface = true;
 
-        var titleRect = new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 30);
+        var titleRect = new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 40);
         if (dragging)
         {
             if (Main.mouseLeft)
             {
                 position = new Vector2(mouse.X, mouse.Y) - dragOffset;
-                position.X = Math.Clamp(position.X, 0f, Math.Max(0f, Main.screenWidth - 100f));
-                position.Y = Math.Clamp(position.Y, 0f, Math.Max(0f, Main.screenHeight - 60f));
+                position.X = Math.Clamp(position.X, 0f, Math.Max(0f, Main.screenWidth - Width));
+                position.Y = Math.Clamp(position.Y, 0f, Math.Max(0f, Main.screenHeight - Height));
             }
             else
             {
@@ -277,92 +447,72 @@ internal static class HerosModPanel
             Main.mouseLeftRelease = false;
         }
 
-        LoadUiSettingsOnce();
-        Color uiAccent = GetUiAccent();
-        sb.Draw(pixel, panelRect, new Color(18, 21, 29) * (uiOpacity / 100f));
-        if (uiUseImage && uiImageTexture != null && !uiImageTexture.IsDisposed)
-            sb.Draw(uiImageTexture, panelRect, Color.White * (uiOpacity / 100f));
-        // Marco y acento configurable; la imagen es solo decorativa y no tapa los controles.
-        if (uiShowDecorations)
-        {
-            sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 3), uiAccent);
-            sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, 2, panelRect.Height), uiAccent * 0.75f);
-            sb.Draw(pixel, new Rectangle(panelRect.Right - 2, panelRect.Y, 2, panelRect.Height), uiAccent * 0.75f);
-            sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Bottom - 2, panelRect.Width, 2), uiAccent * 0.75f);
-        }
-        sb.Draw(pixel, titleRect, GetUiHeaderColor());
-        // Separadores suaves para una cabecera más clara.
-        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 30, panelRect.Width, 1), uiAccent);
-        sb.Draw(pixel, new Rectangle(panelRect.X + 8, panelRect.Y + 31, panelRect.Width - 16, 1), new Color(255, 255, 255, 18));
-        if (!uiCompactHeader)
-            Utils.DrawBorderString(sb, "ADMIN • CONTROL CENTER", new Vector2(panelRect.X + 12, panelRect.Y + 20), new Color(155, 180, 210), 0.55f);
-        Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.Gold, 0.85f);
+        // Nuevo marco visual: sombra, borde, cabecera y área de contenido separadas.
+        sb.Draw(pixel, new Rectangle(panelRect.X + 5, panelRect.Y + 6, panelRect.Width, panelRect.Height), new Color(0, 0, 0, 105));
+        sb.Draw(pixel, panelRect, new Color(8, 10, 18, 245));
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 2), UiAccent);
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 2, panelRect.Width, panelRect.Height - 2), UiPanelColor);
+        sb.Draw(pixel, titleRect, UiTitleColor);
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 40, panelRect.Width, 1), UiAccent * 0.75f);
+        Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 5), Color.White, 1.0f);
+        Utils.DrawBorderString(sb, "CENTRO DE CONTROL  /  TERRARIA", new Vector2(panelRect.X + 150, panelRect.Y + 12), new Color(177, 185, 205), 0.58f);
 
-        string modeText = CurrentExecutionMode switch
-        {
-            ExecutionMode.UnJugador => "MODO: UN JUGADOR",
-            ExecutionMode.ServidorConPermisos => "MODO: SERVIDOR CON PERMISOS (TShock)",
-            ExecutionMode.ServidorDirecto => "MODO: ANARQUICO / DIRECTO",
-            _ => "MODO: DESCONOCIDO"
-        };
-        Color modeColor = CurrentExecutionMode switch
-        {
-            ExecutionMode.UnJugador => new Color(50, 90, 60),
-            ExecutionMode.ServidorConPermisos => new Color(40, 100, 140),
-            ExecutionMode.ServidorDirecto => new Color(150, 90, 30),
-            _ => new Color(70, 70, 70)
-        };
-        if (DrawButton(sb, pixel, new Rectangle(panelRect.X + 100, panelRect.Y + 5, 260, 20), modeText, mouse, modeColor))
+        string modeText = !InMultiplayer
+            ? "UN JUGADOR"
+            : (serverMode == ServerMode.Comandos ? "SERVIDOR: COMANDOS" : "SERVIDOR: DIRECTO");
+        Color modeColor = !InMultiplayer ? new Color(35, 95, 75) : (serverMode == ServerMode.Comandos ? new Color(35, 82, 125) : new Color(125, 78, 30));
+        if (DrawButton(sb, pixel, new Rectangle(panelRect.Right - 218, panelRect.Y + 8, 180, 24), modeText, mouse, modeColor))
         {
             ToggleServerMode();
         }
 
-        var closeRect = new Rectangle(panelRect.Right - 28, panelRect.Y + 5, 20, 20);
-        if (DrawButton(sb, pixel, closeRect, "X", mouse, new Color(180, 50, 50)))
+        var closeRect = new Rectangle(panelRect.Right - 30, panelRect.Y + 8, 22, 24);
+        if (DrawButton(sb, pixel, closeRect, "×", mouse, new Color(150, 45, 60)))
         {
             Visible = false;
             return;
         }
 
-        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Personalizar];
-        int tabCols = 4;
-        int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
-        for (int i = 0; i < tabs.Length; i++)
+        // Navegación agrupada por tarea para que las funciones sean más fáciles de encontrar.
+        Tab[][] tabGroups =
+        [
+            [Tab.Jugador, Tab.EditorVida, Tab.Inventario, Tab.Items, Tab.EditorItems],
+            [Tab.Mundo, Tab.WorldEdit, Tab.Teleport, Tab.Perfiles, Tab.Guia],
+            [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar]
+        ];
+        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES"];
+        string[] tabLabels =
+        [
+            "Jugador", "Editor vida", "Inventario", "Items", "Editor items",
+            "Mundo", "WorldEdit", "Teleport", "Perfiles", "Guía",
+            "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar"
+        ];
+        int tabCols = 5;
+        int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
+        for (int row = 0; row < tabGroups.Length; row++)
         {
-            int row = i / tabCols;
-            int col = i % tabCols;
-            var tabRect = new Rectangle(panelRect.X + Pad + col * (tabWidth + 4),
-                panelRect.Y + 36 + row * 27, tabWidth, 23);
-            bool selected = currentTab == tabs[i];
-            Color tabColor = selected ? GetUiAccent() : new Color(34, 40, 52);
-            string tabLabel = tabs[i] switch
+            int labelY = panelRect.Y + 44 + row * 34;
+            Utils.DrawBorderString(sb, groupLabels[row], new Vector2(panelRect.X + Pad + 2, labelY), new Color(155, 166, 190), 0.52f);
+            for (int col = 0; col < tabGroups[row].Length; col++)
             {
-                Tab.Jugador => "Jugador",
-                Tab.Mundo => "Mundo",
-                Tab.Items => "Items",
-                Tab.Jugadores => "Jugadores",
-                Tab.Inventario => "Inventario",
-                Tab.EditorItems => "Editor Items",
-                Tab.WorldEdit => "WorldEdit",
-                Tab.Teleport => "Teleport",
-                Tab.Jefes => "Jefes",
-                Tab.Herramientas => "Herramientas",
-                Tab.Info => "Información",
-                Tab.Guia => "Guía",
-                Tab.Personalizar => "Personalizar",
-                _ => tabs[i].ToString()
-            };
-            if (DrawButton(sb, pixel, tabRect, tabLabel, mouse, tabColor) && !selected)
-            {
-                currentTab = tabs[i];
-                activeField = 0;
+                Tab tab = tabGroups[row][col];
+                int labelIndex = row * tabCols + col;
+                var tabRect = new Rectangle(panelRect.X + Pad + col * (tabWidth + 6),
+                    panelRect.Y + 55 + row * 34, tabWidth, 22);
+                bool selected = currentTab == tab;
+                Color tabColor = selected ? UiAccent : UiTabColor;
+                if (DrawButton(sb, pixel, tabRect, tabLabels[labelIndex], mouse, tabColor) && !selected)
+                {
+                    currentTab = tab;
+                    activeField = 0;
+                }
             }
         }
 
         int contentY = panelRect.Y + 151;
-        sb.Draw(pixel, new Rectangle(panelRect.X + 6, contentY - 4, panelRect.Width - 12, panelRect.Height - 191), new Color(25, 29, 39));
-        sb.Draw(pixel, new Rectangle(panelRect.X + 6, contentY - 4, panelRect.Width - 12, 1), new Color(48, 60, 78));
+        var contentRect = new Rectangle(panelRect.X + 5, contentY - 3, panelRect.Width - 10, panelRect.Bottom - contentY - 8);
+        sb.Draw(pixel, contentRect, new Color(13, 15, 24, 210));
+        sb.Draw(pixel, new Rectangle(contentRect.X, contentRect.Y, 2, contentRect.Height), UiAccent * 0.65f);
         switch (currentTab)
         {
             case Tab.Jugador:
@@ -376,6 +526,9 @@ internal static class HerosModPanel
                 break;
             case Tab.EditorItems:
                 DrawItemEditorTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.EditorVida:
+                DrawLifeEditorTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.WorldEdit:
                 DrawWorldEditTab(sb, pixel, panelRect, ref contentY, mouse);
@@ -401,16 +554,18 @@ internal static class HerosModPanel
             case Tab.Guia:
                 DrawGuideTab(sb, pixel, panelRect, ref contentY);
                 break;
+            case Tab.Perfiles:
+                DrawProfilesTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
             case Tab.Personalizar:
-                DrawUiCustomizeTab(sb, pixel, panelRect, ref contentY, mouse);
+                DrawCustomizeTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
         }
 
-        if (uiShowStatus && statusTimer > 0)
+        if (statusTimer > 0)
         {
             statusTimer--;
-            sb.Draw(pixel, new Rectangle(panelRect.X + 8, panelRect.Bottom - 32, panelRect.Width - 16, 1), new Color(55, 70, 90));
-            Utils.DrawBorderString(sb, "● " + statusMessage, new Vector2(panelRect.X + Pad, panelRect.Bottom - 25), new Color(155, 225, 175), 0.72f);
+            Utils.DrawBorderString(sb, statusMessage, new Vector2(panelRect.X + Pad, panelRect.Bottom - 24), new Color(150, 255, 150), 0.75f);
         }
 
         if (activeField != 0)
@@ -432,26 +587,26 @@ internal static class HerosModPanel
         DrawSectionHeader(sb, panel, ref y, "Modificaciones del Jugador");
         int btnW = (Width - (Pad * 2) - 8) / 2;
 
-        string godText = IsServer ? "Godmode (comando)" : (godmodeEnabled ? "Godmode: [ON]" : "Godmode: [OFF]");
-        Color godColor = godmodeEnabled ? new Color(40, 140, 60) : new Color(50, 55, 70);
+        string godText = godmodeEnabled ? "Godmode local: ACTIVADO" : "Godmode local: desactivado";
+        Color godColor = godmodeEnabled ? UiAccent : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), godText, mouse, godColor))
         {
-            if (IsServer)
+            godmodeEnabled = !godmodeEnabled;
+            Main.LocalPlayer.creativeGodMode = godmodeEnabled;
+            if (godmodeEnabled)
             {
-                SendCmd("/godmode");
-            }
-            else
-            {
-                godmodeEnabled = !godmodeEnabled;
-                Main.LocalPlayer.creativeGodMode = godmodeEnabled;
-                if (godmodeEnabled)
+                var p = Main.LocalPlayer;
+                p.statLife = p.statLifeMax2;
+                p.statMana = p.statManaMax2;
+                if (Main.netMode == 0)
                 {
-                    var p = Main.LocalPlayer;
-                    p.statLife = p.statLifeMax2;
-                    p.statMana = p.statManaMax2;
+                    p.immune = true;
+                    p.immuneTime = 2;
                 }
-                SetStatus(godmodeEnabled ? "Godmode activado (nativo)." : "Godmode desactivado.");
             }
+            SetStatus(godmodeEnabled
+                ? "Godmode local activado sin comandos ni plugins. En multijugador el servidor puede ignorarlo."
+                : "Godmode local desactivado.");
         }
 
         string flyText = flyEnabled ? "Vuelo Libre: [ON]" : "Vuelo Libre: [OFF]";
@@ -941,6 +1096,128 @@ internal static class HerosModPanel
         y += 18;
     }
 
+    // Mini mapa del panel: muestrea tiles alrededor del jugador y permite elegir coordenadas.
+    private static void DrawWorldMiniMap(SpriteBatch sb, Texture2D pixel, Rectangle area, Point mouse, bool worldEdit)
+    {
+        sb.Draw(pixel, area, new Color(15, 18, 24));
+        int cell = 7, span = 4;
+        int cols = Math.Max(1, area.Width / cell), rows = Math.Max(1, area.Height / cell);
+        int cx = (int)(Main.LocalPlayer.Center.X / 16f), cy = (int)(Main.LocalPlayer.Center.Y / 16f);
+        int left = cx - cols * span / 2, top = cy - rows * span / 2;
+        for (int gy = 0; gy < rows; gy++)
+        for (int gx = 0; gx < cols; gx++)
+        {
+            int tx = Math.Clamp(left + gx * span, 1, Main.maxTilesX - 2);
+            int ty = Math.Clamp(top + gy * span, 1, Main.maxTilesY - 2);
+            Tile t = Main.tile[tx, ty];
+            Color c = new Color(35, 40, 48);
+            if (t != null && t.HasTile)
+                c = t.TileType switch
+                {
+                    TileID.Dirt or TileID.Grass or TileID.CorruptGrass or TileID.CrimsonGrass or TileID.JungleGrass => new Color(83,145,70),
+                    TileID.Stone or TileID.Ebonstone or TileID.Crimstone => new Color(105,105,115),
+                    TileID.Sand or TileID.HardenedSand => new Color(205,184,118),
+                    TileID.SnowBlock or TileID.IceBlock => new Color(170,210,225),
+                    TileID.Ash or TileID.Hellstone => new Color(190,80,55),
+                    _ => new Color(120,125,135)
+                };
+            sb.Draw(pixel, new Rectangle(area.X + gx * cell, area.Y + gy * cell, cell - 1, cell - 1), c);
+        }
+        sb.Draw(pixel, new Rectangle(area.X + cols / 2 * cell - 2, area.Y + rows / 2 * cell - 2, 5, 5), Color.Cyan);
+        if (worldEdit)
+        {
+            if (worldPos1.HasValue && worldPos2.HasValue)
+                DrawMiniMapSelection(sb, pixel, area, left, top, worldPos1.Value, worldPos2.Value, span, cell);
+            if (worldPos1.HasValue) DrawMapMarker(sb, pixel, area, left, top, worldPos1.Value, span, cell, Color.LimeGreen);
+            if (worldPos2.HasValue) DrawMapMarker(sb, pixel, area, left, top, worldPos2.Value, span, cell, Color.Orange);
+        }
+        if (!area.Contains(mouse) || !Clicked) return;
+        int col = Math.Clamp((mouse.X - area.X) / cell, 0, cols - 1);
+        int row = Math.Clamp((mouse.Y - area.Y) / cell, 0, rows - 1);
+        int wx = Math.Clamp(left + col * span, 1, Main.maxTilesX - 2);
+        int wy = Math.Clamp(top + row * span, 1, Main.maxTilesY - 2);
+        Main.mouseLeftRelease = false;
+        if (worldEdit)
+        {
+            if (worldEditSetPos1Next) { worldPos1 = new Point(wx, wy); worldEditSetPos1Next = false; SetStatus($"POS1: {wx}, {wy}"); }
+            else { worldPos2 = new Point(wx, wy); worldEditSetPos1Next = true; SetStatus($"POS2: {wx}, {wy}"); }
+        }
+        else { teleportX = wx.ToString(); teleportY = wy.ToString(); SetStatus($"Destino seleccionado: {wx}, {wy}"); }
+    }
+
+    private static void DrawMiniMapSelection(SpriteBatch sb, Texture2D pixel, Rectangle area, int left, int top,
+        Point p1, Point p2, int span, int cell)
+    {
+        int minX = Math.Min(p1.X, p2.X), maxX = Math.Max(p1.X, p2.X);
+        int minY = Math.Min(p1.Y, p2.Y), maxY = Math.Max(p1.Y, p2.Y);
+        int x1 = area.X + (minX - left) / span * cell;
+        int y1 = area.Y + (minY - top) / span * cell;
+        int x2 = area.X + (maxX - left) / span * cell + cell - 1;
+        int y2 = area.Y + (maxY - top) / span * cell + cell - 1;
+        int thickness = 2;
+        Color outline = new Color(90, 245, 150, 230);
+        if (x2 < area.X || x1 >= area.Right || y2 < area.Y || y1 >= area.Bottom) return;
+        x1 = Math.Clamp(x1, area.X, area.Right - 1);
+        x2 = Math.Clamp(x2, area.X, area.Right - 1);
+        y1 = Math.Clamp(y1, area.Y, area.Bottom - 1);
+        y2 = Math.Clamp(y2, area.Y, area.Bottom - 1);
+        sb.Draw(pixel, new Rectangle(x1, y1, Math.Max(1, x2 - x1 + 1), thickness), outline);
+        sb.Draw(pixel, new Rectangle(x1, Math.Max(area.Y, y2 - thickness + 1), Math.Max(1, x2 - x1 + 1), thickness), outline);
+        sb.Draw(pixel, new Rectangle(x1, y1, thickness, Math.Max(1, y2 - y1 + 1)), outline);
+        sb.Draw(pixel, new Rectangle(Math.Max(area.X, x2 - thickness + 1), y1, thickness, Math.Max(1, y2 - y1 + 1)), outline);
+    }
+
+    // Dibuja la selección en coordenadas de mundo incluso cuando el panel está cerrado.
+    private static void DrawWorldSelectionOverlay(SpriteBatch sb, Texture2D pixel)
+    {
+        if (!worldPos1.HasValue || !worldPos2.HasValue || Main.gameMenu || Main.dedServ)
+            return;
+
+        int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X) + 1, 1, Main.maxTilesX - 1);
+        int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y) + 1, 1, Main.maxTilesY - 1);
+
+        Matrix transform = Main.GameViewMatrix.TransformationMatrix;
+        Vector2 a = Vector2.Transform(new Vector2(x1 * 16f, y1 * 16f), transform);
+        Vector2 b = Vector2.Transform(new Vector2(x2 * 16f, y2 * 16f), transform);
+        int left = (int)MathF.Floor(Math.Min(a.X, b.X));
+        int top = (int)MathF.Floor(Math.Min(a.Y, b.Y));
+        int right = (int)MathF.Ceiling(Math.Max(a.X, b.X));
+        int bottom = (int)MathF.Ceiling(Math.Max(a.Y, b.Y));
+        if (right <= 0 || bottom <= 0 || left >= Main.screenWidth || top >= Main.screenHeight)
+            return;
+
+        left = Math.Clamp(left, 0, Main.screenWidth - 1);
+        right = Math.Clamp(right, left + 1, Main.screenWidth);
+        top = Math.Clamp(top, 0, Main.screenHeight - 1);
+        bottom = Math.Clamp(bottom, top + 1, Main.screenHeight);
+        int width = right - left, height = bottom - top, thickness = 2;
+        Color fill = new Color(35, 190, 95, 28);
+        Color edge = new Color(80, 255, 145, 220);
+        sb.Draw(pixel, new Rectangle(left, top, width, height), fill);
+        sb.Draw(pixel, new Rectangle(left, top, width, Math.Min(thickness, height)), edge);
+        sb.Draw(pixel, new Rectangle(left, Math.Max(top, bottom - thickness), width, Math.Min(thickness, height)), edge);
+        sb.Draw(pixel, new Rectangle(left, top, Math.Min(thickness, width), height), edge);
+        sb.Draw(pixel, new Rectangle(Math.Max(left, right - thickness), top, Math.Min(thickness, width), height), edge);
+    }
+
+    private static void DrawMapMarker(SpriteBatch sb, Texture2D pixel, Rectangle area, int left, int top, Point p, int span, int cell, Color color)
+    {
+        int x = area.X + (p.X - left) / span * cell, y = area.Y + (p.Y - top) / span * cell;
+        if (x >= area.X && x < area.Right && y >= area.Y && y < area.Bottom)
+            sb.Draw(pixel, new Rectangle(x, y, cell, cell), color);
+    }
+
+    private static void TeleportToCoordinates()
+    {
+        if (!int.TryParse(teleportX, out int x) || !int.TryParse(teleportY, out int y)
+            || x < 1 || x >= Main.maxTilesX - 1 || y < 1 || y >= Main.maxTilesY - 1)
+        { SetStatus("Coordenadas inválidas."); return; }
+        if (IsServer) SendCmd($"/tppos {x} {y}");
+        else TeleportPlayer(x * 16, y * 16, $"Coordenadas {x}, {y}");
+    }
+
     // ------------------------------------------------------------------ Teleport
 
     private static void DrawTeleportTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
@@ -972,7 +1249,21 @@ internal static class HerosModPanel
             else
                 TeleportPlayer(Main.dungeonX * 16, Main.dungeonY * 16, "Mazmorra");
         }
-        y += RowH + 12;
+        y += RowH + 8;
+        Utils.DrawBorderString(sb, "Destino X (tiles):", new Vector2(panel.X + Pad, y), Color.White, 0.7f);
+        Utils.DrawBorderString(sb, "Destino Y (tiles):", new Vector2(panel.X + 230, y), Color.White, 0.7f);
+        y += 17;
+        if (string.IsNullOrEmpty(teleportX)) teleportX = ((int)(Main.LocalPlayer.Center.X / 16f)).ToString();
+        if (string.IsNullOrEmpty(teleportY)) teleportY = ((int)(Main.LocalPlayer.Center.Y / 16f)).ToString();
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 24), 26, teleportX, mouse, "X");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 24), 27, teleportY, mouse, "Y");
+        y += 29;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Teletransportar a X/Y", mouse, new Color(45, 100, 150)))
+            TeleportToCoordinates();
+        y += RowH + 6;
+        Utils.DrawBorderString(sb, "Mini mapa · clic para elegir destino", new Vector2(panel.X + Pad, y), new Color(145, 200, 240), 0.68f);
+        y += 18;
+        DrawWorldMiniMap(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, Math.Max(50, panel.Bottom - y - 35)), mouse, false);
     }
 
     // ------------------------------------------------------------------ Jugadores
@@ -1235,6 +1526,20 @@ internal static class HerosModPanel
     private static void DrawItemEditorTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         DrawSectionHeader(sb, panel, ref y, "Editor de objetos · inventario local");
+        var player = Main.LocalPlayer;
+        int selectedSlot = Math.Clamp(player.selectedItem, 0, player.inventory.Length - 1);
+        Item heldItem = player.inventory[selectedSlot];
+        string heldName = heldItem == null || heldItem.IsAir ? "Mano vacía" : heldItem.Name + " · ID " + heldItem.type;
+        DrawInfoLine(sb, panel, ref y, "Objeto equipado actualmente", "Ranura " + (selectedSlot + 1) + ": " + heldName);
+        int slotButtonW = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, slotButtonW, RowH), "Editar objeto equipado", mouse, UiAccent))
+        {
+            editorSlot = (selectedSlot + 1).ToString();
+            LoadItemEditorSlot();
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + slotButtonW + 8, y, slotButtonW, RowH), "Cargar ranura", mouse))
+            LoadItemEditorSlot();
+        y += RowH + 7;
         Utils.DrawBorderString(sb, "Ranura de mochila (1-50):", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
         Utils.DrawBorderString(sb, "Cantidad:", new Vector2(panel.X + 230, y), Color.White, 0.72f);
         Utils.DrawBorderString(sb, "Daño:", new Vector2(panel.X + 390, y), Color.White, 0.72f);
@@ -1266,6 +1571,78 @@ internal static class HerosModPanel
             ResetItemEditorSlot();
         y += RowH + 10;
 
+        Utils.DrawBorderString(sb, "ID del objeto:", new Vector2(panel.X + Pad, y), UiAccent, 0.72f);
+        Utils.DrawBorderString(sb, "Prefijo (0 = ninguno):", new Vector2(panel.X + 230, y), UiAccent, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 110, 26), 14, editorType, mouse, "ID");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 130, 26), 15, editorPrefix, mouse, "prefijo");
+        y += 34;
+        int bwExtra = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bwExtra, RowH), "Crear / reemplazar ranura", mouse, new Color(45, 105, 145)))
+            CreateItemEditorSlot();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bwExtra + 8, y, bwExtra, RowH), "Vaciar ranura", mouse, new Color(135, 55, 55)))
+            ClearItemEditorSlot();
+        y += RowH + 8;
+        Utils.DrawBorderString(sb, "Retroceso:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "Crítico:", new Vector2(panel.X + 195, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "Rareza:", new Vector2(panel.X + 365, y), Color.White, 0.68f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 20, editorKnockback, mouse, "knockback");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 195, y, 100, 24), 21, editorCrit, mouse, "crítico");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 365, y, 100, 24), 22, editorRarity, mouse, "rareza");
+        y += 30;
+        Utils.DrawBorderString(sb, "Animación:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "Velocidad proyectil:", new Vector2(panel.X + 230, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "ID proyectil (0 = ninguno):", new Vector2(panel.X + 400, y), Color.White, 0.62f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 23, editorUseAnimation, mouse, "useAnimation");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 140, 24), 24, editorShootSpeed, mouse, "shootSpeed");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 400, y, 120, 24), 25, editorProjectile, mouse, "ID proyectil");
+        y += 30;
+
+        // Propiedades adicionales del objeto, al estilo de un editor avanzado.
+        Utils.DrawBorderString(sb, "Maná:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "Estilo de uso:", new Vector2(panel.X + 195, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "ID de munición:", new Vector2(panel.X + 365, y), Color.White, 0.68f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 35, editorMana, mouse, "mana");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 195, y, 125, 24), 36, editorUseStyle, mouse, "useStyle");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 365, y, 125, 24), 37, editorAmmo, mouse, "ammo ID");
+        y += 29;
+        Utils.DrawBorderString(sb, "Escala:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y + 15, 125, 24), 38, editorScale, mouse, "scale");
+        int toggleW = (Width - Pad * 2 - 12) / 3;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + 195, y + 15, toggleW, 24), "Auto uso: " + (editorAutoReuse ? "SÍ" : "NO"), mouse, editorAutoReuse ? UiAccent : UiTabColor))
+            editorAutoReuse = !editorAutoReuse;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + 195 + toggleW + 6, y + 15, toggleW, 24), "Consumible: " + (editorConsumable ? "SÍ" : "NO"), mouse, editorConsumable ? UiAccent : UiTabColor))
+            editorConsumable = !editorConsumable;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + 195 + (toggleW + 6) * 2, y + 15, toggleW, 24), "Favorito: " + (editorFavorite ? "SÍ" : "NO"), mouse, editorFavorite ? UiAccent : UiTabColor))
+            editorFavorite = !editorFavorite;
+        y += 45;
+
+        // Presets de un clic: solo rellenan los campos; el usuario confirma con Aplicar cambios.
+        int presetW = (Width - Pad * 2 - 12) / 3;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, presetW, 24), "Preset: arma", mouse))
+        {
+            editorDamage = "500"; editorDefense = "0"; editorUseTime = "1"; editorUseAnimation = "1";
+            editorCrit = "100"; editorKnockback = "20"; editorShootSpeed = "20"; editorAutoReuse = true;
+            editorMana = "0"; editorScale = "1";
+            SetStatus("Preset de arma cargado en los campos; pulsa Aplicar cambios.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + presetW + 6, y, presetW, 24), "Preset: tanque", mouse))
+        {
+            editorDamage = "1"; editorDefense = "1000"; editorUseTime = "20"; editorUseAnimation = "20";
+            editorCrit = "0"; editorKnockback = "0"; editorShootSpeed = "0"; editorAutoReuse = false;
+            editorMana = "0"; editorScale = "1";
+            SetStatus("Preset de tanque cargado en los campos; pulsa Aplicar cambios.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (presetW + 6) * 2, y, presetW, 24), "Preset: rápido", mouse))
+        {
+            editorUseTime = "1"; editorUseAnimation = "1"; editorAutoReuse = true; editorShootSpeed = "30";
+            SetStatus("Preset de uso rápido cargado en los campos; pulsa Aplicar cambios.");
+        }
+        y += 30;
+
         var p = Main.LocalPlayer;
         int slot = ParseEditorSlot();
         if (slot >= 0 && slot < p.inventory.Length)
@@ -1276,6 +1653,8 @@ internal static class HerosModPanel
                 DrawInfoLine(sb, panel, ref y, "Objeto seleccionado", $"{it.Name} (ID {it.type})");
                 DrawInfoLine(sb, panel, ref y, "Estadísticas actuales", $"Daño {it.damage} · Defensa {it.defense} · UseTime {it.useTime}");
                 DrawInfoLine(sb, panel, ref y, "Cantidad / valor", $"{it.stack} / {it.value} monedas de cobre");
+                DrawInfoLine(sb, panel, ref y, "Combate", $"Crítico {it.crit}% · Retroceso {it.knockBack:0.##} · Rareza {it.rare}");
+                DrawInfoLine(sb, panel, ref y, "Uso / proyectil", $"Animación {it.useAnimation} · Velocidad {it.shootSpeed:0.##} · ID {it.shoot}");
             }
             else
             {
@@ -1310,6 +1689,21 @@ internal static class HerosModPanel
         editorUseTime = it.useTime.ToString();
         editorStack = it.stack.ToString();
         editorValue = it.value.ToString();
+        editorType = it.type.ToString();
+        editorPrefix = it.prefix.ToString();
+        editorKnockback = it.knockBack.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        editorCrit = it.crit.ToString();
+        editorUseAnimation = it.useAnimation.ToString();
+        editorShootSpeed = it.shootSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        editorProjectile = it.shoot.ToString();
+        editorRarity = it.rare.ToString();
+        editorMana = it.mana.ToString();
+        editorUseStyle = it.useStyle.ToString();
+        editorAmmo = it.useAmmo.ToString();
+        editorScale = it.scale.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        editorAutoReuse = it.autoReuse;
+        editorConsumable = it.consumable;
+        editorFavorite = it.favorited;
         SetStatus($"Datos cargados: {it.Name}.");
     }
 
@@ -1324,11 +1718,43 @@ internal static class HerosModPanel
         }
 
         Item it = p.inventory[slot];
+        if (int.TryParse(editorType, out int requestedType) && requestedType > 0 && requestedType < ItemID.Count && requestedType != it.type)
+        {
+            it.SetDefaults(requestedType);
+            it.stack = 1;
+        }
+        if (int.TryParse(editorPrefix, out int requestedPrefix))
+        {
+            int safePrefix = Math.Clamp(requestedPrefix, 0, PrefixID.Count - 1);
+            it.prefix = (byte)safePrefix;
+        }
         if (int.TryParse(editorDamage, out int damage)) it.damage = Math.Clamp(damage, 0, 1000000);
         if (int.TryParse(editorDefense, out int defense)) it.defense = Math.Clamp(defense, 0, 100000);
         if (int.TryParse(editorUseTime, out int useTime)) it.useTime = Math.Clamp(useTime, 1, 10000);
         if (int.TryParse(editorStack, out int stack)) it.stack = Math.Clamp(stack, 1, Math.Max(1, it.maxStack));
         if (int.TryParse(editorValue, out int value)) it.value = Math.Clamp(value, 0, int.MaxValue);
+        if (float.TryParse(editorKnockback, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float knockback))
+            it.knockBack = Math.Clamp(knockback, 0f, 10000f);
+        if (int.TryParse(editorCrit, out int crit)) it.crit = Math.Clamp(crit, 0, 1000);
+        if (int.TryParse(editorUseAnimation, out int animation)) it.useAnimation = Math.Clamp(animation, 1, 10000);
+        if (float.TryParse(editorShootSpeed, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float shootSpeed))
+            it.shootSpeed = Math.Clamp(shootSpeed, 0f, 10000f);
+        if (int.TryParse(editorProjectile, out int projectileId))
+        {
+            if (projectileId >= 0 && projectileId < ProjectileID.Count)
+                it.shoot = projectileId;
+            else
+                SetStatus($"ID de proyectil fuera de rango (0-{ProjectileID.Count - 1}).");
+        }
+        if (int.TryParse(editorRarity, out int rarity)) it.rare = (sbyte)Math.Clamp(rarity, -1, 11);
+        if (int.TryParse(editorMana, out int mana)) it.mana = Math.Clamp(mana, 0, 100000);
+        if (int.TryParse(editorUseStyle, out int useStyle)) it.useStyle = Math.Clamp(useStyle, 0, 20);
+        if (int.TryParse(editorAmmo, out int ammo)) it.useAmmo = Math.Clamp(ammo, 0, AmmoID.Count - 1);
+        if (float.TryParse(editorScale, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float scale))
+            it.scale = Math.Clamp(scale, 0.1f, 100f);
+        it.autoReuse = editorAutoReuse;
+        it.consumable = editorConsumable;
+        it.favorited = editorFavorite;
         if (Main.netMode == 0)
             SetStatus($"Editado localmente: {it.Name}. Algunas estadísticas pueden recalcularse por el juego.");
         else
@@ -1356,6 +1782,52 @@ internal static class HerosModPanel
         SetStatus("No hay espacios vacíos en la mochila.");
     }
 
+    private static void CreateItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length)
+        {
+            SetStatus("Ranura inválida. Usa un número entre 1 y 50.");
+            return;
+        }
+        if (!int.TryParse(editorType, out int type) || type <= 0 || type >= ItemID.Count)
+        {
+            SetStatus("ID de objeto inválido.");
+            return;
+        }
+        Item created = new Item();
+        created.SetDefaults(type);
+        created.stack = 1;
+        if (int.TryParse(editorStack, out int amount))
+            created.stack = Math.Clamp(amount, 1, Math.Max(1, created.maxStack));
+        if (int.TryParse(editorPrefix, out int prefix))
+        {
+            prefix = Math.Clamp(prefix, 0, PrefixID.Count - 1);
+            created.prefix = (byte)prefix;
+        }
+        p.inventory[slot] = created;
+        editorDamage = created.damage.ToString();
+        editorDefense = created.defense.ToString();
+        editorUseTime = created.useTime.ToString();
+        editorStack = created.stack.ToString();
+        editorValue = created.value.ToString();
+        SetStatus($"Objeto creado en ranura {slot + 1}: {created.Name}.");
+    }
+
+    private static void ClearItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length)
+        {
+            SetStatus("Ranura inválida.");
+            return;
+        }
+        p.inventory[slot].TurnToAir();
+        SetStatus($"Ranura {slot + 1} vaciada localmente.");
+    }
+
     private static void ResetItemEditorSlot()
     {
         int slot = ParseEditorSlot();
@@ -1374,24 +1846,163 @@ internal static class HerosModPanel
     }
 
 
+    // ------------------------------------------------------------------ Editor de vida y maná
+
+    private static void DrawLifeEditorTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        var p = Main.LocalPlayer;
+        DrawSectionHeader(sb, panel, ref y, "Editor de vida y maná");
+        if (DrawButton(sb, pixel, new Rectangle(panel.Right - Pad - 155, y - 22, 155, 22), "Leer valores actuales", mouse, UiAccent))
+        {
+            lifeCurrent = p.statLife.ToString();
+            lifeMaximum = p.statLifeMax2.ToString();
+            manaCurrent = p.statMana.ToString();
+            manaMaximum = p.statManaMax2.ToString();
+            SetStatus("Campos actualizados con los valores actuales del personaje.");
+        }
+        DrawInfoLine(sb, panel, ref y, "Estado actual", $"Vida {p.statLife}/{p.statLifeMax2}  ·  Maná {p.statMana}/{p.statManaMax2}");
+        DrawInfoLine(sb, panel, ref y, "Límites base", $"Vida base {p.statLifeMax}  ·  Maná base {p.statManaMax}");
+        y += 4;
+
+        if (string.IsNullOrEmpty(lifeCurrent)) lifeCurrent = p.statLife.ToString();
+        if (string.IsNullOrEmpty(lifeMaximum)) lifeMaximum = p.statLifeMax2.ToString();
+        if (string.IsNullOrEmpty(manaCurrent)) manaCurrent = p.statMana.ToString();
+        if (string.IsNullOrEmpty(manaMaximum)) manaMaximum = p.statManaMax2.ToString();
+
+        Utils.DrawBorderString(sb, "Vida actual", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Vida máxima", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 16, lifeCurrent, mouse, "1 - 999999");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 26), 17, lifeMaximum, mouse, "máximo");
+        y += 34;
+
+        Utils.DrawBorderString(sb, "Maná actual", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Maná máximo", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 18, manaCurrent, mouse, "0 - 999999");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 26), 19, manaMaximum, mouse, "máximo");
+        y += 36;
+
+        int bw = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Aplicar vida y maná", mouse, new Color(45, 115, 75)))
+            ApplyLifeEditor();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Curar al máximo", mouse, new Color(45, 90, 135)))
+        {
+            p.statLife = p.statLifeMax2;
+            p.statMana = p.statManaMax2;
+            lifeCurrent = p.statLife.ToString();
+            lifeMaximum = p.statLifeMax2.ToString();
+            manaCurrent = p.statMana.ToString();
+            manaMaximum = p.statManaMax2.ToString();
+            SyncSelf();
+            SetStatus("Vida y maná restaurados al máximo permitido.");
+        }
+        y += RowH + 8;
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Vida al 50%", mouse))
+        {
+            p.statLife = Math.Max(1, p.statLifeMax2 / 2);
+            lifeCurrent = p.statLife.ToString();
+            SyncSelf();
+            SetStatus("Vida ajustada al 50%.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Maná al 50%", mouse))
+        {
+            p.statMana = Math.Max(0, p.statManaMax2 / 2);
+            manaCurrent = p.statMana.ToString();
+            SyncSelf();
+            SetStatus("Maná ajustado al 50%.");
+        }
+        y += RowH + 8;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Máximos estándar (500/200)", mouse))
+        {
+            p.statLifeMax = 500; p.statLifeMax2 = 500; p.statManaMax = 200; p.statManaMax2 = 200;
+            p.statLife = Math.Min(p.statLife, 500); p.statMana = Math.Min(p.statMana, 200);
+            lifeCurrent = p.statLife.ToString(); lifeMaximum = "500"; manaCurrent = p.statMana.ToString(); manaMaximum = "200";
+            SyncSelf(); SetStatus("Máximos estándar aplicados localmente.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Máximos altos (1000/500)", mouse))
+        {
+            p.statLifeMax = 1000; p.statLifeMax2 = 1000; p.statManaMax = 500; p.statManaMax2 = 500;
+            p.statLife = Math.Min(p.statLife, 1000); p.statMana = Math.Min(p.statMana, 500);
+            lifeCurrent = p.statLife.ToString(); lifeMaximum = "1000"; manaCurrent = p.statMana.ToString(); manaMaximum = "500";
+            SyncSelf(); SetStatus("Máximos altos aplicados localmente.");
+        }
+        y += RowH + 8;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Vida crítica (1 HP)", mouse, new Color(145, 55, 55)))
+        {
+            p.statLife = 1; lifeCurrent = "1"; SyncSelf(); SetStatus("Vida fijada en 1 HP.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Restablecer máximos base", mouse))
+        {
+            p.statLifeMax = 100; p.statLifeMax2 = 100; p.statManaMax = 20; p.statManaMax2 = 20;
+            p.statLife = Math.Min(p.statLife, 100); p.statMana = Math.Min(p.statMana, 20);
+            lifeCurrent = p.statLife.ToString(); lifeMaximum = "100"; manaCurrent = p.statMana.ToString(); manaMaximum = "20";
+            SyncSelf(); SetStatus("Máximos base restablecidos localmente.");
+        }
+        y += RowH + 8;
+        Utils.DrawBorderString(sb, "Nota: en multijugador el servidor puede corregir o rechazar cambios locales.",
+            new Vector2(panel.X + Pad, y), new Color(235, 195, 120), 0.66f);
+    }
+
+    private static void ApplyLifeEditor()
+    {
+        var p = Main.LocalPlayer;
+        if (!int.TryParse(lifeMaximum, out int maxLife) || maxLife < 1 || maxLife > 999999
+            || !int.TryParse(lifeCurrent, out int currentLife) || currentLife < 0 || currentLife > maxLife
+            || !int.TryParse(manaMaximum, out int maxMana) || maxMana < 0 || maxMana > 999999
+            || !int.TryParse(manaCurrent, out int currentMana) || currentMana < 0 || currentMana > maxMana)
+        {
+            SetStatus("Valores inválidos: actual debe estar entre 0 y máximo; revisa los cuatro campos.");
+            return;
+        }
+
+        // Cambia los máximos base del personaje local. En multijugador el servidor puede
+        // ignorarlos o recalcularlos, ya que no es una API administrativa del servidor.
+        p.statLifeMax = maxLife;
+        p.statManaMax = maxMana;
+        p.statLifeMax2 = maxLife;
+        p.statManaMax2 = maxMana;
+        p.statLife = Math.Clamp(currentLife, 0, maxLife);
+        p.statMana = Math.Clamp(currentMana, 0, maxMana);
+        lifeCurrent = p.statLife.ToString();
+        lifeMaximum = p.statLifeMax2.ToString();
+        manaCurrent = p.statMana.ToString();
+        manaMaximum = p.statManaMax2.ToString();
+        SyncSelf();
+        SetStatus("Vida y maná ajustados localmente. En servidores, el servidor puede sobrescribirlos.");
+    }
+
+
     // ------------------------------------------------------------------ WorldEdit basico local
 
     private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección y edición local");
+        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección, archivos y edición");
         int bx = panel.X + Pad;
         int bw = (Width - Pad * 2 - 8) / 2;
         string p1 = worldPos1.HasValue ? $"{worldPos1.Value.X}, {worldPos1.Value.Y}" : "Sin seleccionar";
         string p2 = worldPos2.HasValue ? $"{worldPos2.Value.X}, {worldPos2.Value.Y}" : "Sin seleccionar";
         DrawInfoLine(sb, panel, ref y, "POS1", p1);
         DrawInfoLine(sb, panel, ref y, "POS2", p2);
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Marcar POS1 aquí", mouse, new Color(45, 90, 135)))
+        if (worldPos1.HasValue && worldPos2.HasValue)
+        {
+            int areaWidth = Math.Abs(worldPos1.Value.X - worldPos2.Value.X) + 1;
+            int areaHeight = Math.Abs(worldPos1.Value.Y - worldPos2.Value.Y) + 1;
+            long areaTiles = (long)areaWidth * areaHeight;
+            DrawInfoLine(sb, panel, ref y, "Área seleccionada", $"{areaWidth} × {areaHeight} tiles ({areaTiles:N0} tiles)");
+        }
+        else
+        {
+            DrawInfoLine(sb, panel, ref y, "Área seleccionada", "Marca POS1 y POS2 para calcular el área");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Marcar POS1 aquí", mouse, UiAccent))
         {
             var p = Main.LocalPlayer;
             worldPos1 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
             SetStatus($"POS1: {worldPos1.Value.X}, {worldPos1.Value.Y}");
         }
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Marcar POS2 aquí", mouse, new Color(45, 90, 135)))
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Marcar POS2 aquí", mouse, UiAccent))
         {
             var p = Main.LocalPlayer;
             worldPos2 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
@@ -1413,18 +2024,124 @@ internal static class HerosModPanel
             ApplyWorldEdit("replace");
         if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse))
             UndoWorldEdit();
-        y += RowH + 10;
-        Utils.DrawBorderString(sb, "Por seguridad, solo funciona en un jugador. Máximo 4.000 tiles por operación.",
+        y += RowH + 7;
+        Utils.DrawBorderString(sb, "Archivo de construcción (.hws):", new Vector2(bx, y), UiAccent, 0.68f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(bx, y, 220, 25), 26, schematicFileName, mouse, "nombre del archivo");
+        int fileButtonW = (Width - Pad * 2 - 240 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(bx + 228, y, fileButtonW, 25), "Exportar", mouse, UiAccent))
+            ExportWorldSchematic();
+        if (DrawButton(sb, pixel, new Rectangle(bx + 228 + fileButtonW + 8, y, fileButtonW, 25), "Importar en POS1", mouse))
+            ImportWorldSchematic();
+        y += 30;
+        Utils.DrawBorderString(sb, worldSchematicStatus, new Vector2(bx, y), new Color(190, 220, 255), 0.62f);
+        y += 17;
+        Utils.DrawBorderString(sb, "Mini mapa: clic alterna POS1 y POS2.", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
+        y += 18;
+        DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(32, panel.Bottom - y - 45)), mouse, true);
+        Utils.DrawBorderString(sb, "Los .hws guardan tiles; en multijugador el servidor puede revertir cambios.",
             new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+    }
+
+    private static string GetSchematicPath()
+    {
+        string name = Path.GetFileNameWithoutExtension(schematicFileName ?? "construccion");
+        foreach (char invalid in Path.GetInvalidFileNameChars())
+            name = name.Replace(invalid, '_');
+        if (string.IsNullOrWhiteSpace(name)) name = "construccion";
+        string directory = Path.Combine(Main.SavePath, "HerosMod", "Schematics");
+        Directory.CreateDirectory(directory);
+        return Path.Combine(directory, name + ".hws");
+    }
+
+    private static void ExportWorldSchematic()
+    {
+        if (!worldPos1.HasValue || !worldPos2.HasValue) { SetStatus("Marca POS1 y POS2 antes de exportar."); return; }
+        try
+        {
+            int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+            int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+            int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+            int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+            long area = (long)(x2 - x1 + 1) * (y2 - y1 + 1);
+            if (area > 500000) { SetStatus("Selección demasiado grande: máximo 500 000 tiles."); return; }
+            string path = GetSchematicPath();
+            using (var writer = new StreamWriter(path, false))
+            {
+                writer.WriteLine("HEROSMOD_SCHEMATIC_1");
+                writer.WriteLine((x2 - x1 + 1) + "," + (y2 - y1 + 1));
+                for (int yy = y1; yy <= y2; yy++)
+                {
+                    for (int xx = x1; xx <= x2; xx++)
+                    {
+                        Tile tile = Main.tile[xx, yy];
+                        writer.Write(tile != null && tile.HasTile ? tile.TileType + 1 : 0);
+                        if (xx < x2) writer.Write(',');
+                    }
+                    writer.WriteLine();
+                }
+            }
+            worldSchematicStatus = "Exportado: " + Path.GetFileName(path) + " (" + area.ToString("N0") + " tiles)";
+            SetStatus("Archivo guardado en " + path);
+        }
+        catch (Exception ex) { worldSchematicStatus = "Error al exportar: " + ex.Message; SetStatus("No se pudo exportar el archivo."); }
+    }
+
+    private static void ImportWorldSchematic()
+    {
+        if (!worldPos1.HasValue) { SetStatus("Marca POS1 como esquina superior izquierda."); return; }
+        try
+        {
+            string path = GetSchematicPath();
+            if (!File.Exists(path)) { worldSchematicStatus = "No existe " + Path.GetFileName(path); SetStatus(worldSchematicStatus); return; }
+            int width, height;
+            using (var reader = new StreamReader(path))
+            {
+                if (reader.ReadLine() != "HEROSMOD_SCHEMATIC_1") throw new InvalidDataException("Formato .hws no reconocido.");
+                string[] dims = (reader.ReadLine() ?? "").Split(',');
+                if (dims.Length != 2 || !int.TryParse(dims[0], out width) || !int.TryParse(dims[1], out height) ||
+                    width < 1 || height < 1 || (long)width * height > 500000)
+                    throw new InvalidDataException("Dimensiones inválidas o demasiado grandes.");
+                if (worldPos1.Value.X < 1 || worldPos1.Value.Y < 1 ||
+                    worldPos1.Value.X + width >= Main.maxTilesX - 1 || worldPos1.Value.Y + height >= Main.maxTilesY - 1)
+                    throw new InvalidDataException("La construcción no cabe desde POS1.");
+                for (int row = 0; row < height; row++)
+                {
+                    string[] cells = (reader.ReadLine() ?? "").Split(',');
+                    if (cells.Length != width) throw new InvalidDataException("Fila incompleta: " + (row + 1));
+                    for (int col = 0; col < width; col++)
+                        if (!int.TryParse(cells[col], out int encoded) || encoded < 0 || encoded > TileID.Count)
+                            throw new InvalidDataException("ID de tile inválido.");
+                }
+            }
+            int changed = 0;
+            using (var reader = new StreamReader(path))
+            {
+                reader.ReadLine();
+                reader.ReadLine();
+                for (int row = 0; row < height; row++)
+                {
+                    string[] cells = (reader.ReadLine() ?? "").Split(',');
+                    for (int col = 0; col < width; col++)
+                    {
+                        int encoded = int.Parse(cells[col]);
+                        int x = worldPos1.Value.X + col;
+                        int yy = worldPos1.Value.Y + row;
+                        if (Main.tile[x, yy] == null) continue;
+                        WorldGen.KillTile(x, yy, false, false, true);
+                        if (encoded > 0) WorldGen.PlaceTile(x, yy, encoded - 1, true, true);
+                        changed++;
+                    }
+                }
+            }
+            worldSchematicStatus = "Importado " + Path.GetFileName(path) + " · " + width + "×" + height;
+            SetStatus("Construcción importada en POS1: " + changed.ToString("N0") + " tiles.");
+        }
+        catch (Exception ex) { worldSchematicStatus = "Error al importar: " + ex.Message; SetStatus("No se pudo importar el archivo."); }
     }
 
     private static void ApplyWorldEdit(string operation)
     {
-        if (Main.netMode != 0)
-        {
-            SetStatus("WorldEdit local está bloqueado en multijugador; hace falta un handler del servidor.");
-            return;
-        }
         if (!worldPos1.HasValue || !worldPos2.HasValue)
         {
             SetStatus("Marca POS1 y POS2 antes de editar.");
@@ -1434,9 +2151,10 @@ internal static class HerosModPanel
         int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
         int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
         int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
-        if ((long)(x2 - x1 + 1) * (y2 - y1 + 1) > 4000)
+        long selectedArea = (long)(x2 - x1 + 1) * (y2 - y1 + 1);
+        if (selectedArea > 100000)
         {
-            SetStatus("Selección demasiado grande: reduce el área a 4.000 tiles o menos.");
+            SetStatus("Selección demasiado grande para editar de una vez (máximo 100 000 tiles). Reduce el área.");
             return;
         }
         int tileId = int.TryParse(worldTileType, out int parsedTile) ? parsedTile : 1;
@@ -1476,28 +2194,29 @@ internal static class HerosModPanel
 
     private static void UndoWorldEdit()
     {
-        if (Main.netMode != 0)
-        {
-            SetStatus("Undo local solo funciona en un jugador.");
-            return;
-        }
         if (worldEditUndo.Count == 0)
         {
             SetStatus("No hay una operación para deshacer.");
             return;
         }
         foreach (var entry in worldEditUndo)
-            Main.tile[entry.x, entry.y].CopyFrom(entry.tile);
+        {
+            if (entry.x < 0 || entry.x >= Main.maxTilesX || entry.y < 0 || entry.y >= Main.maxTilesY)
+                continue;
+            Tile current = Main.tile[entry.x, entry.y];
+            if (current != null && entry.tile != null)
+                current.CopyFrom(entry.tile);
+        }
         int count = worldEditUndo.Count;
         worldEditUndo.Clear();
         SetStatus($"Undo completado: restaurados {count} tiles.");
     }
 
-    // ------------------------------------------------------------------ Herramientas adicionales: 50 acciones paginadas
+    // ------------------------------------------------------------------ Herramientas adicionales: 200 acciones categorizadas
 
     private static void DrawToolsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Centro de moderación y administración · 50 herramientas");
+        DrawSectionHeader(sb, panel, ref y, "Centro de herramientas · 200 acciones por categorías");
         Utils.DrawBorderString(sb, "Objetivo (jugador/warp/región/clave):", new Vector2(panel.X + Pad, y), Color.White, 0.66f);
         Utils.DrawBorderString(sb, "Motivo (kick/ban):", new Vector2(panel.X + 330, y), Color.White, 0.66f);
         y += 18;
@@ -1505,7 +2224,7 @@ internal static class HerosModPanel
         DrawTextField(sb, pixel, new Rectangle(panel.X + 320, y, 300, 25), 5, moderationReason, mouse, "Motivo opcional...");
         y += 32;
 
-        int pageSize = 10;
+        int pageSize = 12;
         int first = toolsPage * pageSize;
         int cols = 2;
         int buttonW = (Width - Pad * 2 - 8) / cols;
@@ -1518,12 +2237,15 @@ internal static class HerosModPanel
             int col = localIndex % cols;
             int row = localIndex / cols;
             var rect = new Rectangle(panel.X + Pad + col * (buttonW + 8), y + row * 29, buttonW, 25);
-            Color color = index < 10 ? new Color(112, 55, 62)
-                : index < 20 ? new Color(45, 86, 120)
-                : index < 30 ? new Color(92, 76, 43)
-                : index < 40 ? new Color(92, 58, 112)
-                : new Color(48, 91, 75);
-            if (DrawButton(sb, pixel, rect, $"{index + 1:00}. {extraTools[index].label}", mouse, color))
+            string toolLabel = extraTools[index].label;
+            Color color = toolLabel.StartsWith("MODERACIÓN") || toolLabel.StartsWith("USUARIOS") || toolLabel.StartsWith("REGIONES") ? new Color(112, 55, 62)
+                : toolLabel.StartsWith("TIEMPO") || toolLabel.StartsWith("CLIMA") || toolLabel.StartsWith("EVENTOS") || toolLabel.StartsWith("PROGRESIÓN") ? new Color(45, 86, 120)
+                : toolLabel.StartsWith("TELETRANSPORTE") || toolLabel.StartsWith("JUGADOR") ? new Color(48, 91, 75)
+                : toolLabel.StartsWith("OBJETOS") || toolLabel.StartsWith("NPC") ? new Color(92, 76, 43)
+                : toolLabel.StartsWith("SERVIDOR") || toolLabel.StartsWith("CONFIGURACIÓN") ? new Color(75, 75, 88)
+                : toolLabel.StartsWith("ECONOMÍA") ? new Color(92, 58, 112)
+                : new Color(50, 55, 68);
+            if (DrawButton(sb, pixel, rect, $"{index + 1:000}. {extraTools[index].label}", mouse, color))
                 RunExtraTool(index);
         }
 
@@ -1532,7 +2254,7 @@ internal static class HerosModPanel
             toolsPage = Math.Max(0, toolsPage - 1);
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 138, navY, 130, 23), "Siguiente", mouse))
             toolsPage = Math.Min((extraTools.Length - 1) / pageSize, toolsPage + 1);
-        Utils.DrawBorderString(sb, $"Página {toolsPage + 1}/5 · {extraTools.Length} acciones",
+        Utils.DrawBorderString(sb, $"Página {toolsPage + 1}/{(extraTools.Length + pageSize - 1) / pageSize} · {extraTools.Length} acciones",
             new Vector2(panel.X + Pad + 285, navY + 4), new Color(180, 205, 235), 0.72f);
         Utils.DrawBorderString(sb, "Solo se envían comandos; el servidor y sus permisos deciden si se ejecutan.",
             new Vector2(panel.X + Pad, panel.Bottom - 43), new Color(235, 195, 120), 0.61f);
@@ -1567,24 +2289,82 @@ internal static class HerosModPanel
         SetStatus($"Herramienta enviada: {extraTools[index].label}. El servidor debe permitir el comando.");
     }
 
+    // ------------------------------------------------------------------ Personalización de la interfaz
+    private static void DrawCustomizeTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Personalizar interfaz");
+        Utils.DrawBorderString(sb, "Cambia los colores del panel sin desactivar ni reemplazar ninguna función.",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
+        y += 28;
+
+        string[] themeNames = { "Azul", "Verde", "Violeta", "Naranja", "Rojo", "Anime Sakura", "Anime Cyan" };
+        int gap = 7;
+        int bw = (Width - Pad * 2 - gap * (themeNames.Length - 1)) / themeNames.Length;
+        for (int i = 0; i < themeNames.Length; i++)
+        {
+            var rect = new Rectangle(panel.X + Pad + i * (bw + gap), y, bw, 32);
+            if (DrawButton(sb, pixel, rect, themeNames[i], mouse, UiAccents[i]))
+            {
+                uiTheme = i;
+                SetStatus($"Tema aplicado: {themeNames[i]}.");
+            }
+            if (uiTheme == i)
+                sb.Draw(pixel, new Rectangle(rect.X, rect.Bottom - 3, rect.Width, 3), Color.White);
+        }
+        y += 44;
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, 245, RowH + 4),
+            uiHighContrast ? "Contraste alto: ACTIVADO" : "Contraste alto: desactivado", mouse,
+            uiHighContrast ? UiAccent : null))
+        {
+            uiHighContrast = !uiHighContrast;
+            SetStatus(uiHighContrast ? "Contraste alto activado." : "Contraste alto desactivado.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 253, y, 245, RowH + 4),
+            "Restablecer apariencia", mouse))
+        {
+            uiTheme = 0;
+            uiHighContrast = false;
+            SetStatus("Apariencia predeterminada restaurada.");
+        }
+        y += RowH + 18;
+
+        DrawSectionHeader(sb, panel, ref y, "Vista previa");
+        var preview = new Rectangle(panel.X + Pad, y, Width - Pad * 2, 76);
+        sb.Draw(pixel, preview, UiPanelColor);
+        sb.Draw(pixel, new Rectangle(preview.X, preview.Y, preview.Width, 23), UiTitleColor);
+        Utils.DrawBorderString(sb, "HERO's Mod · Vista previa", new Vector2(preview.X + 9, preview.Y + 4), Color.White, 0.75f);
+        sb.Draw(pixel, new Rectangle(preview.X + 9, preview.Y + 34, 135, 27), UiAccent);
+        Utils.DrawBorderString(sb, "Botón destacado", new Vector2(preview.X + 18, preview.Y + 39), Color.White, 0.68f);
+        sb.Draw(pixel, new Rectangle(preview.X + 153, preview.Y + 34, 135, 27), UiTabColor);
+        Utils.DrawBorderString(sb, "Botón normal", new Vector2(preview.X + 162, preview.Y + 39), Color.White, 0.68f);
+        y += 91;
+
+        Utils.DrawBorderString(sb, "Los cambios son visuales y duran mientras siga abierta esta sesión del juego.",
+            new Vector2(panel.X + Pad, y), new Color(235, 195, 120), 0.66f);
+        y += 20;
+        Utils.DrawBorderString(sb, "Consejo: arrastra la barra superior para mover el panel y usa F8 para abrir/cerrar.",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.66f);
+    }
+
     // ------------------------------------------------------------------ dibujo comun
 
     private static void DrawSectionHeader(SpriteBatch sb, Rectangle panel, ref int y, string title)
     {
-        var pixel = TextureAssets.MagicPixel.Value;
-        sb.Draw(pixel, new Rectangle(panel.X + Pad, y + 2, 3, 15), new Color(85, 165, 230));
-        Utils.DrawBorderString(sb, title.ToUpperInvariant(), new Vector2(panel.X + Pad + 9, y), new Color(155, 205, 250), 0.78f);
-        y += 24;
+        Utils.DrawBorderString(sb, title, new Vector2(panel.X + Pad, y), UiAccent, 0.82f);
+        y += 22;
     }
+
+    private static Color UiAccent => UiAccents[Math.Clamp(uiTheme, 0, UiAccents.Length - 1)];
+    private static Color UiPanelColor => uiHighContrast ? new Color(14, 10, 24) : new Color(25, 20, 39);
+    private static Color UiTitleColor => uiHighContrast ? new Color(45, 18, 54) : new Color(66, 31, 75);
+    private static Color UiTabColor => uiHighContrast ? new Color(26, 18, 39) : new Color(43, 31, 58);
 
     private static bool DrawButton(SpriteBatch sb, Texture2D pixel, Rectangle rect, string text, Point mouse, Color? customBg = null)
     {
         bool hover = rect.Contains(mouse);
-        Color bg = hover ? new Color(66, 105, 145) : (customBg ?? new Color(39, 46, 60));
-        Color edge = hover ? GetUiAccent() : new Color(66, 79, 101);
-        sb.Draw(pixel, rect, edge);
-        if (rect.Width > 2 && rect.Height > 2)
-            sb.Draw(pixel, new Rectangle(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2), bg);
+        Color bg = hover ? Color.Lerp(UiAccent, Color.White, 0.18f) : (customBg ?? new Color(50, 55, 68));
+        sb.Draw(pixel, rect, bg);
 
         var font = FontAssets.MouseText.Value;
         float scale = 0.7f;
@@ -1604,10 +2384,7 @@ internal static class HerosModPanel
     private static void DrawTextField(SpriteBatch sb, Texture2D pixel, Rectangle rect, int fieldId, string text, Point mouse, string hint = null)
     {
         bool active = activeField == fieldId;
-        sb.Draw(pixel, rect, active ? new Color(105, 175, 225) : new Color(66, 79, 101));
-        if (rect.Width > 2 && rect.Height > 2)
-            sb.Draw(pixel, new Rectangle(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2),
-                active ? new Color(29, 43, 59) : new Color(18, 22, 30));
+        sb.Draw(pixel, rect, active ? new Color(40, 48, 65) : new Color(20, 22, 28));
 
         string display = text;
         if (active && (Main.timeForVisualEffects % 60 < 30))
@@ -1631,39 +2408,12 @@ internal static class HerosModPanel
         if (Main.drawingPlayerChat || activeField != 0)
             return;
 
-        if (waitingForToggleKey)
+        bool tilde = Main.keyState.IsKeyDown(Keys.OemTilde) && Main.oldKeyState.IsKeyUp(Keys.OemTilde);
+        bool f8 = Main.keyState.IsKeyDown(Keys.F8) && Main.oldKeyState.IsKeyUp(Keys.F8);
+        if (tilde || f8)
         {
-            Keys[] pressed = Main.keyState.GetPressedKeys();
-            foreach (Keys key in pressed)
-            {
-                if (Main.oldKeyState.IsKeyDown(key))
-                    continue;
-
-                // Escape cancels capture without changing the current shortcut.
-                if (key == Keys.Escape)
-                {
-                    waitingForToggleKey = false;
-                    SetStatus("Cambio de tecla cancelado.");
-                    return;
-                }
-
-                // Ignore modifiers by themselves; choose the actual key.
-                if (key == Keys.LeftShift || key == Keys.RightShift ||
-                    key == Keys.LeftControl || key == Keys.RightControl ||
-                    key == Keys.LeftAlt || key == Keys.RightAlt)
-                    continue;
-
-                uiToggleKey = key;
-                waitingForToggleKey = false;
-                SaveUiSettings();
-                SetStatus("Tecla de HERO's Mod cambiada a " + uiToggleKey + ".");
-                return;
-            }
-            return;
-        }
-
-        if (Main.keyState.IsKeyDown(uiToggleKey) && Main.oldKeyState.IsKeyUp(uiToggleKey))
             Visible = !Visible;
+        }
     }
 
     private static void HandleTyping()
@@ -1698,211 +2448,59 @@ internal static class HerosModPanel
         else if (activeField == 13)
             worldReplaceType = Main.GetInputText(worldReplaceType);
         else if (activeField == 14)
-            uiImagePath = Main.GetInputText(uiImagePath);
+            editorType = Main.GetInputText(editorType);
+        else if (activeField == 15)
+            editorPrefix = Main.GetInputText(editorPrefix);
+        else if (activeField == 16)
+            lifeCurrent = Main.GetInputText(lifeCurrent);
+        else if (activeField == 17)
+            lifeMaximum = Main.GetInputText(lifeMaximum);
+        else if (activeField == 18)
+            manaCurrent = Main.GetInputText(manaCurrent);
+        else if (activeField == 19)
+            manaMaximum = Main.GetInputText(manaMaximum);
+        else if (activeField == 20)
+            editorKnockback = Main.GetInputText(editorKnockback);
+        else if (activeField == 21)
+            editorCrit = Main.GetInputText(editorCrit);
+        else if (activeField == 22)
+            editorRarity = Main.GetInputText(editorRarity);
+        else if (activeField == 23)
+            editorUseAnimation = Main.GetInputText(editorUseAnimation);
+        else if (activeField == 24)
+            editorShootSpeed = Main.GetInputText(editorShootSpeed);
+        else if (activeField == 25)
+            editorProjectile = Main.GetInputText(editorProjectile);
+        else if (activeField == 35)
+            editorMana = Main.GetInputText(editorMana);
+        else if (activeField == 36)
+            editorUseStyle = Main.GetInputText(editorUseStyle);
+        else if (activeField == 37)
+            editorAmmo = Main.GetInputText(editorAmmo);
+        else if (activeField == 38)
+            editorScale = Main.GetInputText(editorScale);
+        else if (activeField == 26)
+            schematicFileName = Main.GetInputText(schematicFileName);
+        else if (activeField == 26)
+            schematicFileName = Main.GetInputText(schematicFileName);
+        else if (activeField == 26)
+            teleportX = Main.GetInputText(teleportX);
+        else if (activeField == 27)
+            teleportY = Main.GetInputText(teleportY);
+        else if (activeField == 31)
+            profileNameInput = Main.GetInputText(profileNameInput);
+        else if (activeField == 32)
+            bookmarkXInput = Main.GetInputText(bookmarkXInput);
+        else if (activeField == 33)
+            bookmarkYInput = Main.GetInputText(bookmarkYInput);
+        else if (activeField == 34)
+            bookmarkNameInput = Main.GetInputText(bookmarkNameInput);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
             activeField = 0;
             Main.clrInput();
         }
-    }
-
-    // ------------------------------------------------------------------ Personalización de interfaz
-
-    private static Color GetUiAccent()
-    {
-        return uiTheme switch
-        {
-            1 => new Color(70, 210, 145), // Verde
-            2 => new Color(190, 105, 245), // Violeta
-            3 => new Color(245, 155, 65), // Naranja
-            4 => new Color(235, 85, 110), // Rojo
-            _ => new Color(85, 165, 230) // Azul
-        };
-    }
-
-    private static Color GetUiHeaderColor()
-    {
-        return uiTheme switch
-        {
-            1 => new Color(26, 55, 43),
-            2 => new Color(48, 33, 62),
-            3 => new Color(66, 44, 26),
-            4 => new Color(65, 31, 40),
-            _ => new Color(35, 42, 56)
-        };
-    }
-
-    private static void LoadUiSettingsOnce()
-    {
-        if (uiSettingsLoaded) return;
-        uiSettingsLoaded = true;
-        try
-        {
-            if (!File.Exists(uiSettingsPath)) return;
-            foreach (string line in File.ReadAllLines(uiSettingsPath))
-            {
-                int split = line.IndexOf('=');
-                if (split < 1) continue;
-                string key = line.Substring(0, split);
-                string value = line.Substring(split + 1);
-                if (key == "image") uiImagePath = value;
-                else if (key == "useImage") uiUseImage = value == "1";
-                else if (key == "theme" && int.TryParse(value, out int theme)) uiTheme = Math.Clamp(theme, 0, 4);
-                else if (key == "opacity" && int.TryParse(value, out int opacity)) uiOpacity = Math.Clamp(opacity, 45, 100);
-                else if (key == "compact") uiCompactHeader = value == "1";
-                else if (key == "status") uiShowStatus = value == "1";
-                else if (key == "decorations") uiShowDecorations = value == "1";
-                else if (key == "toggleKey" && Enum.TryParse(value, out Keys parsedKey)) uiToggleKey = parsedKey;
-            }
-            if (uiUseImage && !string.IsNullOrWhiteSpace(uiImagePath)) TryLoadUiImage();
-        }
-        catch (Exception ex)
-        {
-            SetStatus("No se pudo cargar la configuración UI: " + ex.Message);
-        }
-    }
-
-    private static void SaveUiSettings()
-    {
-        try
-        {
-            File.WriteAllLines(uiSettingsPath, new[]
-            {
-                "image=" + uiImagePath,
-                "useImage=" + (uiUseImage ? "1" : "0"),
-                "theme=" + uiTheme,
-                "opacity=" + uiOpacity,
-                "compact=" + (uiCompactHeader ? "1" : "0"),
-                "status=" + (uiShowStatus ? "1" : "0"),
-                "decorations=" + (uiShowDecorations ? "1" : "0"),
-                "toggleKey=" + uiToggleKey
-            });
-            SetStatus("Personalización guardada en " + uiSettingsPath);
-        }
-        catch (Exception ex)
-        {
-            SetStatus("No se pudo guardar: " + ex.Message);
-        }
-    }
-
-    private static void TryLoadUiImage()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(uiImagePath) || !File.Exists(uiImagePath))
-            {
-                SetStatus("No existe esa imagen. Usa la ruta completa a un PNG o JPG.");
-                return;
-            }
-            using var stream = File.OpenRead(uiImagePath);
-            Texture2D newTexture = Texture2D.FromStream(Main.instance.GraphicsDevice, stream);
-            if (uiImageTexture != null && !uiImageTexture.IsDisposed)
-                uiImageTexture.Dispose();
-            uiImageTexture = newTexture;
-            uiImageLoaded = true;
-            uiUseImage = true;
-            SetStatus("Imagen cargada. Guarda la configuración para conservarla.");
-        }
-        catch (Exception ex)
-        {
-            uiImageLoaded = false;
-            SetStatus("No se pudo cargar la imagen: " + ex.Message);
-        }
-    }
-
-    private static void DrawUiCustomizeTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
-    {
-        DrawSectionHeader(sb, panel, ref y, "Personaliza la apariencia");
-        int half = (Width - Pad * 2 - 10) / 2;
-        Utils.DrawBorderString(sb, "Tema de color", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
-        y += 20;
-        string[] themes = { "Azul", "Verde", "Violeta", "Naranja", "Rojo" };
-        for (int i = 0; i < themes.Length; i++)
-        {
-            int col = i % 3;
-            int row = i / 3;
-            var r = new Rectangle(panel.X + Pad + col * 112, y + row * 30, 106, 25);
-            Color swatch = i switch
-            {
-                1 => new Color(70, 210, 145),
-                2 => new Color(190, 105, 245),
-                3 => new Color(245, 155, 65),
-                4 => new Color(235, 85, 110),
-                _ => new Color(85, 165, 230)
-            };
-            if (DrawButton(sb, pixel, r, (uiTheme == i ? "✓ " : "") + themes[i], mouse, swatch))
-            {
-                uiTheme = i;
-                SetStatus("Tema cambiado a " + themes[i] + ".");
-            }
-        }
-        y += 64;
-        Utils.DrawBorderString(sb, "Imagen de fondo (PNG/JPG) — ruta completa:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
-        y += 20;
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), 14, uiImagePath, mouse,
-            @"Ejemplo: C:\Users\pc\Pictures\fondo.png");
-        y += RowH + 6;
-        int buttonW = (Width - Pad * 2 - 12) / 3;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, buttonW, RowH), "Cargar imagen", mouse))
-            TryLoadUiImage();
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + buttonW + 6, y, buttonW, RowH),
-            uiUseImage ? "Imagen: ON" : "Imagen: OFF", mouse))
-        {
-            uiUseImage = !uiUseImage;
-            if (uiUseImage && (uiImageTexture == null || uiImageTexture.IsDisposed)) TryLoadUiImage();
-            SetStatus(uiUseImage ? "Fondo de imagen activado." : "Fondo de imagen desactivado.");
-        }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (buttonW + 6) * 2, y, buttonW, RowH), "Quitar imagen", mouse))
-        {
-            uiUseImage = false;
-            uiImagePath = "";
-            if (uiImageTexture != null && !uiImageTexture.IsDisposed) uiImageTexture.Dispose();
-            uiImageTexture = null;
-            uiImageLoaded = false;
-            SetStatus("Imagen quitada del panel.");
-        }
-        y += RowH + 14;
-        Utils.DrawBorderString(sb, "Opacidad del fondo: " + uiOpacity + "%", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
-        y += 22;
-        int smallW = (Width - Pad * 2 - 18) / 4;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, smallW, RowH), "-15%", mouse))
-            uiOpacity = Math.Max(45, uiOpacity - 15);
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + smallW + 6, y, smallW, RowH), "-5%", mouse))
-            uiOpacity = Math.Max(45, uiOpacity - 5);
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (smallW + 6) * 2, y, smallW, RowH), "+5%", mouse))
-            uiOpacity = Math.Min(100, uiOpacity + 5);
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (smallW + 6) * 3, y, smallW, RowH), "+15%", mouse))
-            uiOpacity = Math.Min(100, uiOpacity + 15);
-        y += RowH + 12;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), uiCompactHeader ? "Cabecera compacta: ON" : "Cabecera compacta: OFF", mouse))
-            uiCompactHeader = !uiCompactHeader;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 10, y, half, RowH), uiShowDecorations ? "Bordes decorativos: ON" : "Bordes decorativos: OFF", mouse))
-            uiShowDecorations = !uiShowDecorations;
-        y += RowH + 6;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), uiShowStatus ? "Mensajes inferiores: ON" : "Mensajes inferiores: OFF", mouse))
-            uiShowStatus = !uiShowStatus;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 10, y, half, RowH), "Guardar configuración", mouse, new Color(40, 110, 75)))
-            SaveUiSettings();
-        y += RowH + 10;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH),
-            waitingForToggleKey ? "Pulsa una tecla..." : "Tecla para abrir: " + uiToggleKey, mouse, new Color(55, 80, 115)))
-        {
-            waitingForToggleKey = true;
-            SetStatus("Pulsa la nueva tecla. Escape cancela.");
-        }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 10, y, half, RowH),
-            "Restablecer tecla (~)", mouse))
-        {
-            uiToggleKey = Keys.OemTilde;
-            waitingForToggleKey = false;
-            SaveUiSettings();
-            SetStatus("Tecla restablecida a ~ (OemTilde).");
-        }
-        y += RowH + 6;
-        Utils.DrawBorderString(sb, "La tecla se guarda localmente. Escape cancela la captura.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
-        y += 18;
-        Utils.DrawBorderString(sb, "La imagen solo decora el panel; no se sube al servidor ni se comparte.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
     }
 
     // ------------------------------------------------------------------ servidor
@@ -1944,21 +2542,21 @@ internal static class HerosModPanel
 
     private static void ToggleServerMode()
     {
-        if (CurrentExecutionMode == ExecutionMode.UnJugador)
+        if (!InMultiplayer)
         {
-            SetStatus("MODO UN JUGADOR: los cheats se aplican localmente. Los otros modos solo se usan al conectarte a un servidor.");
+            SetStatus("El modo de servidor se usa al entrar a un servidor.");
             return;
         }
 
-        if (CurrentExecutionMode == ExecutionMode.ServidorConPermisos)
+        if (serverMode == ServerMode.Comandos)
         {
             serverMode = ServerMode.Directo;
-            SetStatus("MODO ANARQUICO / DIRECTO: acciones del cliente; el servidor puede rechazarlas. Usalo solo donde este permitido.");
+            SetStatus("Modo DIRECTO: acciones del cliente. Con anticheat (TShock) pueden kickearte; Ãºsalo donde estÃ© permitido.");
         }
         else
         {
             serverMode = ServerMode.Comandos;
-            SetStatus("MODO SERVIDOR CON PERMISOS: TShock valida los comandos segun tus permisos.");
+            SetStatus("Modo COMANDOS: todo va por comandos de TShock.");
         }
     }
 
