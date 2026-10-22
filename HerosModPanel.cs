@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -25,7 +25,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, Jefes, Teleport, Jugadores, Info, Inventario, Guia }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -61,6 +61,77 @@ internal static class HerosModPanel
     private static string itemQuery = "";
     private static string itemAmount = "1";
     private static string itemPrefix = "-1";
+    // Herramientas adicionales de moderación/comandos (requieren servidor con TShock/plugins).
+    private static string moderationTarget = "";
+    private static string moderationReason = "";
+    private static int toolsPage;
+    private static string editorSlot = "1";
+    private static string editorDamage = "";
+    private static string editorDefense = "";
+    private static string editorUseTime = "";
+    private static string editorStack = "";
+    private static string editorValue = "";
+    private static Point? worldPos1;
+    private static Point? worldPos2;
+    private static string worldTileType = "1";
+    private static string worldReplaceType = "0";
+    private static int worldEditUndoType = -1;
+    private static readonly List<(int x, int y, Tile tile)> worldEditUndo = new();
+
+    private static readonly (string label, string command)[] extraTools = new (string, string)[]
+    {
+        ("Kick jugador", "/kick {target} {reason}"),
+        ("Ban jugador", "/ban {target} {reason}"),
+        ("Silenciar", "/mute {target}"),
+        ("Quitar silencio", "/unmute {target}"),
+        ("Teletransportarme", "/tp {target}"),
+        ("Traer jugador", "/tphere {target}"),
+        ("Eliminar jugador", "/kill {target}"),
+        ("Curar jugador", "/heal {target}"),
+        ("Slap / empujar", "/slap {target}"),
+        ("Ver usuario", "/userinfo {target}"),
+        ("Lista de jugadores", "/who"),
+        ("Quién está jugando", "/playing"),
+        ("Ver reglas", "/rules"),
+        ("Mensaje del día", "/motd"),
+        ("Ayuda del servidor", "/help"),
+        ("Ir al spawn", "/spawn"),
+        ("Volver a casa", "/home"),
+        ("Volver atrás", "/back"),
+        ("Listar warps", "/warp list"),
+        ("Usar warp", "/warp {target}"),
+        ("Eliminar enemigos", "/butcher"),
+        ("Asentar líquidos", "/settle"),
+        ("Poner de día", "/time day"),
+        ("Poner de noche", "/time night"),
+        ("Poner mediodía", "/time noon"),
+        ("Poner medianoche", "/time midnight"),
+        ("Iniciar lluvia", "/rain start"),
+        ("Detener lluvia", "/rain stop"),
+        ("Luna de sangre", "/bloodmoon"),
+        ("Eclipse solar", "/eclipse"),
+        ("Invasión goblin", "/invasion goblin"),
+        ("Invasión helada", "/invasion frost"),
+        ("Invasión pirata", "/invasion pirate"),
+        ("Invasión marciana", "/invasion martian"),
+        ("Luna de calabaza", "/invasion pumpkin"),
+        ("Luna helada", "/invasion frostmoon"),
+        ("Evento Solar", "/invasion solar"),
+        ("Evento Vortex", "/invasion vortex"),
+        ("Evento Nebula", "/invasion nebula"),
+        ("Evento Stardust", "/invasion stardust"),
+        ("Crecer plantas", "/grow"),
+        ("Invocar meteorito", "/dropmeteor"),
+        ("Activar Hardmode", "/hardmode"),
+        ("Listar grupos", "/group list"),
+        ("Listar usuarios", "/user list"),
+        ("Listar regiones", "/region list"),
+        ("Info de región", "/region info {target}"),
+        ("Cambiar clave servidor", "/serverpassword {target}"),
+        ("Buscar actualizaciones", "/checkupdates"),
+        ("Info del mundo", "/world")
+    };
+
 
     private static string statusMessage = "HERO's Mod listo.";
     private static int statusTimer;
@@ -201,8 +272,8 @@ internal static class HerosModPanel
             return;
         }
 
-        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Info, Tab.Inventario, Tab.Guia];
+        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
+                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
         for (int i = 0; i < tabs.Length; i++)
@@ -217,6 +288,8 @@ internal static class HerosModPanel
             {
                 Tab.Jugadores => "Jugadores",
                 Tab.Inventario => "Inventario",
+                Tab.EditorItems => "Editor Items",
+                Tab.WorldEdit => "WorldEdit",
                 Tab.Teleport => "Teleport",
                 _ => tabs[i].ToString()
             };
@@ -239,6 +312,12 @@ internal static class HerosModPanel
             case Tab.Items:
                 DrawItemsTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
+            case Tab.EditorItems:
+                DrawItemEditorTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.WorldEdit:
+                DrawWorldEditTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
             case Tab.Jefes:
                 DrawBossesTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
@@ -253,6 +332,9 @@ internal static class HerosModPanel
                 break;
             case Tab.Inventario:
                 DrawInventoryTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.Herramientas:
+                DrawToolsTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Guia:
                 DrawGuideTab(sb, pixel, panelRect, ref contentY);
@@ -1080,6 +1162,345 @@ internal static class HerosModPanel
         }
     }
 
+
+
+    // ------------------------------------------------------------------ Editor local de objetos
+
+    private static void DrawItemEditorTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Editor de objetos · inventario local");
+        Utils.DrawBorderString(sb, "Ranura de mochila (1-50):", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Cantidad:", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Daño:", new Vector2(panel.X + 390, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 95, 26), 6, editorSlot, mouse, "1");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 110, 26), 10, editorStack, mouse, "cantidad");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 390, y, 110, 26), 7, editorDamage, mouse, "daño");
+        y += 34;
+
+        Utils.DrawBorderString(sb, "Defensa:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "UseTime:", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Valor (cobre):", new Vector2(panel.X + 390, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 110, 26), 8, editorDefense, mouse, "defensa");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 110, 26), 9, editorUseTime, mouse, "useTime");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 390, y, 140, 26), 11, editorValue, mouse, "valor");
+        y += 36;
+
+        int bw = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Cargar datos de la ranura", mouse, new Color(45, 90, 130)))
+            LoadItemEditorSlot();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Aplicar cambios", mouse, new Color(55, 115, 75)))
+            ApplyItemEditorSlot();
+        y += RowH + 8;
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Duplicar objeto en hueco vacío", mouse))
+            DuplicateItemEditorSlot();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Reparar / restablecer objeto", mouse))
+            ResetItemEditorSlot();
+        y += RowH + 10;
+
+        var p = Main.LocalPlayer;
+        int slot = ParseEditorSlot();
+        if (slot >= 0 && slot < p.inventory.Length)
+        {
+            Item it = p.inventory[slot];
+            if (it != null && !it.IsAir)
+            {
+                DrawInfoLine(sb, panel, ref y, "Objeto seleccionado", $"{it.Name} (ID {it.type})");
+                DrawInfoLine(sb, panel, ref y, "Estadísticas actuales", $"Daño {it.damage} · Defensa {it.defense} · UseTime {it.useTime}");
+                DrawInfoLine(sb, panel, ref y, "Cantidad / valor", $"{it.stack} / {it.value} monedas de cobre");
+            }
+            else
+            {
+                Utils.DrawBorderString(sb, "La ranura seleccionada está vacía.", new Vector2(panel.X + Pad, y), Color.Gray, 0.72f);
+                y += 20;
+            }
+        }
+
+        Utils.DrawBorderString(sb, "Limitación: cambios locales; un servidor puede rechazarlos o sobrescribirlos.",
+            new Vector2(panel.X + Pad, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+    }
+
+    private static int ParseEditorSlot()
+    {
+        if (!int.TryParse(editorSlot, out int slot))
+            return -1;
+        return slot - 1;
+    }
+
+    private static void LoadItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length || p.inventory[slot] == null || p.inventory[slot].IsAir)
+        {
+            SetStatus("La ranura indicada no contiene un objeto válido.");
+            return;
+        }
+        Item it = p.inventory[slot];
+        editorDamage = it.damage.ToString();
+        editorDefense = it.defense.ToString();
+        editorUseTime = it.useTime.ToString();
+        editorStack = it.stack.ToString();
+        editorValue = it.value.ToString();
+        SetStatus($"Datos cargados: {it.Name}.");
+    }
+
+    private static void ApplyItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length || p.inventory[slot] == null || p.inventory[slot].IsAir)
+        {
+            SetStatus("Selecciona una ranura con un objeto.");
+            return;
+        }
+
+        Item it = p.inventory[slot];
+        if (int.TryParse(editorDamage, out int damage)) it.damage = Math.Clamp(damage, 0, 1000000);
+        if (int.TryParse(editorDefense, out int defense)) it.defense = Math.Clamp(defense, 0, 100000);
+        if (int.TryParse(editorUseTime, out int useTime)) it.useTime = Math.Clamp(useTime, 1, 10000);
+        if (int.TryParse(editorStack, out int stack)) it.stack = Math.Clamp(stack, 1, Math.Max(1, it.maxStack));
+        if (int.TryParse(editorValue, out int value)) it.value = Math.Clamp(value, 0, int.MaxValue);
+        if (Main.netMode == 0)
+            SetStatus($"Editado localmente: {it.Name}. Algunas estadísticas pueden recalcularse por el juego.");
+        else
+            SetStatus("Cambios aplicados solo al cliente; el servidor puede sobrescribirlos.");
+    }
+
+    private static void DuplicateItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length || p.inventory[slot] == null || p.inventory[slot].IsAir)
+        {
+            SetStatus("Selecciona primero un objeto válido.");
+            return;
+        }
+        for (int i = 0; i < p.inventory.Length; i++)
+        {
+            if (p.inventory[i] == null || p.inventory[i].IsAir)
+            {
+                p.inventory[i] = p.inventory[slot].Clone();
+                SetStatus($"Copia local creada en la ranura {i + 1}.");
+                return;
+            }
+        }
+        SetStatus("No hay espacios vacíos en la mochila.");
+    }
+
+    private static void ResetItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length || p.inventory[slot] == null || p.inventory[slot].IsAir)
+        {
+            SetStatus("Selecciona primero un objeto válido.");
+            return;
+        }
+        int type = p.inventory[slot].type;
+        int stack = p.inventory[slot].stack;
+        p.inventory[slot].SetDefaults(type);
+        p.inventory[slot].stack = Math.Clamp(stack, 1, Math.Max(1, p.inventory[slot].maxStack));
+        LoadItemEditorSlot();
+        SetStatus("Estadísticas restauradas a los valores base del objeto.");
+    }
+
+
+    // ------------------------------------------------------------------ WorldEdit basico local
+
+    private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección y edición local");
+        int bx = panel.X + Pad;
+        int bw = (Width - Pad * 2 - 8) / 2;
+        string p1 = worldPos1.HasValue ? $"{worldPos1.Value.X}, {worldPos1.Value.Y}" : "Sin seleccionar";
+        string p2 = worldPos2.HasValue ? $"{worldPos2.Value.X}, {worldPos2.Value.Y}" : "Sin seleccionar";
+        DrawInfoLine(sb, panel, ref y, "POS1", p1);
+        DrawInfoLine(sb, panel, ref y, "POS2", p2);
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Marcar POS1 aquí", mouse, new Color(45, 90, 135)))
+        {
+            var p = Main.LocalPlayer;
+            worldPos1 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
+            SetStatus($"POS1: {worldPos1.Value.X}, {worldPos1.Value.Y}");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Marcar POS2 aquí", mouse, new Color(45, 90, 135)))
+        {
+            var p = Main.LocalPlayer;
+            worldPos2 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
+            SetStatus($"POS2: {worldPos2.Value.X}, {worldPos2.Value.Y}");
+        }
+        y += RowH + 8;
+        Utils.DrawBorderString(sb, "Tile ID (0 = aire/borrar):", new Vector2(bx, y), Color.White, 0.7f);
+        Utils.DrawBorderString(sb, "Reemplazar tile ID:", new Vector2(bx + 250, y), Color.White, 0.7f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 12, worldTileType, mouse, "1");
+        DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 13, worldReplaceType, mouse, "0");
+        y += 33;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Fill selección", mouse, new Color(50, 105, 70)))
+            ApplyWorldEdit("fill");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Clear selección", mouse, new Color(135, 65, 60)))
+            ApplyWorldEdit("clear");
+        y += RowH + 7;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Replace ID → ID", mouse, new Color(80, 75, 130)))
+            ApplyWorldEdit("replace");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse))
+            UndoWorldEdit();
+        y += RowH + 10;
+        Utils.DrawBorderString(sb, "Por seguridad, solo funciona en un jugador. Máximo 4.000 tiles por operación.",
+            new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+    }
+
+    private static void ApplyWorldEdit(string operation)
+    {
+        if (Main.netMode != 0)
+        {
+            SetStatus("WorldEdit local está bloqueado en multijugador; hace falta un handler del servidor.");
+            return;
+        }
+        if (!worldPos1.HasValue || !worldPos2.HasValue)
+        {
+            SetStatus("Marca POS1 y POS2 antes de editar.");
+            return;
+        }
+        int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        if ((long)(x2 - x1 + 1) * (y2 - y1 + 1) > 4000)
+        {
+            SetStatus("Selección demasiado grande: reduce el área a 4.000 tiles o menos.");
+            return;
+        }
+        int tileId = int.TryParse(worldTileType, out int parsedTile) ? parsedTile : 1;
+        int replaceId = int.TryParse(worldReplaceType, out int parsedReplace) ? parsedReplace : 0;
+        if (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count)
+        {
+            SetStatus("Tile ID fuera de rango.");
+            return;
+        }
+
+        worldEditUndo.Clear();
+        int changed = 0;
+        for (int x = x1; x <= x2; x++)
+        for (int yy = y1; yy <= y2; yy++)
+        {
+            Tile tile = Main.tile[x, yy];
+            if (tile == null) continue;
+            if (operation == "replace" && (!tile.HasTile || tile.TileType != replaceId))
+                continue;
+            if (operation == "fill" && tileId == 0)
+                operation = "clear";
+            worldEditUndo.Add((x, yy, (Tile)tile.Clone()));
+            if (operation == "clear")
+                WorldGen.KillTile(x, yy, false, false, true);
+            else if (operation == "fill")
+                WorldGen.PlaceTile(x, yy, tileId, true, true);
+            else if (operation == "replace")
+            {
+                WorldGen.KillTile(x, yy, false, false, true);
+                if (tileId > 0) WorldGen.PlaceTile(x, yy, tileId, true, true);
+            }
+            changed++;
+        }
+        worldEditUndoType = operation == "clear" ? 0 : tileId;
+        SetStatus($"WorldEdit {operation}: {changed} tiles. Undo disponible para la última operación.");
+    }
+
+    private static void UndoWorldEdit()
+    {
+        if (Main.netMode != 0)
+        {
+            SetStatus("Undo local solo funciona en un jugador.");
+            return;
+        }
+        if (worldEditUndo.Count == 0)
+        {
+            SetStatus("No hay una operación para deshacer.");
+            return;
+        }
+        foreach (var entry in worldEditUndo)
+            Main.tile[entry.x, entry.y].CopyFrom(entry.tile);
+        int count = worldEditUndo.Count;
+        worldEditUndo.Clear();
+        SetStatus($"Undo completado: restaurados {count} tiles.");
+    }
+
+    // ------------------------------------------------------------------ Herramientas adicionales: 50 acciones paginadas
+
+    private static void DrawToolsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Centro de moderación y administración · 50 herramientas");
+        Utils.DrawBorderString(sb, "Objetivo (jugador/warp/región/clave):", new Vector2(panel.X + Pad, y), Color.White, 0.66f);
+        Utils.DrawBorderString(sb, "Motivo (kick/ban):", new Vector2(panel.X + 330, y), Color.White, 0.66f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 300, 25), 4, moderationTarget, mouse, "Nombre exacto o argumento...");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 320, y, 300, 25), 5, moderationReason, mouse, "Motivo opcional...");
+        y += 32;
+
+        int pageSize = 10;
+        int first = toolsPage * pageSize;
+        int cols = 2;
+        int buttonW = (Width - Pad * 2 - 8) / cols;
+        for (int localIndex = 0; localIndex < pageSize; localIndex++)
+        {
+            int index = first + localIndex;
+            if (index >= extraTools.Length)
+                break;
+
+            int col = localIndex % cols;
+            int row = localIndex / cols;
+            var rect = new Rectangle(panel.X + Pad + col * (buttonW + 8), y + row * 29, buttonW, 25);
+            Color color = index < 10 ? new Color(112, 55, 62)
+                : index < 20 ? new Color(45, 86, 120)
+                : index < 30 ? new Color(92, 76, 43)
+                : index < 40 ? new Color(92, 58, 112)
+                : new Color(48, 91, 75);
+            if (DrawButton(sb, pixel, rect, $"{index + 1:00}. {extraTools[index].label}", mouse, color))
+                RunExtraTool(index);
+        }
+
+        int navY = panel.Bottom - 73;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, navY, 130, 23), "Anterior", mouse))
+            toolsPage = Math.Max(0, toolsPage - 1);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 138, navY, 130, 23), "Siguiente", mouse))
+            toolsPage = Math.Min((extraTools.Length - 1) / pageSize, toolsPage + 1);
+        Utils.DrawBorderString(sb, $"Página {toolsPage + 1}/5 · {extraTools.Length} acciones",
+            new Vector2(panel.X + Pad + 285, navY + 4), new Color(180, 205, 235), 0.72f);
+        Utils.DrawBorderString(sb, "Solo se envían comandos; el servidor y sus permisos deciden si se ejecutan.",
+            new Vector2(panel.X + Pad, panel.Bottom - 43), new Color(235, 195, 120), 0.61f);
+    }
+
+    private static void RunExtraTool(int index)
+    {
+        if (index < 0 || index >= extraTools.Length)
+            return;
+
+        if (Main.netMode != 1 || serverMode != ServerMode.Comandos)
+        {
+            SetStatus("Estas herramientas requieren multijugador y modo COMANDOS (TShock/plugins).");
+            return;
+        }
+
+        string template = extraTools[index].command;
+        if (template.Contains("{target}") && string.IsNullOrWhiteSpace(moderationTarget))
+        {
+            SetStatus("Escribe primero el objetivo en el campo superior.");
+            return;
+        }
+
+        string target = Quote(moderationTarget.Trim());
+        string reason = string.IsNullOrWhiteSpace(moderationReason) ? "" : Quote(moderationReason.Trim());
+        string command = template.Replace("{target}", target).Replace("{reason}", reason);
+        while (command.Contains("  "))
+            command = command.Replace("  ", " ");
+        command = command.Trim();
+
+        SendCmd(command);
+        SetStatus($"Herramienta enviada: {extraTools[index].label}. El servidor debe permitir el comando.");
+    }
+
     // ------------------------------------------------------------------ dibujo comun
 
     private static void DrawSectionHeader(SpriteBatch sb, Rectangle panel, ref int y, string title)
@@ -1155,6 +1576,26 @@ internal static class HerosModPanel
             itemAmount = Main.GetInputText(itemAmount);
         else if (activeField == 3)
             itemPrefix = Main.GetInputText(itemPrefix);
+        else if (activeField == 4)
+            moderationTarget = Main.GetInputText(moderationTarget);
+        else if (activeField == 5)
+            moderationReason = Main.GetInputText(moderationReason);
+        else if (activeField == 6)
+            editorSlot = Main.GetInputText(editorSlot);
+        else if (activeField == 7)
+            editorDamage = Main.GetInputText(editorDamage);
+        else if (activeField == 8)
+            editorDefense = Main.GetInputText(editorDefense);
+        else if (activeField == 9)
+            editorUseTime = Main.GetInputText(editorUseTime);
+        else if (activeField == 10)
+            editorStack = Main.GetInputText(editorStack);
+        else if (activeField == 11)
+            editorValue = Main.GetInputText(editorValue);
+        else if (activeField == 12)
+            worldTileType = Main.GetInputText(worldTileType);
+        else if (activeField == 13)
+            worldReplaceType = Main.GetInputText(worldReplaceType);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
