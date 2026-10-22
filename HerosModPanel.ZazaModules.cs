@@ -65,21 +65,18 @@ internal static partial class HerosModPanel
         Tab destination, Color background)
     {
         int x = panel.X + Pad;
-        Rectangle left = new Rectangle(x, y, buttonWidth, buttonHeight);
-        Rectangle right = new Rectangle(x + buttonWidth + gap, y, buttonWidth, buttonHeight);
-
-        if (DrawButton(sb, pixel, left, label, mouse, background))
+        Rectangle button = new Rectangle(x, y, buttonWidth, buttonHeight);
+        if (DrawButton(sb, pixel, button, label, mouse, background))
         {
             currentTab = destination;
             SetStatus("Módulo abierto: " + status + ".");
         }
 
-        string actionLabel = "Abrir";
-        if (DrawButton(sb, pixel, right, actionLabel, mouse, new Color(48, 53, 65)))
-        {
-            currentTab = destination;
-            SetStatus("Módulo abierto: " + status + ".");
-        }
+        // La segunda columna describe el acceso; evita duplicar el botón "Abrir".
+        Rectangle description = new Rectangle(x + buttonWidth + gap, y, buttonWidth, buttonHeight);
+        Utils.DrawBorderString(sb, status,
+            new Vector2(description.X + 8, description.Y + (buttonHeight - 18) / 2),
+            Color.LightGray, 0.62f);
 
         y += buttonHeight + 6;
     }
