@@ -27,8 +27,8 @@ internal static class HerosModPanel
 {
     private enum Tab { Jugador, Mundo, Items, EditorItems, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
 
-    private const int Width = 640;
-    private const int Height = 540;
+    private const int Width = 760;
+    private const int Height = 640;
     private const int Pad = 10;
     private const int RowH = 26;
 
@@ -252,8 +252,15 @@ internal static class HerosModPanel
             Main.mouseLeftRelease = false;
         }
 
-        sb.Draw(pixel, panelRect, new Color(30, 33, 40) * 0.98f);
-        sb.Draw(pixel, titleRect, new Color(50, 56, 70));
+        sb.Draw(pixel, panelRect, new Color(18, 21, 29) * 0.99f);
+        // Marco y acento superior para separar el panel del mundo.
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 2), new Color(85, 165, 230));
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, 2, panelRect.Height), new Color(55, 75, 100));
+        sb.Draw(pixel, new Rectangle(panelRect.Right - 2, panelRect.Y, 2, panelRect.Height), new Color(55, 75, 100));
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Bottom - 2, panelRect.Width, 2), new Color(55, 75, 100));
+        sb.Draw(pixel, titleRect, new Color(35, 42, 56));
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 30, panelRect.Width, 1), new Color(70, 125, 175));
+        Utils.DrawBorderString(sb, "ADMIN • CONTROL CENTER", new Vector2(panelRect.X + 12, panelRect.Y + 20), new Color(155, 180, 210), 0.55f);
         Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.Gold, 0.85f);
 
         string modeText = !InMultiplayer
@@ -274,7 +281,7 @@ internal static class HerosModPanel
 
         Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
                       Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia];
-        int tabCols = 5;
+        int tabCols = 4;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
         for (int i = 0; i < tabs.Length; i++)
         {
@@ -300,7 +307,9 @@ internal static class HerosModPanel
             }
         }
 
-        int contentY = panelRect.Y + 94;
+        int contentY = panelRect.Y + 124;
+        sb.Draw(pixel, new Rectangle(panelRect.X + 6, contentY - 4, panelRect.Width - 12, panelRect.Height - 164), new Color(25, 29, 39));
+        sb.Draw(pixel, new Rectangle(panelRect.X + 6, contentY - 4, panelRect.Width - 12, 1), new Color(48, 60, 78));
         switch (currentTab)
         {
             case Tab.Jugador:
@@ -344,7 +353,8 @@ internal static class HerosModPanel
         if (statusTimer > 0)
         {
             statusTimer--;
-            Utils.DrawBorderString(sb, statusMessage, new Vector2(panelRect.X + Pad, panelRect.Bottom - 24), new Color(150, 255, 150), 0.75f);
+            sb.Draw(pixel, new Rectangle(panelRect.X + 8, panelRect.Bottom - 32, panelRect.Width - 16, 1), new Color(55, 70, 90));
+            Utils.DrawBorderString(sb, "● " + statusMessage, new Vector2(panelRect.X + Pad, panelRect.Bottom - 25), new Color(155, 225, 175), 0.72f);
         }
 
         if (activeField != 0)
@@ -1505,15 +1515,20 @@ internal static class HerosModPanel
 
     private static void DrawSectionHeader(SpriteBatch sb, Rectangle panel, ref int y, string title)
     {
-        Utils.DrawBorderString(sb, title, new Vector2(panel.X + Pad, y), new Color(130, 180, 240), 0.8f);
-        y += 22;
+        var pixel = TextureAssets.MagicPixel.Value;
+        sb.Draw(pixel, new Rectangle(panel.X + Pad, y + 2, 3, 15), new Color(85, 165, 230));
+        Utils.DrawBorderString(sb, title.ToUpperInvariant(), new Vector2(panel.X + Pad + 9, y), new Color(155, 205, 250), 0.78f);
+        y += 24;
     }
 
     private static bool DrawButton(SpriteBatch sb, Texture2D pixel, Rectangle rect, string text, Point mouse, Color? customBg = null)
     {
         bool hover = rect.Contains(mouse);
-        Color bg = hover ? new Color(75, 85, 110) : (customBg ?? new Color(50, 55, 68));
-        sb.Draw(pixel, rect, bg);
+        Color bg = hover ? new Color(66, 105, 145) : (customBg ?? new Color(39, 46, 60));
+        Color edge = hover ? new Color(130, 195, 245) : new Color(66, 79, 101);
+        sb.Draw(pixel, rect, edge);
+        if (rect.Width > 2 && rect.Height > 2)
+            sb.Draw(pixel, new Rectangle(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2), bg);
 
         var font = FontAssets.MouseText.Value;
         float scale = 0.7f;
@@ -1533,7 +1548,10 @@ internal static class HerosModPanel
     private static void DrawTextField(SpriteBatch sb, Texture2D pixel, Rectangle rect, int fieldId, string text, Point mouse, string hint = null)
     {
         bool active = activeField == fieldId;
-        sb.Draw(pixel, rect, active ? new Color(40, 48, 65) : new Color(20, 22, 28));
+        sb.Draw(pixel, rect, active ? new Color(105, 175, 225) : new Color(66, 79, 101));
+        if (rect.Width > 2 && rect.Height > 2)
+            sb.Draw(pixel, new Rectangle(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2),
+                active ? new Color(29, 43, 59) : new Color(18, 22, 30));
 
         string display = text;
         if (active && (Main.timeForVisualEffects % 60 < 30))
