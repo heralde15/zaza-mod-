@@ -77,6 +77,7 @@ internal static partial class HerosModPanel
     private static string editorCrit = "";
     private static string editorUseAnimation = "";
     private static string editorShootSpeed = "";
+    private static string editorProjectile = "0";
     private static string editorRarity = "";
     private static string teleportX = "";
     private static string teleportY = "";
@@ -1471,9 +1472,11 @@ internal static partial class HerosModPanel
         y += 30;
         Utils.DrawBorderString(sb, "Animación:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
         Utils.DrawBorderString(sb, "Velocidad proyectil:", new Vector2(panel.X + 230, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "ID proyectil (0 = ninguno):", new Vector2(panel.X + 400, y), Color.White, 0.62f);
         y += 17;
         DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 23, editorUseAnimation, mouse, "useAnimation");
         DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 140, 24), 24, editorShootSpeed, mouse, "shootSpeed");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 400, y, 120, 24), 25, editorProjectile, mouse, "ID proyectil");
         y += 30;
 
         var p = Main.LocalPlayer;
@@ -1487,7 +1490,7 @@ internal static partial class HerosModPanel
                 DrawInfoLine(sb, panel, ref y, "Estadísticas actuales", $"Daño {it.damage} · Defensa {it.defense} · UseTime {it.useTime}");
                 DrawInfoLine(sb, panel, ref y, "Cantidad / valor", $"{it.stack} / {it.value} monedas de cobre");
                 DrawInfoLine(sb, panel, ref y, "Combate", $"Crítico {it.crit}% · Retroceso {it.knockBack:0.##} · Rareza {it.rare}");
-                DrawInfoLine(sb, panel, ref y, "Uso / proyectil", $"Animación {it.useAnimation} · Velocidad {it.shootSpeed:0.##}");
+                DrawInfoLine(sb, panel, ref y, "Uso / proyectil", $"Animación {it.useAnimation} · Velocidad {it.shootSpeed:0.##} · ID {it.shoot}");
             }
             else
             {
@@ -1528,6 +1531,7 @@ internal static partial class HerosModPanel
         editorCrit = it.crit.ToString();
         editorUseAnimation = it.useAnimation.ToString();
         editorShootSpeed = it.shootSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        editorProjectile = it.shoot.ToString();
         editorRarity = it.rare.ToString();
         SetStatus($"Datos cargados: {it.Name}.");
     }
@@ -1564,6 +1568,13 @@ internal static partial class HerosModPanel
         if (int.TryParse(editorUseAnimation, out int animation)) it.useAnimation = Math.Clamp(animation, 1, 10000);
         if (float.TryParse(editorShootSpeed, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float shootSpeed))
             it.shootSpeed = Math.Clamp(shootSpeed, 0f, 10000f);
+        if (int.TryParse(editorProjectile, out int projectileId))
+        {
+            if (projectileId >= 0 && projectileId < ProjectileID.Count)
+                it.shoot = projectileId;
+            else
+                SetStatus($"ID de proyectil fuera de rango (0-{ProjectileID.Count - 1}).");
+        }
         if (int.TryParse(editorRarity, out int rarity)) it.rare = (sbyte)Math.Clamp(rarity, -1, 11);
         if (Main.netMode == 0)
             SetStatus($"Editado localmente: {it.Name}. Algunas estadísticas pueden recalcularse por el juego.");
@@ -1819,7 +1830,7 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, "Mini mapa: clic alterna POS1 y POS2.", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
         y += 18;
         DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(48, panel.Bottom - y - 45)), mouse, true);
-        Utils.DrawBorderString(sb, "Por seguridad, solo funciona en un jugador. Máximo 4.000 tiles por operación.",
+        Utils.DrawBorderString(sb, "Sin plugins en un jugador. En multijugador se necesita lógica integrada del servidor. Máximo 4.000 tiles.",
             new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
     }
 
@@ -2092,6 +2103,8 @@ internal static partial class HerosModPanel
             editorUseAnimation = Main.GetInputText(editorUseAnimation);
         else if (activeField == 24)
             editorShootSpeed = Main.GetInputText(editorShootSpeed);
+        else if (activeField == 25)
+            editorProjectile = Main.GetInputText(editorProjectile);
         else if (activeField == 26)
             teleportX = Main.GetInputText(teleportX);
         else if (activeField == 27)
