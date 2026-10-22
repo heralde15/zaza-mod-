@@ -1,0 +1,273 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Terraria-ZazaMod</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Terraria.Libraries.ReLogic.ReLogic.dll" />
+    <None Remove="Terraria.GameContent.Creative.Content.Sacrifices.tsv" />
+    <None Remove="Terraria.IO.Data.ResourcePacksDefaultInfo.tsv" />
+    <None Remove="Terraria.GameContent.Metadata.MaterialData.Materials.json" />
+    <None Remove="Terraria.GameContent.Metadata.MaterialData.Tiles.json" />
+    <None Remove="Terraria.GameContent.WorldBuilding.Configuration.json" />
+    <None Remove="Terraria.Localization.Content.de_DE.Game.json" />
+    <None Remove="Terraria.Localization.Content.de_DE.Items.json" />
+    <None Remove="Terraria.Localization.Content.de_DE.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.de_DE.Main.json" />
+    <None Remove="Terraria.Localization.Content.de_DE.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.de_DE.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.de_DE.Town.json" />
+    <None Remove="Terraria.Localization.Content.en_US.Game.json" />
+    <None Remove="Terraria.Localization.Content.en_US.Items.json" />
+    <None Remove="Terraria.Localization.Content.en_US.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.en_US.Main.json" />
+    <None Remove="Terraria.Localization.Content.en_US.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.en_US.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.en_US.Town.json" />
+    <None Remove="Terraria.Localization.Content.es_ES.Game.json" />
+    <None Remove="Terraria.Localization.Content.es_ES.Items.json" />
+    <None Remove="Terraria.Localization.Content.es_ES.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.es_ES.Main.json" />
+    <None Remove="Terraria.Localization.Content.es_ES.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.es_ES.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.es_ES.Town.json" />
+    <None Remove="Terraria.Localization.Content.fr_FR.Game.json" />
+    <None Remove="Terraria.Localization.Content.fr_FR.Items.json" />
+    <None Remove="Terraria.Localization.Content.fr_FR.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.fr_FR.Main.json" />
+    <None Remove="Terraria.Localization.Content.fr_FR.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.fr_FR.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.fr_FR.Town.json" />
+    <None Remove="Terraria.Localization.Content.it_IT.Game.json" />
+    <None Remove="Terraria.Localization.Content.it_IT.Items.json" />
+    <None Remove="Terraria.Localization.Content.it_IT.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.it_IT.Main.json" />
+    <None Remove="Terraria.Localization.Content.it_IT.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.it_IT.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.it_IT.Town.json" />
+    <None Remove="Terraria.Localization.Content.pl_PL.Game.json" />
+    <None Remove="Terraria.Localization.Content.pl_PL.Items.json" />
+    <None Remove="Terraria.Localization.Content.pl_PL.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.pl_PL.Main.json" />
+    <None Remove="Terraria.Localization.Content.pl_PL.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.pl_PL.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.pl_PL.Town.json" />
+    <None Remove="Terraria.Localization.Content.pt_BR.Game.json" />
+    <None Remove="Terraria.Localization.Content.pt_BR.Items.json" />
+    <None Remove="Terraria.Localization.Content.pt_BR.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.pt_BR.Main.json" />
+    <None Remove="Terraria.Localization.Content.pt_BR.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.pt_BR.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.pt_BR.Town.json" />
+    <None Remove="Terraria.Localization.Content.ru_RU.Game.json" />
+    <None Remove="Terraria.Localization.Content.ru_RU.Items.json" />
+    <None Remove="Terraria.Localization.Content.ru_RU.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.ru_RU.Main.json" />
+    <None Remove="Terraria.Localization.Content.ru_RU.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.ru_RU.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.ru_RU.Town.json" />
+    <None Remove="Terraria.Localization.Content.zh_Hans.Game.json" />
+    <None Remove="Terraria.Localization.Content.zh_Hans.Items.json" />
+    <None Remove="Terraria.Localization.Content.zh_Hans.Legacy.json" />
+    <None Remove="Terraria.Localization.Content.zh_Hans.Main.json" />
+    <None Remove="Terraria.Localization.Content.zh_Hans.NPCs.json" />
+    <None Remove="Terraria.Localization.Content.zh_Hans.Projectiles.json" />
+    <None Remove="Terraria.Localization.Content.zh_Hans.Town.json" />
+    <None Remove="Terraria.ZazaMod.WorldEdit.MapColors.MapColors.xml" />
+    <EmbeddedResource Include="Terraria.Libraries.ReLogic.ReLogic.dll" LogicalName="Terraria.Libraries.ReLogic.ReLogic.dll" />
+    <EmbeddedResource Include="Terraria.GameContent.Creative.Content.Sacrifices.tsv" LogicalName="Terraria.GameContent.Creative.Content.Sacrifices.tsv" />
+    <EmbeddedResource Include="Terraria.IO.Data.ResourcePacksDefaultInfo.tsv" LogicalName="Terraria.IO.Data.ResourcePacksDefaultInfo.tsv" />
+    <EmbeddedResource Include="Terraria.GameContent.Metadata.MaterialData.Materials.json" LogicalName="Terraria.GameContent.Metadata.MaterialData.Materials.json" />
+    <EmbeddedResource Include="Terraria.GameContent.Metadata.MaterialData.Tiles.json" LogicalName="Terraria.GameContent.Metadata.MaterialData.Tiles.json" />
+    <EmbeddedResource Include="Terraria.GameContent.WorldBuilding.Configuration.json" LogicalName="Terraria.GameContent.WorldBuilding.Configuration.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.de_DE.Game.json" LogicalName="Terraria.Localization.Content.de_DE.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.de_DE.Items.json" LogicalName="Terraria.Localization.Content.de_DE.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.de_DE.Legacy.json" LogicalName="Terraria.Localization.Content.de_DE.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.de_DE.Main.json" LogicalName="Terraria.Localization.Content.de_DE.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.de_DE.NPCs.json" LogicalName="Terraria.Localization.Content.de_DE.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.de_DE.Projectiles.json" LogicalName="Terraria.Localization.Content.de_DE.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.de_DE.Town.json" LogicalName="Terraria.Localization.Content.de_DE.Town.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.en_US.Game.json" LogicalName="Terraria.Localization.Content.en_US.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.en_US.Items.json" LogicalName="Terraria.Localization.Content.en_US.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.en_US.Legacy.json" LogicalName="Terraria.Localization.Content.en_US.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.en_US.Main.json" LogicalName="Terraria.Localization.Content.en_US.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.en_US.NPCs.json" LogicalName="Terraria.Localization.Content.en_US.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.en_US.Projectiles.json" LogicalName="Terraria.Localization.Content.en_US.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.en_US.Town.json" LogicalName="Terraria.Localization.Content.en_US.Town.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.es_ES.Game.json" LogicalName="Terraria.Localization.Content.es_ES.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.es_ES.Items.json" LogicalName="Terraria.Localization.Content.es_ES.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.es_ES.Legacy.json" LogicalName="Terraria.Localization.Content.es_ES.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.es_ES.Main.json" LogicalName="Terraria.Localization.Content.es_ES.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.es_ES.NPCs.json" LogicalName="Terraria.Localization.Content.es_ES.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.es_ES.Projectiles.json" LogicalName="Terraria.Localization.Content.es_ES.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.es_ES.Town.json" LogicalName="Terraria.Localization.Content.es_ES.Town.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.fr_FR.Game.json" LogicalName="Terraria.Localization.Content.fr_FR.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.fr_FR.Items.json" LogicalName="Terraria.Localization.Content.fr_FR.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.fr_FR.Legacy.json" LogicalName="Terraria.Localization.Content.fr_FR.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.fr_FR.Main.json" LogicalName="Terraria.Localization.Content.fr_FR.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.fr_FR.NPCs.json" LogicalName="Terraria.Localization.Content.fr_FR.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.fr_FR.Projectiles.json" LogicalName="Terraria.Localization.Content.fr_FR.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.fr_FR.Town.json" LogicalName="Terraria.Localization.Content.fr_FR.Town.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.it_IT.Game.json" LogicalName="Terraria.Localization.Content.it_IT.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.it_IT.Items.json" LogicalName="Terraria.Localization.Content.it_IT.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.it_IT.Legacy.json" LogicalName="Terraria.Localization.Content.it_IT.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.it_IT.Main.json" LogicalName="Terraria.Localization.Content.it_IT.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.it_IT.NPCs.json" LogicalName="Terraria.Localization.Content.it_IT.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.it_IT.Projectiles.json" LogicalName="Terraria.Localization.Content.it_IT.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.it_IT.Town.json" LogicalName="Terraria.Localization.Content.it_IT.Town.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pl_PL.Game.json" LogicalName="Terraria.Localization.Content.pl_PL.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pl_PL.Items.json" LogicalName="Terraria.Localization.Content.pl_PL.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pl_PL.Legacy.json" LogicalName="Terraria.Localization.Content.pl_PL.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pl_PL.Main.json" LogicalName="Terraria.Localization.Content.pl_PL.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pl_PL.NPCs.json" LogicalName="Terraria.Localization.Content.pl_PL.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pl_PL.Projectiles.json" LogicalName="Terraria.Localization.Content.pl_PL.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pl_PL.Town.json" LogicalName="Terraria.Localization.Content.pl_PL.Town.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pt_BR.Game.json" LogicalName="Terraria.Localization.Content.pt_BR.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pt_BR.Items.json" LogicalName="Terraria.Localization.Content.pt_BR.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pt_BR.Legacy.json" LogicalName="Terraria.Localization.Content.pt_BR.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pt_BR.Main.json" LogicalName="Terraria.Localization.Content.pt_BR.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pt_BR.NPCs.json" LogicalName="Terraria.Localization.Content.pt_BR.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pt_BR.Projectiles.json" LogicalName="Terraria.Localization.Content.pt_BR.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.pt_BR.Town.json" LogicalName="Terraria.Localization.Content.pt_BR.Town.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.ru_RU.Game.json" LogicalName="Terraria.Localization.Content.ru_RU.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.ru_RU.Items.json" LogicalName="Terraria.Localization.Content.ru_RU.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.ru_RU.Legacy.json" LogicalName="Terraria.Localization.Content.ru_RU.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.ru_RU.Main.json" LogicalName="Terraria.Localization.Content.ru_RU.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.ru_RU.NPCs.json" LogicalName="Terraria.Localization.Content.ru_RU.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.ru_RU.Projectiles.json" LogicalName="Terraria.Localization.Content.ru_RU.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.ru_RU.Town.json" LogicalName="Terraria.Localization.Content.ru_RU.Town.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.zh_Hans.Game.json" LogicalName="Terraria.Localization.Content.zh_Hans.Game.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.zh_Hans.Items.json" LogicalName="Terraria.Localization.Content.zh_Hans.Items.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.zh_Hans.Legacy.json" LogicalName="Terraria.Localization.Content.zh_Hans.Legacy.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.zh_Hans.Main.json" LogicalName="Terraria.Localization.Content.zh_Hans.Main.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.zh_Hans.NPCs.json" LogicalName="Terraria.Localization.Content.zh_Hans.NPCs.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.zh_Hans.Projectiles.json" LogicalName="Terraria.Localization.Content.zh_Hans.Projectiles.json" />
+    <EmbeddedResource Include="Terraria.Localization.Content.zh_Hans.Town.json" LogicalName="Terraria.Localization.Content.zh_Hans.Town.json" />
+    <EmbeddedResource Include="Terraria.ZazaMod.WorldEdit.MapColors.MapColors.xml" LogicalName="Terraria.ZazaMod.WorldEdit.MapColors.MapColors.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Net.Primitives">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Net.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Sockets">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Net.Sockets.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Threading.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.XDocument">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Xml.XDocument.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Requests">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Net.Requests.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.NetworkInformation">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Net.NetworkInformation.dll</HintPath>
+    </Reference>
+    <Reference Include="FNA" />
+    <Reference Include="ReLogic" />
+    <Reference Include="System.Collections.Concurrent">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Collections.Concurrent.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Diagnostics.Process">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Diagnostics.Process.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="Microsoft.Win32.Registry">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\Microsoft.Win32.Registry.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Thread">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Threading.Thread.dll</HintPath>
+    </Reference>
+    <Reference Include="Ionic.Zip.CF" />
+    <Reference Include="System.Security.Cryptography">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Security.Cryptography.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Mail">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Net.Mail.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Loader">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Runtime.Loader.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.RegularExpressions">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Text.RegularExpressions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.TypeConverter">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.ComponentModel.TypeConverter.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.ThreadPool">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Threading.ThreadPool.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.InteropServices.JavaScript">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Runtime.InteropServices.JavaScript.dll</HintPath>
+    </Reference>
+    <Reference Include="SkiaSharp" />
+    <Reference Include="System.Linq">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="RailSDK.Net" />
+    <Reference Include="System.IO.Pipes">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.IO.Pipes.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization.Primitives">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Runtime.Serialization.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization.Json">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Runtime.Serialization.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Steamworks.NET" />
+    <Reference Include="CsvHelper" />
+    <Reference Include="System.Text.Encoding.Extensions">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Text.Encoding.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.ComponentModel.dll</HintPath>
+    </Reference>
+    <Reference Include="SteelSeriesEngineWrapper">
+      <HintPath>..\Terraria\SteelSeriesEngineWrapper.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Drawing.Primitives">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Drawing.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="MP3Sharp" />
+    <Reference Include="NVorbis" />
+    <Reference Include="System.Runtime.InteropServices">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Runtime.InteropServices.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.WebHeaderCollection">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Net.WebHeaderCollection.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Specialized">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Collections.Specialized.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Console">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Console.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.NameResolution">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Net.NameResolution.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.Compression">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.IO.Compression.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Memory">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization.Xml">
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.28\System.Runtime.Serialization.Xml.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
