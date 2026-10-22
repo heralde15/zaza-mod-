@@ -51,6 +51,36 @@ internal static partial class HerosModPanel
     private static Tab currentTab = Tab.Jugador;
     // Apariencia del panel; solo cambia el dibujo, no altera las funciones del mod.
     private static int uiTheme = 5;
+    private static bool englishUi;
+    private static string Ui(string text)
+    {
+        if (!englishUi || string.IsNullOrEmpty(text)) return text;
+        if (text.StartsWith("MODERACIÓN ·")) return text.Replace("MODERACIÓN ·", "MODERATION ·");
+        if (text.StartsWith("USUARIOS ·")) return text.Replace("USUARIOS ·", "USERS ·");
+        if (text.StartsWith("REGIONES ·")) return text.Replace("REGIONES ·", "REGIONS ·");
+        if (text.StartsWith("TIEMPO ·")) return text.Replace("TIEMPO ·", "TIME ·");
+        if (text.StartsWith("CLIMA ·")) return text.Replace("CLIMA ·", "WEATHER ·");
+        if (text.StartsWith("EVENTOS ·")) return text.Replace("EVENTOS ·", "EVENTS ·");
+        if (text.StartsWith("PROGRESIÓN ·")) return text.Replace("PROGRESIÓN ·", "PROGRESSION ·");
+        if (text.StartsWith("TELETRANSPORTE ·")) return text.Replace("TELETRANSPORTE ·", "TELEPORT ·");
+        if (text.StartsWith("JUGADOR ·")) return text.Replace("JUGADOR ·", "PLAYER ·");
+        if (text.StartsWith("OBJETOS ·")) return text.Replace("OBJETOS ·", "ITEMS ·");
+        if (text.StartsWith("SERVIDOR ·")) return text.Replace("SERVIDOR ·", "SERVER ·");
+        if (text.StartsWith("CONFIGURACIÓN ·")) return text.Replace("CONFIGURACIÓN ·", "SETTINGS ·");
+        if (text.StartsWith("ECONOMÍA ·")) return text.Replace("ECONOMÍA ·", "ECONOMY ·");
+        if (text.StartsWith("UTILIDADES ·")) return text.Replace("UTILIDADES ·", "UTILITIES ·");
+        return text switch
+        {
+            "UN JUGADOR" => "SINGLE PLAYER", "SERVIDOR: COMANDOS" => "SERVER: COMMANDS", "SERVIDOR: DIRECTO" => "SERVER: DIRECT",
+            "PERSONAJE  /  INVENTARIO" => "PLAYER  /  INVENTORY", "MUNDO  /  CONSTRUCCIÓN" => "WORLD  /  BUILDING", "ADMINISTRACIÓN  /  AJUSTES" => "ADMIN  /  SETTINGS",
+            "Jugador" => "Player", "Editor vida" => "Life editor", "Inventario" => "Inventory", "Editor items" => "Item editor", "Mundo" => "World", "Perfiles" => "Profiles", "Guía" => "Guide", "Jugadores" => "Players", "Jefes" => "Bosses", "Herramientas" => "Tools", "Personalizar" => "Customize",
+            "Anterior" => "Previous", "Siguiente" => "Next", "Restablecer apariencia" => "Reset appearance", "Contraste alto: ACTIVADO" => "High contrast: ON", "Contraste alto: desactivado" => "High contrast: OFF",
+            "Azul" => "Blue", "Verde" => "Green", "Violeta" => "Purple", "Naranja" => "Orange", "Rojo" => "Red", "Anime Sakura" => "Anime Sakura", "Anime Cyan" => "Anime Cyan",
+            "Obtener Objeto (primer resultado / nombre escrito)" => "Get item (first result / entered name)", "Editar objeto equipado" => "Edit equipped item", "Cargar ranura" => "Load slot", "Copiar inventario" => "Copy inventory", "Pegar en huecos" => "Paste into empty slots",
+            "Establecer: Día" => "Set: Day", "Establecer: Noche" => "Set: Night", "Establecer: Mediodía" => "Set: Noon", "Rey Slime" => "King Slime", "Ojo de Cthulhu" => "Eye of Cthulhu", "Devoramundos" => "Eater of Worlds",
+            _ => text
+        };
+    }
     private static bool uiHighContrast;
     private static readonly Color[] UiAccents =
     {
@@ -457,6 +487,13 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 5), Color.White, 1.0f);
         Utils.DrawBorderString(sb, "CENTRO DE CONTROL  /  TERRARIA", new Vector2(panelRect.X + 150, panelRect.Y + 12), new Color(177, 185, 205), 0.58f);
 
+        var languageRect = new Rectangle(panelRect.Right - 330, panelRect.Y + 8, 102, 24);
+        if (DrawButton(sb, pixel, languageRect, englishUi ? "LANG: EN" : "IDIOMA: ES", mouse, new Color(75, 75, 100)))
+        {
+            englishUi = !englishUi;
+            SetStatus(englishUi ? "Language changed to English." : "Idioma cambiado a español.");
+        }
+
         string modeText = !InMultiplayer
             ? "UN JUGADOR"
             : (serverMode == ServerMode.Comandos ? "SERVIDOR: COMANDOS" : "SERVIDOR: DIRECTO");
@@ -492,7 +529,7 @@ internal static partial class HerosModPanel
         for (int row = 0; row < tabGroups.Length; row++)
         {
             int labelY = panelRect.Y + 44 + row * 34;
-            Utils.DrawBorderString(sb, groupLabels[row], new Vector2(panelRect.X + Pad + 2, labelY), new Color(155, 166, 190), 0.52f);
+            Utils.DrawBorderString(sb, Ui(groupLabels[row]), new Vector2(panelRect.X + Pad + 2, labelY), new Color(155, 166, 190), 0.52f);
             for (int col = 0; col < tabGroups[row].Length; col++)
             {
                 Tab tab = tabGroups[row][col];
@@ -501,7 +538,7 @@ internal static partial class HerosModPanel
                     panelRect.Y + 55 + row * 34, tabWidth, 22);
                 bool selected = currentTab == tab;
                 Color tabColor = selected ? UiAccent : UiTabColor;
-                if (DrawButton(sb, pixel, tabRect, tabLabels[labelIndex], mouse, tabColor) && !selected)
+                if (DrawButton(sb, pixel, tabRect, Ui(tabLabels[labelIndex]), mouse, tabColor) && !selected)
                 {
                     currentTab = tab;
                     activeField = 0;
@@ -2362,6 +2399,7 @@ internal static partial class HerosModPanel
 
     private static bool DrawButton(SpriteBatch sb, Texture2D pixel, Rectangle rect, string text, Point mouse, Color? customBg = null)
     {
+        text = Ui(text);
         bool hover = rect.Contains(mouse);
         Color bg = hover ? Color.Lerp(UiAccent, Color.White, 0.18f) : (customBg ?? new Color(50, 55, 68));
         sb.Draw(pixel, rect, bg);
