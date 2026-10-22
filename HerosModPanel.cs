@@ -25,7 +25,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static partial class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -1551,8 +1551,7 @@ internal static partial class HerosModPanel
         if (int.TryParse(editorPrefix, out int requestedPrefix))
         {
             int safePrefix = Math.Clamp(requestedPrefix, 0, PrefixID.Count - 1);
-            if (safePrefix == 0 || it.CanApplyPrefix(safePrefix))
-                it.prefix = (byte)safePrefix;
+            it.prefix = (byte)safePrefix;
         }
         if (int.TryParse(editorDamage, out int damage)) it.damage = Math.Clamp(damage, 0, 1000000);
         if (int.TryParse(editorDefense, out int defense)) it.defense = Math.Clamp(defense, 0, 100000);
@@ -1615,8 +1614,7 @@ internal static partial class HerosModPanel
         if (int.TryParse(editorPrefix, out int prefix))
         {
             prefix = Math.Clamp(prefix, 0, PrefixID.Count - 1);
-            if (prefix == 0 || created.CanApplyPrefix(prefix))
-                created.prefix = (byte)prefix;
+            created.prefix = (byte)prefix;
         }
         p.inventory[slot] = created;
         editorDamage = created.damage.ToString();
