@@ -3092,17 +3092,9 @@ internal static partial class HerosModPanel
         int count = int.TryParse(itemAmount, out int parsedCount) && parsedCount > 0 ? Math.Min(parsedCount, 9999) : 1;
         int prefixValue = int.TryParse(itemPrefix, out int parsedPrefix) ? parsedPrefix : -1;
 
-        if (IsServer)
-        {
-            // TShock: /item <id> <cantidad> [prefijo]
-            string cmd = $"/item {id} {count}";
-            if (prefixValue > 0)
-                cmd += $" {prefixValue}";
-
-            SendCmd(cmd);
-            return;
-        }
-
+        // Modo libre: no manda /item ni depende de comandos/plugins.
+        // En un jugador el objeto aparece normalmente; en servidores remotos el servidor
+        // puede rechazar o no sincronizar objetos creados solo por el cliente.
         var p = Main.LocalPlayer;
         Item.NewItem(new EntitySource_WorldEvent(), (int)p.position.X, (int)p.position.Y, p.width, p.height, id, count, false, prefixValue);
         SetStatus($"Objeto entregado: {Lang.GetItemNameValue(id)} (x{count})");
