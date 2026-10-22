@@ -25,7 +25,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -71,6 +71,12 @@ internal static class HerosModPanel
     private static string editorUseTime = "";
     private static string editorStack = "";
     private static string editorValue = "";
+    private static Point? worldPos1;
+    private static Point? worldPos2;
+    private static string worldTileType = "1";
+    private static string worldReplaceType = "0";
+    private static int worldEditUndoType = -1;
+    private static readonly List<(int x, int y, Tile tile)> worldEditUndo = new();
 
     private static readonly (string label, string command)[] extraTools = new (string, string)[]
     {
@@ -266,7 +272,7 @@ internal static class HerosModPanel
             return;
         }
 
-        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.Jefes, Tab.Teleport,
+        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
                       Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
@@ -283,6 +289,7 @@ internal static class HerosModPanel
                 Tab.Jugadores => "Jugadores",
                 Tab.Inventario => "Inventario",
                 Tab.EditorItems => "Editor Items",
+                Tab.WorldEdit => "WorldEdit",
                 Tab.Teleport => "Teleport",
                 _ => tabs[i].ToString()
             };
@@ -307,6 +314,9 @@ internal static class HerosModPanel
                 break;
             case Tab.EditorItems:
                 DrawItemEditorTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.WorldEdit:
+                DrawWorldEditTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Jefes:
                 DrawBossesTab(sb, pixel, panelRect, ref contentY, mouse);
@@ -1297,6 +1307,127 @@ internal static class HerosModPanel
         SetStatus("Estadísticas restauradas a los valores base del objeto.");
     }
 
+
+    // ------------------------------------------------------------------ WorldEdit basico local
+
+    private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección y edición local");
+        int bx = panel.X + Pad;
+        int bw = (Width - Pad * 2 - 8) / 2;
+        string p1 = worldPos1.HasValue ? $"{worldPos1.Value.X}, {worldPos1.Value.Y}" : "Sin seleccionar";
+        string p2 = worldPos2.HasValue ? $"{worldPos2.Value.X}, {worldPos2.Value.Y}" : "Sin seleccionar";
+        DrawInfoLine(sb, panel, ref y, "POS1", p1);
+        DrawInfoLine(sb, panel, ref y, "POS2", p2);
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Marcar POS1 aquí", mouse, new Color(45, 90, 135)))
+        {
+            var p = Main.LocalPlayer;
+            worldPos1 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
+            SetStatus($"POS1: {worldPos1.Value.X}, {worldPos1.Value.Y}");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Marcar POS2 aquí", mouse, new Color(45, 90, 135)))
+        {
+            var p = Main.LocalPlayer;
+            worldPos2 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
+            SetStatus($"POS2: {worldPos2.Value.X}, {worldPos2.Value.Y}");
+        }
+        y += RowH + 8;
+        Utils.DrawBorderString(sb, "Tile ID (0 = aire/borrar):", new Vector2(bx, y), Color.White, 0.7f);
+        Utils.DrawBorderString(sb, "Reemplazar tile ID:", new Vector2(bx + 250, y), Color.White, 0.7f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 12, worldTileType, mouse, "1");
+        DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 13, worldReplaceType, mouse, "0");
+        y += 33;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Fill selección", mouse, new Color(50, 105, 70)))
+            ApplyWorldEdit("fill");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Clear selección", mouse, new Color(135, 65, 60)))
+            ApplyWorldEdit("clear");
+        y += RowH + 7;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Replace ID → ID", mouse, new Color(80, 75, 130)))
+            ApplyWorldEdit("replace");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse))
+            UndoWorldEdit();
+        y += RowH + 10;
+        Utils.DrawBorderString(sb, "Por seguridad, solo funciona en un jugador. Máximo 4.000 tiles por operación.",
+            new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+    }
+
+    private static void ApplyWorldEdit(string operation)
+    {
+        if (Main.netMode != 0)
+        {
+            SetStatus("WorldEdit local está bloqueado en multijugador; hace falta un handler del servidor.");
+            return;
+        }
+        if (!worldPos1.HasValue || !worldPos2.HasValue)
+        {
+            SetStatus("Marca POS1 y POS2 antes de editar.");
+            return;
+        }
+        int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        if ((long)(x2 - x1 + 1) * (y2 - y1 + 1) > 4000)
+        {
+            SetStatus("Selección demasiado grande: reduce el área a 4.000 tiles o menos.");
+            return;
+        }
+        int tileId = int.TryParse(worldTileType, out int parsedTile) ? parsedTile : 1;
+        int replaceId = int.TryParse(worldReplaceType, out int parsedReplace) ? parsedReplace : 0;
+        if (tileId < 0 || tileId >= TileLoader.TileCount || replaceId < 0 || replaceId >= TileLoader.TileCount)
+        {
+            SetStatus("Tile ID fuera de rango.");
+            return;
+        }
+
+        worldEditUndo.Clear();
+        int changed = 0;
+        for (int x = x1; x <= x2; x++)
+        for (int yy = y1; yy <= y2; yy++)
+        {
+            Tile tile = Main.tile[x, yy];
+            if (tile == null) continue;
+            if (operation == "replace" && (!tile.HasTile || tile.TileType != replaceId))
+                continue;
+            if (operation == "fill" && tileId == 0)
+                operation = "clear";
+            worldEditUndo.Add((x, yy, tile.Clone()));
+            if (operation == "clear")
+                WorldGen.KillTile(x, yy, false, false, true);
+            else if (operation == "fill")
+                WorldGen.PlaceTile(x, yy, tileId, true, true);
+            else if (operation == "replace")
+            {
+                WorldGen.KillTile(x, yy, false, false, true);
+                if (tileId > 0) WorldGen.PlaceTile(x, yy, tileId, true, true);
+            }
+            changed++;
+        }
+        worldEditUndoType = operation == "clear" ? 0 : tileId;
+        Main.sectionManager?.GetType();
+        SetStatus($"WorldEdit {operation}: {changed} tiles. Undo disponible para la última operación.");
+    }
+
+    private static void UndoWorldEdit()
+    {
+        if (Main.netMode != 0)
+        {
+            SetStatus("Undo local solo funciona en un jugador.");
+            return;
+        }
+        if (worldEditUndo.Count == 0)
+        {
+            SetStatus("No hay una operación para deshacer.");
+            return;
+        }
+        foreach (var entry in worldEditUndo)
+            Main.tile[entry.x, entry.y] = entry.tile.Clone();
+        int count = worldEditUndo.Count;
+        worldEditUndo.Clear();
+        SetStatus($"Undo completado: restaurados {count} tiles.");
+    }
+
     // ------------------------------------------------------------------ Herramientas adicionales: 50 acciones paginadas
 
     private static void DrawToolsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
@@ -1462,6 +1593,10 @@ internal static class HerosModPanel
             editorStack = Main.GetInputText(editorStack);
         else if (activeField == 11)
             editorValue = Main.GetInputText(editorValue);
+        else if (activeField == 12)
+            worldTileType = Main.GetInputText(worldTileType);
+        else if (activeField == 13)
+            worldReplaceType = Main.GetInputText(worldReplaceType);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
