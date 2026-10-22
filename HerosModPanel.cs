@@ -26,7 +26,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static partial class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, ZazaMod }
 
     private const int Width = 760;
     private const int Height = 800;
@@ -740,14 +740,15 @@ internal static partial class HerosModPanel
         [
             [Tab.Jugador, Tab.EditorVida, Tab.Inventario, Tab.Items, Tab.EditorItems],
             [Tab.Mundo, Tab.WorldEdit, Tab.Teleport, Tab.Perfiles, Tab.Guia],
-            [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar]
+            [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar],
+            [Tab.ZazaMod]
         ];
-        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES"];
+        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES", "ZAZA MOD  /  FUNCIONES DEL PROYECTO"];
         string[] tabLabels =
         [
             "Jugador", "Editor vida", "Inventario", "Items", "Editor items",
             "Mundo", "WorldEdit", "Teleport", "Perfiles", "Guía",
-            "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar"
+            "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar", "Zaza Mod"
         ];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
@@ -771,7 +772,7 @@ internal static partial class HerosModPanel
             }
         }
 
-        int contentY = panelRect.Y + 151;
+        int contentY = panelRect.Y + 185;
         var contentRect = new Rectangle(panelRect.X + 5, contentY - 3, panelRect.Width - 10, panelRect.Bottom - contentY - 8);
         sb.Draw(pixel, contentRect, new Color(13, 15, 24, 210));
         sb.Draw(pixel, new Rectangle(contentRect.X, contentRect.Y, 2, contentRect.Height), UiAccent * 0.65f);
@@ -821,6 +822,9 @@ internal static partial class HerosModPanel
                 break;
             case Tab.Personalizar:
                 DrawCustomizeTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.ZazaMod:
+                DrawZazaModTab(sb, pixel, panelRect, ref contentY);
                 break;
         }
 
@@ -2552,6 +2556,40 @@ internal static partial class HerosModPanel
     }
 
     // ------------------------------------------------------------------ Personalización de la interfaz
+    // Pestaña separada para integrar las funciones originales de Zaza Mod 1.4.4.9.
+    // No sustituye ni modifica las pestañas originales de HERO's Mod.
+    private static void DrawZazaModTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Zaza Mod · integración independiente");
+        Utils.DrawBorderString(sb,
+            "Esta categoría está reservada para las funciones del proyecto Zaza Mod 1.4.4.9.",
+            new Vector2(panel.X + Pad, y), Color.White, 0.76f);
+        y += 28;
+        DrawInfoLine(sb, panel, ref y, "Estado", "Categoría creada; esperando revisar los archivos fuente de Zaza.");
+        DrawInfoLine(sb, panel, ref y, "Compatibilidad", "Se integrarán solo las funciones que puedan adaptarse a Terraria Unified.");
+        DrawInfoLine(sb, panel, ref y, "HERO's Mod", "Las pestañas y herramientas existentes se conservan por separado.");
+        y += 8;
+        DrawSectionHeader(sb, panel, ref y, "Áreas para organizar las funciones de Zaza");
+        string[] areas =
+        {
+            "Panel y comandos originales de Zaza",
+            "Herramientas de jugador y administración",
+            "Editor de objetos e inventario",
+            "NPC, jefes, buffs y proyectiles",
+            "Mundo, construcción y WorldEdit",
+            "Opciones, perfiles y utilidades propias"
+        };
+        foreach (string area in areas)
+        {
+            if (y > panel.Bottom - 55) break;
+            DrawInfoLine(sb, panel, ref y, "ZAZA", area);
+        }
+        y += 8;
+        Utils.DrawBorderString(sb,
+            "Las acciones reales se añadirán después de inspeccionar el código 1.4.4.9; no se muestran botones falsos.",
+            new Vector2(panel.X + Pad, y), new Color(235, 195, 120), 0.65f);
+    }
+
     private static void DrawCustomizeTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         DrawSectionHeader(sb, panel, ref y, "Personalizar interfaz");
