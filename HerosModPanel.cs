@@ -329,8 +329,8 @@ internal static class HerosModPanel
             }
         }
 
-        int contentY = panelRect.Y + 124;
-        sb.Draw(pixel, new Rectangle(panelRect.X + 6, contentY - 4, panelRect.Width - 12, panelRect.Height - 164), new Color(25, 29, 39));
+        int contentY = panelRect.Y + 151;
+        sb.Draw(pixel, new Rectangle(panelRect.X + 6, contentY - 4, panelRect.Width - 12, panelRect.Height - 191), new Color(25, 29, 39));
         sb.Draw(pixel, new Rectangle(panelRect.X + 6, contentY - 4, panelRect.Width - 12, 1), new Color(48, 60, 78));
         switch (currentTab)
         {
