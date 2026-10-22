@@ -37,16 +37,26 @@ internal static class HerosModPanel
 
     private enum ServerMode { Comandos, Directo }
 
+    // Tres contextos de ejecución mostrados por la UI. Un jugador se determina
+    // automáticamente por Main.netMode; en multijugador se alternan los otros dos.
+    private enum ExecutionMode { UnJugador, ServidorConPermisos, ServidorDirecto }
+
     /// <summary>
-    /// Comandos = mandar comandos de chat a TShock (el servidor decide segun tus permisos).
-    /// Directo  = el cliente actua por si mismo (servidores vanilla / anarquicos).
+    /// Comandos = enviar comandos a TShock, que valida los permisos.
+    /// Directo = acciones locales del cliente en servidores vanilla/anárquicos;
+    /// el servidor puede rechazarlas o no sincronizarlas.
     /// </summary>
     private static ServerMode serverMode = ServerMode.Comandos;
 
     private static bool InMultiplayer => Main.netMode == 1;
+    private static ExecutionMode CurrentExecutionMode => !InMultiplayer
+        ? ExecutionMode.UnJugador
+        : serverMode == ServerMode.Comandos
+            ? ExecutionMode.ServidorConPermisos
+            : ExecutionMode.ServidorDirecto;
 
-    /// <summary>true = en un servidor y usando comandos de TShock.</summary>
-    private static bool IsServer => Main.netMode == 1 && serverMode == ServerMode.Comandos;
+    /// <summary>true = conectado a servidor usando comandos de TShock.</summary>
+    private static bool IsServer => CurrentExecutionMode == ExecutionMode.ServidorConPermisos;
 
     private static Tab currentTab = Tab.Jugador;
     private static Vector2 position = new(120f, 80f);
@@ -288,10 +298,20 @@ internal static class HerosModPanel
             Utils.DrawBorderString(sb, "ADMIN • CONTROL CENTER", new Vector2(panelRect.X + 12, panelRect.Y + 20), new Color(155, 180, 210), 0.55f);
         Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.Gold, 0.85f);
 
-        string modeText = !InMultiplayer
-            ? "Un jugador"
-            : (serverMode == ServerMode.Comandos ? "Servidor: COMANDOS (TShock)" : "Servidor: DIRECTO (vanilla/anarquÃ­a)");
-        Color modeColor = !InMultiplayer ? new Color(50, 90, 60) : (serverMode == ServerMode.Comandos ? new Color(40, 100, 140) : new Color(150, 90, 30));
+        string modeText = CurrentExecutionMode switch
+        {
+            ExecutionMode.UnJugador => "MODO: UN JUGADOR",
+            ExecutionMode.ServidorConPermisos => "MODO: SERVIDOR CON PERMISOS (TShock)",
+            ExecutionMode.ServidorDirecto => "MODO: ANARQUICO / DIRECTO",
+            _ => "MODO: DESCONOCIDO"
+        };
+        Color modeColor = CurrentExecutionMode switch
+        {
+            ExecutionMode.UnJugador => new Color(50, 90, 60),
+            ExecutionMode.ServidorConPermisos => new Color(40, 100, 140),
+            ExecutionMode.ServidorDirecto => new Color(150, 90, 30),
+            _ => new Color(70, 70, 70)
+        };
         if (DrawButton(sb, pixel, new Rectangle(panelRect.X + 100, panelRect.Y + 5, 260, 20), modeText, mouse, modeColor))
         {
             ToggleServerMode();
@@ -1924,21 +1944,21 @@ internal static class HerosModPanel
 
     private static void ToggleServerMode()
     {
-        if (!InMultiplayer)
+        if (CurrentExecutionMode == ExecutionMode.UnJugador)
         {
-            SetStatus("El modo de servidor se usa al entrar a un servidor.");
+            SetStatus("MODO UN JUGADOR: los cheats se aplican localmente. Los otros modos solo se usan al conectarte a un servidor.");
             return;
         }
 
-        if (serverMode == ServerMode.Comandos)
+        if (CurrentExecutionMode == ExecutionMode.ServidorConPermisos)
         {
             serverMode = ServerMode.Directo;
-            SetStatus("Modo DIRECTO: acciones del cliente. Con anticheat (TShock) pueden kickearte; Ãºsalo donde estÃ© permitido.");
+            SetStatus("MODO ANARQUICO / DIRECTO: acciones del cliente; el servidor puede rechazarlas. Usalo solo donde este permitido.");
         }
         else
         {
             serverMode = ServerMode.Comandos;
-            SetStatus("Modo COMANDOS: todo va por comandos de TShock.");
+            SetStatus("MODO SERVIDOR CON PERMISOS: TShock valida los comandos segun tus permisos.");
         }
     }
 
