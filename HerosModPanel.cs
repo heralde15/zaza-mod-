@@ -1375,7 +1375,7 @@ internal static class HerosModPanel
         }
         int tileId = int.TryParse(worldTileType, out int parsedTile) ? parsedTile : 1;
         int replaceId = int.TryParse(worldReplaceType, out int parsedReplace) ? parsedReplace : 0;
-        if (tileId < 0 || tileId >= TileLoader.TileCount || replaceId < 0 || replaceId >= TileLoader.TileCount)
+        if (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count)
         {
             SetStatus("Tile ID fuera de rango.");
             return;
@@ -1405,7 +1405,6 @@ internal static class HerosModPanel
             changed++;
         }
         worldEditUndoType = operation == "clear" ? 0 : tileId;
-        Main.sectionManager?.GetType();
         SetStatus($"WorldEdit {operation}: {changed} tiles. Undo disponible para la última operación.");
     }
 
