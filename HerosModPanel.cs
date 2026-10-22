@@ -281,7 +281,9 @@ internal static class HerosModPanel
             sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Bottom - 2, panelRect.Width, 2), uiAccent * 0.75f);
         }
         sb.Draw(pixel, titleRect, GetUiHeaderColor());
+        // Separadores suaves para una cabecera más clara.
         sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 30, panelRect.Width, 1), uiAccent);
+        sb.Draw(pixel, new Rectangle(panelRect.X + 8, panelRect.Y + 31, panelRect.Width - 16, 1), new Color(255, 255, 255, 18));
         if (!uiCompactHeader)
             Utils.DrawBorderString(sb, "ADMIN • CONTROL CENTER", new Vector2(panelRect.X + 12, panelRect.Y + 20), new Color(155, 180, 210), 0.55f);
         Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.Gold, 0.85f);
@@ -316,11 +318,18 @@ internal static class HerosModPanel
             Color tabColor = selected ? GetUiAccent() : new Color(34, 40, 52);
             string tabLabel = tabs[i] switch
             {
+                Tab.Jugador => "Jugador",
+                Tab.Mundo => "Mundo",
+                Tab.Items => "Items",
                 Tab.Jugadores => "Jugadores",
                 Tab.Inventario => "Inventario",
                 Tab.EditorItems => "Editor Items",
                 Tab.WorldEdit => "WorldEdit",
                 Tab.Teleport => "Teleport",
+                Tab.Jefes => "Jefes",
+                Tab.Herramientas => "Herramientas",
+                Tab.Info => "Información",
+                Tab.Guia => "Guía",
                 Tab.Personalizar => "Personalizar",
                 _ => tabs[i].ToString()
             };
@@ -1429,7 +1438,7 @@ internal static class HerosModPanel
                 continue;
             if (operation == "fill" && tileId == 0)
                 operation = "clear";
-            worldEditUndo.Add((x, yy, tile.Clone()));
+            worldEditUndo.Add((x, yy, (Tile)tile.Clone()));
             if (operation == "clear")
                 WorldGen.KillTile(x, yy, false, false, true);
             else if (operation == "fill")
@@ -1458,7 +1467,7 @@ internal static class HerosModPanel
             return;
         }
         foreach (var entry in worldEditUndo)
-            Main.tile[entry.x, entry.y] = entry.tile.Clone();
+            Main.tile[entry.x, entry.y].CopyFrom(entry.tile);
         int count = worldEditUndo.Count;
         worldEditUndo.Clear();
         SetStatus($"Undo completado: restaurados {count} tiles.");
