@@ -3091,13 +3091,74 @@ internal static partial class HerosModPanel
 
         int count = int.TryParse(itemAmount, out int parsedCount) && parsedCount > 0 ? Math.Min(parsedCount, 9999) : 1;
         int prefixValue = int.TryParse(itemPrefix, out int parsedPrefix) ? parsedPrefix : -1;
+        Player player = Main.LocalPlayer;
 
-        // Modo libre: no manda /item ni depende de comandos/plugins.
-        // En un jugador el objeto aparece normalmente; en servidores remotos el servidor
-        // puede rechazar o no sincronizar objetos creados solo por el cliente.
-        var p = Main.LocalPlayer;
-        Item.NewItem(new EntitySource_WorldEvent(), (int)p.position.X, (int)p.position.Y, p.width, p.height, id, count, false, prefixValue);
-        SetStatus($"Objeto entregado: {Lang.GetItemNameValue(id)} (x{count})");
+        // Entrega directamente al inventario; no requiere escribir /item.
+        // En multijugador se envía la sincronización estándar del inventario del jugador.
+        Item template = new Item();
+        template.SetDefaults(id);
+        if (prefixValue > 0)
+            template.Prefix(prefixValue);
+
+        int remaining = count;
+        int changedSlots = 0;
+        int inventoryLimit = Math.Min(50, player.inventory.Length);
+
+        // Primero completar pilas existentes del mismo objeto y prefijo.
+        for (int slot = 0; slot < inventoryLimit && remaining > 0; slot++)
+        {
+            Item current = player.inventory[slot];
+            if (current == null || current.IsAir || current.type != template.type || current.prefix != template.prefix)
+                continue;
+
+            int room = Math.Max(0, current.maxStack - current.stack);
+            if (room == 0)
+                continue;
+
+            int added = Math.Min(room, remaining);
+            current.stack += added;
+            remaining -= added;
+            changedSlots++;
+            SyncInventorySlot(player, slot, current);
+        }
+
+        // Después usar espacios vacíos del inventario principal (sin tocar monedas/munición).
+        for (int slot = 0; slot < inventoryLimit && remaining > 0; slot++)
+        {
+            Item current = player.inventory[slot];
+            if (current != null && !current.IsAir)
+                continue;
+
+            Item created = template.Clone();
+            int added = Math.Min(Math.Max(1, created.maxStack), remaining);
+            created.stack = added;
+            player.inventory[slot] = created;
+            remaining -= added;
+            changedSlots++;
+            SyncInventorySlot(player, slot, created);
+        }
+
+        if (Main.netMode == 0)
+        {
+            SetStatus(remaining == 0
+                ? $"Objeto añadido al inventario: {Lang.GetItemNameValue(id)} (x{count})."
+                : $"Inventario casi lleno: se añadieron {count - remaining}/{count} de {Lang.GetItemNameValue(id)}.");
+        }
+        else
+        {
+            SetStatus(remaining == 0
+                ? $"Entrega enviada al inventario: {Lang.GetItemNameValue(id)} (x{count}). El servidor puede rechazar cambios directos."
+                : $"Inventario lleno: se enviaron {count - remaining}/{count} de {Lang.GetItemNameValue(id)}. El servidor puede rechazar cambios directos.");
+        }
+    }
+
+    private static void SyncInventorySlot(Player player, int slot, Item item)
+    {
+        if (Main.netMode != 1 || player == null || item == null)
+            return;
+
+        NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null,
+            player.whoAmI, slot, item.type, item.prefix, item.stack);
     }
 
     private static void SpawnBoss(int npcId, string bossName, string tshockName)
