@@ -25,7 +25,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -65,6 +65,12 @@ internal static class HerosModPanel
     private static string moderationTarget = "";
     private static string moderationReason = "";
     private static int toolsPage;
+    private static string editorSlot = "1";
+    private static string editorDamage = "";
+    private static string editorDefense = "";
+    private static string editorUseTime = "";
+    private static string editorStack = "";
+    private static string editorValue = "";
 
     private static readonly (string label, string command)[] extraTools = new (string, string)[]
     {
@@ -260,7 +266,7 @@ internal static class HerosModPanel
             return;
         }
 
-        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.Jefes, Tab.Teleport,
+        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.Jefes, Tab.Teleport,
                       Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
@@ -276,6 +282,7 @@ internal static class HerosModPanel
             {
                 Tab.Jugadores => "Jugadores",
                 Tab.Inventario => "Inventario",
+                Tab.EditorItems => "Editor Items",
                 Tab.Teleport => "Teleport",
                 _ => tabs[i].ToString()
             };
@@ -297,6 +304,9 @@ internal static class HerosModPanel
                 break;
             case Tab.Items:
                 DrawItemsTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.EditorItems:
+                DrawItemEditorTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Jefes:
                 DrawBossesTab(sb, pixel, panelRect, ref contentY, mouse);
@@ -1143,6 +1153,150 @@ internal static class HerosModPanel
     }
 
 
+
+    // ------------------------------------------------------------------ Editor local de objetos
+
+    private static void DrawItemEditorTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Editor de objetos · inventario local");
+        Utils.DrawBorderString(sb, "Ranura de mochila (1-50):", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Cantidad:", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Daño:", new Vector2(panel.X + 390, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 95, 26), 6, editorSlot, mouse, "1");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 110, 26), 10, editorStack, mouse, "cantidad");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 390, y, 110, 26), 7, editorDamage, mouse, "daño");
+        y += 34;
+
+        Utils.DrawBorderString(sb, "Defensa:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "UseTime:", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Valor (cobre):", new Vector2(panel.X + 390, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 110, 26), 8, editorDefense, mouse, "defensa");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 110, 26), 9, editorUseTime, mouse, "useTime");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 390, y, 140, 26), 11, editorValue, mouse, "valor");
+        y += 36;
+
+        int bw = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Cargar datos de la ranura", mouse, new Color(45, 90, 130)))
+            LoadItemEditorSlot();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Aplicar cambios", mouse, new Color(55, 115, 75)))
+            ApplyItemEditorSlot();
+        y += RowH + 8;
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Duplicar objeto en hueco vacío", mouse))
+            DuplicateItemEditorSlot();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Reparar / restablecer objeto", mouse))
+            ResetItemEditorSlot();
+        y += RowH + 10;
+
+        var p = Main.LocalPlayer;
+        int slot = ParseEditorSlot();
+        if (slot >= 0 && slot < p.inventory.Length)
+        {
+            Item it = p.inventory[slot];
+            if (it != null && !it.IsAir)
+            {
+                DrawInfoLine(sb, panel, ref y, "Objeto seleccionado", $"{it.Name} (ID {it.type})");
+                DrawInfoLine(sb, panel, ref y, "Estadísticas actuales", $"Daño {it.damage} · Defensa {it.defense} · UseTime {it.useTime}");
+                DrawInfoLine(sb, panel, ref y, "Cantidad / valor", $"{it.stack} / {it.value} monedas de cobre");
+            }
+            else
+            {
+                Utils.DrawBorderString(sb, "La ranura seleccionada está vacía.", new Vector2(panel.X + Pad, y), Color.Gray, 0.72f);
+                y += 20;
+            }
+        }
+
+        Utils.DrawBorderString(sb, "Limitación: cambios locales; un servidor puede rechazarlos o sobrescribirlos.",
+            new Vector2(panel.X + Pad, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+    }
+
+    private static int ParseEditorSlot()
+    {
+        if (!int.TryParse(editorSlot, out int slot))
+            return -1;
+        return slot - 1;
+    }
+
+    private static void LoadItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length || p.inventory[slot] == null || p.inventory[slot].IsAir)
+        {
+            SetStatus("La ranura indicada no contiene un objeto válido.");
+            return;
+        }
+        Item it = p.inventory[slot];
+        editorDamage = it.damage.ToString();
+        editorDefense = it.defense.ToString();
+        editorUseTime = it.useTime.ToString();
+        editorStack = it.stack.ToString();
+        editorValue = it.value.ToString();
+        SetStatus($"Datos cargados: {it.Name}.");
+    }
+
+    private static void ApplyItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length || p.inventory[slot] == null || p.inventory[slot].IsAir)
+        {
+            SetStatus("Selecciona una ranura con un objeto.");
+            return;
+        }
+
+        Item it = p.inventory[slot];
+        if (int.TryParse(editorDamage, out int damage)) it.damage = Math.Clamp(damage, 0, 1000000);
+        if (int.TryParse(editorDefense, out int defense)) it.defense = Math.Clamp(defense, 0, 100000);
+        if (int.TryParse(editorUseTime, out int useTime)) it.useTime = Math.Clamp(useTime, 1, 10000);
+        if (int.TryParse(editorStack, out int stack)) it.stack = Math.Clamp(stack, 1, Math.Max(1, it.maxStack));
+        if (int.TryParse(editorValue, out int value)) it.value = Math.Clamp(value, 0, int.MaxValue);
+        if (Main.netMode == 0)
+            SetStatus($"Editado localmente: {it.Name}. Algunas estadísticas pueden recalcularse por el juego.");
+        else
+            SetStatus("Cambios aplicados solo al cliente; el servidor puede sobrescribirlos.");
+    }
+
+    private static void DuplicateItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length || p.inventory[slot] == null || p.inventory[slot].IsAir)
+        {
+            SetStatus("Selecciona primero un objeto válido.");
+            return;
+        }
+        for (int i = 0; i < p.inventory.Length; i++)
+        {
+            if (p.inventory[i] == null || p.inventory[i].IsAir)
+            {
+                p.inventory[i] = p.inventory[slot].Clone();
+                SetStatus($"Copia local creada en la ranura {i + 1}.");
+                return;
+            }
+        }
+        SetStatus("No hay espacios vacíos en la mochila.");
+    }
+
+    private static void ResetItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length || p.inventory[slot] == null || p.inventory[slot].IsAir)
+        {
+            SetStatus("Selecciona primero un objeto válido.");
+            return;
+        }
+        int type = p.inventory[slot].type;
+        int stack = p.inventory[slot].stack;
+        p.inventory[slot].SetDefaults(type);
+        p.inventory[slot].stack = Math.Clamp(stack, 1, Math.Max(1, p.inventory[slot].maxStack));
+        LoadItemEditorSlot();
+        SetStatus("Estadísticas restauradas a los valores base del objeto.");
+    }
+
     // ------------------------------------------------------------------ Herramientas adicionales: 50 acciones paginadas
 
     private static void DrawToolsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
@@ -1296,6 +1450,18 @@ internal static class HerosModPanel
             moderationTarget = Main.GetInputText(moderationTarget);
         else if (activeField == 5)
             moderationReason = Main.GetInputText(moderationReason);
+        else if (activeField == 6)
+            editorSlot = Main.GetInputText(editorSlot);
+        else if (activeField == 7)
+            editorDamage = Main.GetInputText(editorDamage);
+        else if (activeField == 8)
+            editorDefense = Main.GetInputText(editorDefense);
+        else if (activeField == 9)
+            editorUseTime = Main.GetInputText(editorUseTime);
+        else if (activeField == 10)
+            editorStack = Main.GetInputText(editorStack);
+        else if (activeField == 11)
+            editorValue = Main.GetInputText(editorValue);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
