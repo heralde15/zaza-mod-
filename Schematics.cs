@@ -82,7 +82,7 @@ public class Schematics
 						continue;
 					}
 					LegacyTile tile = Mods.copiedTiles[tileIndex];
-					((Vector2)(ref pos))._002Ector((float)(i - startX) * 16f, (float)(j - startY) * 16f);
+					pos = new Vector2((float)(i - startX) * 16f, (float)(j - startY) * 16f);
 					if (!(pos.X > (float)width) && !(pos.Y > (float)height))
 					{
 						if (tile.wall > 0)
@@ -278,9 +278,9 @@ public class Schematics
 				num17 *= Alpha;
 			}
 			Vector2 vector2 = default(Vector2);
-			((Vector2)(ref vector2))._002Ector((float)(j * 16), (float)(i * 16 + (int)num11 * 2));
+			vector2 = new Vector2((float)(j * 16), (float)(i * 16 + (int)num11 * 2));
 			Rectangle value = default(Rectangle);
-			((Rectangle)(ref value))._002Ector(0, 0, 16, 16 - (int)num11 * 2);
+			value = new Rectangle(0, 0, 16, 16 - (int)num11 * 2);
 			bool flag2 = true;
 			if (belowTile.liquid < 245 && (!belowTile.nactive() || !Main.tileSolid[belowTile.type] || Main.tileSolidTop[belowTile.type]))
 			{
@@ -300,51 +300,51 @@ public class Schematics
 				{
 					if (aboveTile.liquid > 0 && aboveTile.liquid > 0)
 					{
-						((Rectangle)(ref value))._002Ector(0, 4, 16, 16);
+						value = new Rectangle(0, 4, 16, 16);
 						num17 = 0.5f;
 					}
 					else if (aboveTile.liquid > 0)
 					{
-						((Vector2)(ref vector2))._002Ector((float)(j * 16), (float)(i * 16 + 4));
-						((Rectangle)(ref value))._002Ector(0, 4, 16, 12);
+						vector2 = new Vector2((float)(j * 16), (float)(i * 16 + 4));
+						value = new Rectangle(0, 4, 16, 12);
 						num17 = 0.5f;
 					}
 					else if (belowTile.liquid > 0)
 					{
-						((Vector2)(ref vector2))._002Ector((float)(j * 16), (float)(i * 16 + (int)num11 * 2 + (int)num18 * 2));
-						((Rectangle)(ref value))._002Ector(0, 4, 16, 16 - (int)num11 * 2);
+						vector2 = new Vector2((float)(j * 16), (float)(i * 16 + (int)num11 * 2 + (int)num18 * 2));
+						value = new Rectangle(0, 4, 16, 16 - (int)num11 * 2);
 					}
 					else
 					{
-						((Vector2)(ref vector2))._002Ector((float)(j * 16 + (int)num19), (float)(i * 16 + (int)num19 * 2 + (int)num18 * 2));
-						((Rectangle)(ref value))._002Ector(0, 4, 16 - (int)num19 * 2, 16 - (int)num19 * 2);
+						vector2 = new Vector2((float)(j * 16 + (int)num19), (float)(i * 16 + (int)num19 * 2 + (int)num18 * 2));
+						value = new Rectangle(0, 4, 16 - (int)num19 * 2, 16 - (int)num19 * 2);
 					}
 				}
 				else
 				{
 					num17 = 0.5f;
-					((Rectangle)(ref value))._002Ector(0, 4, 16, 16 - (int)num11 * 2 + (int)num18 * 2);
+					value = new Rectangle(0, 4, 16, 16 - (int)num11 * 2 + (int)num18 * 2);
 				}
 			}
 			else if (aboveTile.liquid > 32)
 			{
-				((Rectangle)(ref value))._002Ector(0, 4, value.Width, value.Height);
+				value = new Rectangle(0, 4, value.Width, value.Height);
 			}
 			else if (num11 < 1f && aboveTile.nactive() && Main.tileSolid[aboveTile.type] && !Main.tileSolidTop[aboveTile.type])
 			{
-				((Vector2)(ref vector2))._002Ector((float)(j * 16), (float)(i * 16));
-				((Rectangle)(ref value))._002Ector(0, 4, 16, 16);
+				vector2 = new Vector2((float)(j * 16), (float)(i * 16));
+				value = new Rectangle(0, 4, 16, 16);
 			}
-			if ((((Color)(ref color)).R > 20 || ((Color)(ref color)).B > 20 || ((Color)(ref color)).G > 20) && value.Y < 4)
+			if ((color.R > 20 || color.B > 20 || color.G > 20) && value.Y < 4)
 			{
-				int num20 = ((Color)(ref color)).R;
-				if (((Color)(ref color)).G > num20)
+				int num20 = color.R;
+				if (color.G > num20)
 				{
-					num20 = ((Color)(ref color)).G;
+					num20 = color.G;
 				}
-				if (((Color)(ref color)).B > num20)
+				if (color.B > num20)
 				{
-					num20 = ((Color)(ref color)).B;
+					num20 = color.B;
 				}
 				num20 /= 30;
 				if (Main.rand.Next(20000) < num20)
@@ -372,17 +372,17 @@ public class Schematics
 					num17 = 1f;
 				}
 			}
-			float num23 = (float)(int)((Color)(ref color)).R * num17;
-			float num24 = (float)(int)((Color)(ref color)).G * num17;
-			float num25 = (float)(int)((Color)(ref color)).B * num17;
-			float num26 = (float)(int)((Color)(ref color)).A * num17;
-			((Color)(ref color))._002Ector((int)(byte)num23, (int)(byte)num24, (int)(byte)num25, (int)(byte)num26);
+			float num23 = (float)(int)color.R * num17;
+			float num24 = (float)(int)color.G * num17;
+			float num25 = (float)(int)color.B * num17;
+			float num26 = (float)(int)color.A * num17;
+			color = new Color((int)(byte)num23, (int)(byte)num24, (int)(byte)num25, (int)(byte)num26);
 			if (flag)
 			{
-				((Color)(ref color))._002Ector(((Color)(ref color)).ToVector4() * LiquidRenderer.GetShimmerBaseColor(j, i));
+				color = new Color(color.ToVector4() * LiquidRenderer.GetShimmerBaseColor(j, i));
 			}
 			Color color2 = color;
-			if (num12 != 1 && ((double)(int)((Color)(ref color2)).R > (double)num6 * 0.6 || (double)(int)((Color)(ref color2)).G > (double)num6 * 0.65 || (double)(int)((Color)(ref color2)).B > (double)num6 * 0.7))
+			if (num12 != 1 && ((double)(int)color2.R > (double)num6 * 0.6 || (double)(int)color2.G > (double)num6 * 0.65 || (double)(int)color2.B > (double)num6 * 0.7))
 			{
 				for (int l = 0; l < 4; l++)
 				{
@@ -422,18 +422,18 @@ public class Schematics
 						num28 = 8;
 						height = 8 - (16 - value.Height);
 					}
-					num23 = (float)(int)((Color)(ref color4)).R * num17;
-					num24 = (float)(int)((Color)(ref color4)).G * num17;
-					num25 = (float)(int)((Color)(ref color4)).B * num17;
-					num26 = (float)(int)((Color)(ref color4)).A * num17;
-					((Color)(ref color4))._002Ector((int)(byte)num23, (int)(byte)num24, (int)(byte)num25, (int)(byte)num26);
-					((Color)(ref color3)).R = (byte)((((Color)(ref color2)).R * 3 + ((Color)(ref color4)).R * 2) / 5);
-					((Color)(ref color3)).G = (byte)((((Color)(ref color2)).G * 3 + ((Color)(ref color4)).G * 2) / 5);
-					((Color)(ref color3)).B = (byte)((((Color)(ref color2)).B * 3 + ((Color)(ref color4)).B * 2) / 5);
-					((Color)(ref color3)).A = (byte)((((Color)(ref color2)).A * 3 + ((Color)(ref color4)).A * 2) / 5);
+					num23 = (float)(int)color4.R * num17;
+					num24 = (float)(int)color4.G * num17;
+					num25 = (float)(int)color4.B * num17;
+					num26 = (float)(int)color4.A * num17;
+					color4 = new Color((int)(byte)num23, (int)(byte)num24, (int)(byte)num25, (int)(byte)num26);
+					color3.R = (byte)((color2.R * 3 + color4.R * 2) / 5);
+					color3.G = (byte)((color2.G * 3 + color4.G * 2) / 5);
+					color3.B = (byte)((color2.B * 3 + color4.B * 2) / 5);
+					color3.A = (byte)((color2.A * 3 + color4.A * 2) / 5);
 					if (flag)
 					{
-						((Color)(ref color3))._002Ector(((Color)(ref color3)).ToVector4() * LiquidRenderer.GetShimmerBaseColor(j, i));
+						color3 = new Color(color3.ToVector4() * LiquidRenderer.GetShimmerBaseColor(j, i));
 					}
 					spriteBatch.Draw(TextureAssets.Liquid[num12].Value, vector2 + new Vector2((float)num27, (float)num28) + vector, (Rectangle?)new Rectangle(value.X + num27, value.Y + num28, width, height), color3, 0f, default(Vector2), 1f, (SpriteEffects)0, 0f);
 					if (flag)
@@ -454,16 +454,16 @@ public class Schematics
 			if (belowTile.halfBrick())
 			{
 				color = Color.White;
-				num23 = (float)(int)((Color)(ref color)).R * num17;
-				num24 = (float)(int)((Color)(ref color)).G * num17;
-				num25 = (float)(int)((Color)(ref color)).B * num17;
-				num26 = (float)(int)((Color)(ref color)).A * num17;
-				((Color)(ref color))._002Ector((int)(byte)num23, (int)(byte)num24, (int)(byte)num25, (int)(byte)num26);
+				num23 = (float)(int)color.R * num17;
+				num24 = (float)(int)color.G * num17;
+				num25 = (float)(int)color.B * num17;
+				num26 = (float)(int)color.A * num17;
+				color = new Color((int)(byte)num23, (int)(byte)num24, (int)(byte)num25, (int)(byte)num26);
 				if (flag)
 				{
-					((Color)(ref color))._002Ector(((Color)(ref color)).ToVector4() * LiquidRenderer.GetShimmerBaseColor(j, i));
+					color = new Color(color.ToVector4() * LiquidRenderer.GetShimmerBaseColor(j, i));
 				}
-				((Vector2)(ref vector2))._002Ector((float)(j * 16), (float)(i * 16 + 16));
+				vector2 = new Vector2((float)(j * 16), (float)(i * 16 + 16));
 				spriteBatch.Draw(TextureAssets.Liquid[num12].Value, vector2 + vector, (Rectangle?)new Rectangle(0, 4, 16, 8), color, 0f, default(Vector2), 1f, (SpriteEffects)0, 0f);
 				if (flag)
 				{
@@ -523,7 +523,7 @@ public class Schematics
 						continue;
 					}
 					LegacyTile tile = Mods.copiedTiles[tileIndex];
-					((Vector2)(ref pos))._002Ector((float)(i - startX), (float)(j - startY));
+					pos = new Vector2((float)(i - startX), (float)(j - startY));
 					if (!(pos.X > (float)width) && !(pos.Y > (float)height))
 					{
 						MapTile mT = MapHelper.CreateMapTile_FromLegacyTile(tile, i, j);
@@ -1405,7 +1405,7 @@ public class Schematics
 							if (Mods.pasteInTShock && Main.netMode == 1)
 							{
 								bool tilePasted = false;
-								((Vector2)(ref fakePos))._002Ector((float)((i + 2) * 16), (float)(j * 16));
+								fakePos = new Vector2((float)((i + 2) * 16), (float)(j * 16));
 								Mods.FakeNetMessage13(fakePos, 58);
 								if (tile.WallType > 0 && Mods.wallToItemDictionarySearch.ContainsKey(tile.WallType) && !sameWall)
 								{
@@ -2064,7 +2064,7 @@ public class Schematics
 					Item toUse = GetItemDrop(i, j, lTile, includeLargeObjectDrops: true);
 					if ((tile.active() && toUse.createTile != -1 && toUse.createTile != tile.type) || ShouldPlaceThisTile(tile))
 					{
-						((Vector2)(ref fakePos))._002Ector((float)((i + 2) * 16), (float)(j * 16));
+						fakePos = new Vector2((float)((i + 2) * 16), (float)(j * 16));
 						tilesSent = PasteTiles_ConvertTiles(i, j, tilesSent, tile, fakePos);
 						if (tile.active())
 						{
@@ -3480,8 +3480,8 @@ public class Schematics
 			{
 				for (int j = 0; j < schemSizeY; j++)
 				{
-					((Vector2)(ref screenPos))._002Ector((float)(Mods.pasteImagePreviewPos.X * 16 + i * 3200), (float)(Mods.pasteImagePreviewPos.Y * 16 + j * 2400));
-					((Vector2)(ref dispPos))._002Ector(startPos.X + (float)(i * 3200), startPos.Y + (float)(j * 2400));
+					screenPos = new Vector2((float)(Mods.pasteImagePreviewPos.X * 16 + i * 3200), (float)(Mods.pasteImagePreviewPos.Y * 16 + j * 2400));
+					dispPos = new Vector2(startPos.X + (float)(i * 3200), startPos.Y + (float)(j * 2400));
 					if (Mods.WithinScreenBounds(new Rectangle((int)screenPos.X, (int)screenPos.Y, 3200, 2400), -16))
 					{
 						if (worldSchemTargets[i, j] != null && !((GraphicsResource)worldSchemTargets[i, j]).IsDisposed)
@@ -3503,8 +3503,8 @@ public class Schematics
 			{
 				for (int l = 0; l < schemMapSizeY; l++)
 				{
-					((Vector2)(ref screenPos2))._002Ector((float)(Mods.pasteImagePreviewPos.X * 16 + k * 3200), (float)(Mods.pasteImagePreviewPos.Y * 16 + l * 2400));
-					((Vector2)(ref dispPos2))._002Ector(startPos.X + (float)(k * 3200), startPos.Y + (float)(l * 2400));
+					screenPos2 = new Vector2((float)(Mods.pasteImagePreviewPos.X * 16 + k * 3200), (float)(Mods.pasteImagePreviewPos.Y * 16 + l * 2400));
+					dispPos2 = new Vector2(startPos.X + (float)(k * 3200), startPos.Y + (float)(l * 2400));
 					if (Mods.WithinScreenBounds(new Rectangle((int)screenPos2.X, (int)screenPos2.Y, 3200, 2400), -16))
 					{
 						if (mapSchemTargets[k, l] != null && !((GraphicsResource)mapSchemTargets[k, l]).IsDisposed)
@@ -3524,7 +3524,7 @@ public class Schematics
 		Rectangle.Intersect(ref value2, ref value, ref result);
 		if (result.Width != 0 && result.Height != 0)
 		{
-			((Rectangle)(ref result)).Offset(-value2.X, -value2.Y);
+			result.Offset(-value2.X, -value2.Y);
 			if (isPlayerUpsideDown)
 			{
 				result.Y = (int)verticalFlipOffset - result.Y;
@@ -3605,7 +3605,7 @@ public class Schematics
 		}
 		Main.instance.MouseText(Mods.PasteModeString(), 0, 0);
 		Point res = default(Point);
-		((Point)(ref res))._002Ector(-1, -1);
+		res = new Point(-1, -1);
 		if (!Mods.motionlessPaste)
 		{
 			Mods.GetMapCoordinatesModV2(Main.mouseX, Main.mouseY, 0, out res);
@@ -3625,7 +3625,7 @@ public class Schematics
 			return;
 		}
 		Color color = default(Color);
-		((Color)(ref color))._002Ector(210, 210, 210, 100);
+		color = new Color(210, 210, 210, 100);
 		Mods.GetMapCoordinatesModV2(res.X, res.Y, 1, out var res2);
 		if (!Mods.worldPreviewOnMap)
 		{
@@ -3634,7 +3634,7 @@ public class Schematics
 			{
 				for (int j = 0; j < schemMapSizeY; j++)
 				{
-					((Vector2)(ref dispPos))._002Ector((float)res2.X + (float)(i * 3200) * Main.mapFullscreenScale / 16f, (float)res2.Y + (float)(j * 2400) * Main.mapFullscreenScale / 16f);
+					dispPos = new Vector2((float)res2.X + (float)(i * 3200) * Main.mapFullscreenScale / 16f, (float)res2.Y + (float)(j * 2400) * Main.mapFullscreenScale / 16f);
 					if (Mods.WithinScreenBoundsMap(new Rectangle((int)dispPos.X, (int)dispPos.Y, (int)(3200f * Main.mapFullscreenScale / 16f), (int)(2400f * Main.mapFullscreenScale / 16f)), -1))
 					{
 						if (mapSchemTargets[i, j] != null && !((GraphicsResource)mapSchemTargets[i, j]).IsDisposed)
@@ -3655,7 +3655,7 @@ public class Schematics
 			{
 				for (int l = 0; l < schemSizeY; l++)
 				{
-					((Vector2)(ref dispPos2))._002Ector((float)res2.X + (float)(k * 3200) * Main.mapFullscreenScale / 16f, (float)res2.Y + (float)(l * 2400) * Main.mapFullscreenScale / 16f);
+					dispPos2 = new Vector2((float)res2.X + (float)(k * 3200) * Main.mapFullscreenScale / 16f, (float)res2.Y + (float)(l * 2400) * Main.mapFullscreenScale / 16f);
 					if (Mods.WithinScreenBoundsMap(new Rectangle((int)dispPos2.X, (int)dispPos2.Y, (int)(3200f * Main.mapFullscreenScale / 16f), (int)(2400f * Main.mapFullscreenScale / 16f)), -4))
 					{
 						if (worldSchemTargets[k, l] != null && !((GraphicsResource)worldSchemTargets[k, l]).IsDisposed)
@@ -3672,14 +3672,14 @@ public class Schematics
 		CaptureInterface.GetMapCoords(res.X, res.Y, 1, out var result2);
 		CaptureInterface.GetMapCoords(res.X + schematicSizeX, res.Y + schematicSizeY, 1, out var result3);
 		Rectangle value3 = default(Rectangle);
-		((Rectangle)(ref value3))._002Ector(result2.X, result2.Y, result3.X - result2.X, result3.Y - result2.Y);
+		value3 = new Rectangle(result2.X, result2.Y, result3.X - result2.X, result3.Y - result2.Y);
 		Rectangle value4 = default(Rectangle);
-		((Rectangle)(ref value4))._002Ector(0, 0, Main.screenWidth + 1, Main.screenHeight + 1);
+		value4 = new Rectangle(0, 0, Main.screenWidth + 1, Main.screenHeight + 1);
 		Rectangle result4 = default(Rectangle);
 		Rectangle.Intersect(ref value4, ref value3, ref result4);
 		if (result4.Width != 0 && result4.Height != 0)
 		{
-			((Rectangle)(ref result4)).Offset(-value4.X, -value4.Y);
+			result4.Offset(-value4.X, -value4.Y);
 			for (int m = 0; m < 2; m++)
 			{
 				spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(result4.X, result4.Y + ((m == 1) ? result4.Height : (-2)), result4.Width, 2), Mods.pasteBorderColor);
@@ -8715,7 +8715,7 @@ public class Schematics
 										else if (Mods.drawPhotoType == 1)
 										{
 											LegacyTile legacyTile = new LegacyTile();
-											((Color)(ref val3))._002Ector((int)pixelSpan[num + 2], (int)pixelSpan[num + 1], (int)pixelSpan[num], (int)pixelSpan[num + 3]);
+											val3 = new Color((int)pixelSpan[num + 2], (int)pixelSpan[num + 1], (int)pixelSpan[num], (int)pixelSpan[num + 3]);
 											if (list2.Contains(val3))
 											{
 												Mods.copiedTiles.Add(list3[list2.IndexOf(val3)]);
@@ -8723,7 +8723,7 @@ public class Schematics
 											else
 											{
 												list2.Add(val3);
-												if (((Color)(ref val3)).A > 30)
+												if (val3.A > 30)
 												{
 													KeyValuePair<ColorTable, byte>? closestWallColor = GetClosestWallColor(val3);
 													if (closestWallColor.HasValue)
@@ -8844,9 +8844,9 @@ public class Schematics
 
 	public static int GetPixelColorDifferenceDistance(Color current, Color match)
 	{
-		byte b = (byte)(((Color)(ref current)).R - ((Color)(ref match)).R);
-		int num = ((Color)(ref current)).G - ((Color)(ref match)).G;
-		int num2 = ((Color)(ref current)).B - ((Color)(ref match)).B;
+		byte b = (byte)(current.R - match.R);
+		int num = current.G - match.G;
+		int num2 = current.B - match.B;
 		return b * b + num * num + num2 * num2;
 	}
 
@@ -8941,7 +8941,7 @@ public class Schematics
 
 	public static bool ColorWithinRange(Color color, Color wColor, int range)
 	{
-		if (((Color)(ref wColor)).R > ((Color)(ref color)).R - range && ((Color)(ref wColor)).R < ((Color)(ref color)).R + range && ((Color)(ref wColor)).B > ((Color)(ref color)).B - range && ((Color)(ref wColor)).B < ((Color)(ref color)).B + range && ((Color)(ref wColor)).G > ((Color)(ref color)).G - range && ((Color)(ref wColor)).G < ((Color)(ref color)).G + range && ((Color)(ref wColor)).A > 180)
+		if (wColor.R > color.R - range && wColor.R < color.R + range && wColor.B > color.B - range && wColor.B < color.B + range && wColor.G > color.G - range && wColor.G < color.G + range && wColor.A > 180)
 		{
 			return true;
 		}
