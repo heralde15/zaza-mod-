@@ -35,7 +35,7 @@ partial class Main
 
 	private static void DrawInterface_4_2_AdminPanel()
 	{
-		AdminPanel.Draw(spriteBatch);
+		HerosModPanel.Draw(spriteBatch);
 	}
 
 	private static void DrawInterface_4_1_CraftingReach()
