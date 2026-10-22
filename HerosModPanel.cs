@@ -140,6 +140,8 @@ internal static partial class HerosModPanel
     private static Point? worldPos2;
     private static string worldTileType = "1";
     private static string worldReplaceType = "0";
+    private static string worldWallType = "1";
+    private static string worldReplaceWallType = "0";
     private static string worldSchematicStatus = "Marca POS1 y POS2 para exportar.";
     private static int worldEditUndoType = -1;
     private static readonly List<(int x, int y, Tile tile)> worldEditUndo = new();
@@ -2253,13 +2255,29 @@ internal static partial class HerosModPanel
         DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 12, worldTileType, mouse, "1");
         DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 13, worldReplaceType, mouse, "0");
         y += 33;
+        Utils.DrawBorderString(sb, "Wall ID:", new Vector2(bx, y), Color.White, 0.7f);
+        Utils.DrawBorderString(sb, "Reemplazar wall ID:", new Vector2(bx + 250, y), Color.White, 0.7f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 27, worldWallType, mouse, "1");
+        DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 28, worldReplaceWallType, mouse, "0");
+        y += 33;
         if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Fill selección", mouse, new Color(50, 105, 70)))
             ApplyWorldEdit("fill");
         if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Clear selección", mouse, new Color(135, 65, 60)))
             ApplyWorldEdit("clear");
         y += RowH + 7;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Replace ID → ID", mouse, new Color(80, 75, 130)))
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Replace tile ID → ID", mouse, new Color(80, 75, 130)))
             ApplyWorldEdit("replace");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Contorno de tiles", mouse, new Color(65, 105, 135)))
+            ApplyWorldEdit("outline");
+        y += RowH + 7;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar paredes", mouse, new Color(50, 105, 70)))
+            ApplyWorldEdit("wallfill");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Borrar paredes", mouse, new Color(135, 65, 60)))
+            ApplyWorldEdit("wallclear");
+        y += RowH + 7;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar wall ID", mouse, new Color(80, 75, 130)))
+            ApplyWorldEdit("wallreplace");
         if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse))
             UndoWorldEdit();
         y += RowH + 7;
@@ -2385,6 +2403,7 @@ internal static partial class HerosModPanel
             SetStatus("Marca POS1 y POS2 antes de editar.");
             return;
         }
+
         int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
         int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
         int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
@@ -2395,11 +2414,22 @@ internal static partial class HerosModPanel
             SetStatus("Selección demasiado grande para editar de una vez (máximo 100 000 tiles). Reduce el área.");
             return;
         }
+
         int tileId = int.TryParse(worldTileType, out int parsedTile) ? parsedTile : 1;
         int replaceId = int.TryParse(worldReplaceType, out int parsedReplace) ? parsedReplace : 0;
-        if (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count)
+        int wallId = int.TryParse(worldWallType, out int parsedWall) ? parsedWall : 1;
+        int replaceWallId = int.TryParse(worldReplaceWallType, out int parsedReplaceWall) ? parsedReplaceWall : 0;
+        bool tileOperation = operation == "fill" || operation == "replace" || operation == "outline" || operation == "clear";
+        bool wallOperation = operation == "wallfill" || operation == "wallclear" || operation == "wallreplace";
+
+        if (tileOperation && (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count))
         {
             SetStatus("Tile ID fuera de rango.");
+            return;
+        }
+        if (wallOperation && (wallId < 0 || wallId >= WallID.Count || replaceWallId < 0 || replaceWallId >= WallID.Count))
+        {
+            SetStatus("Wall ID fuera de rango.");
             return;
         }
 
@@ -2409,25 +2439,63 @@ internal static partial class HerosModPanel
         for (int yy = y1; yy <= y2; yy++)
         {
             Tile tile = Main.tile[x, yy];
-            if (tile == null) continue;
+            if (tile == null)
+                continue;
+
             if (operation == "replace" && (!tile.HasTile || tile.TileType != replaceId))
                 continue;
-            if (operation == "fill" && tileId == 0)
-                operation = "clear";
+            if (operation == "wallreplace" && tile.WallType != replaceWallId)
+                continue;
+            if (operation == "wallclear" && tile.WallType == 0)
+                continue;
+            if (operation == "clear" && !tile.HasTile)
+                continue;
+            if (operation == "outline" && x != x1 && x != x2 && yy != y1 && yy != y2)
+                continue;
+
             worldEditUndo.Add((x, yy, (Tile)tile.Clone()));
-            if (operation == "clear")
-                WorldGen.KillTile(x, yy, false, false, true);
-            else if (operation == "fill")
-                WorldGen.PlaceTile(x, yy, tileId, true, true);
-            else if (operation == "replace")
+            switch (operation)
             {
-                WorldGen.KillTile(x, yy, false, false, true);
-                if (tileId > 0) WorldGen.PlaceTile(x, yy, tileId, true, true);
+                case "clear":
+                    WorldGen.KillTile(x, yy, false, false, true);
+                    break;
+                case "fill":
+                    if (tileId == 0)
+                        WorldGen.KillTile(x, yy, false, false, true);
+                    else
+                        WorldGen.PlaceTile(x, yy, tileId, true, true);
+                    break;
+                case "replace":
+                    WorldGen.KillTile(x, yy, false, false, true);
+                    if (tileId > 0)
+                        WorldGen.PlaceTile(x, yy, tileId, true, true);
+                    break;
+                case "outline":
+                    if (tileId == 0)
+                        WorldGen.KillTile(x, yy, false, false, true);
+                    else
+                        WorldGen.PlaceTile(x, yy, tileId, true, true);
+                    break;
+                case "wallclear":
+                    tile.WallType = 0;
+                    break;
+                case "wallfill":
+                    tile.WallType = (ushort)wallId;
+                    break;
+                case "wallreplace":
+                    tile.WallType = (ushort)wallId;
+                    break;
             }
             changed++;
         }
-        worldEditUndoType = operation == "clear" ? 0 : tileId;
-        SetStatus($"WorldEdit {operation}: {changed} tiles. Undo disponible para la última operación.");
+
+        if (changed == 0)
+        {
+            worldEditUndo.Clear();
+            SetStatus("No hubo cambios en la selección.");
+            return;
+        }
+        SetStatus($"WorldEdit {operation}: {changed:N0} celdas modificadas. Undo disponible para la última operación.");
     }
 
     private static void UndoWorldEdit()
