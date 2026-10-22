@@ -1758,7 +1758,7 @@ internal static partial class HerosModPanel
         if (int.TryParse(editorRarity, out int rarity)) it.rare = (sbyte)Math.Clamp(rarity, -1, 11);
         if (int.TryParse(editorMana, out int mana)) it.mana = Math.Clamp(mana, 0, 100000);
         if (int.TryParse(editorUseStyle, out int useStyle)) it.useStyle = Math.Clamp(useStyle, 0, 20);
-        if (int.TryParse(editorAmmo, out int ammo)) it.useAmmo = Math.Clamp(ammo, 0, AmmoID.Count - 1);
+        if (int.TryParse(editorAmmo, out int ammo)) it.useAmmo = Math.Max(0, ammo);
         if (float.TryParse(editorScale, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float scale))
             it.scale = Math.Clamp(scale, 0.1f, 100f);
         it.autoReuse = editorAutoReuse;
