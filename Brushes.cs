@@ -1286,7 +1286,7 @@ public class Brushes
 		}
 		int brushSizeSq = brushSize * brushSize;
 		Rectangle screenRect = default(Rectangle);
-		((Rectangle)(ref screenRect))._002Ector(0, 0, Main.screenWidth, Main.screenHeight);
+		screenRect = new Rectangle(0, 0, Main.screenWidth, Main.screenHeight);
 		Rectangle rect = default(Rectangle);
 		Rectangle result = default(Rectangle);
 		for (int dx = -realSize; dx <= realSize; dx++)
@@ -1295,11 +1295,11 @@ public class Brushes
 			int halfHeight = ((!useCircle) ? brushSize : ((int)Math.Sqrt(Math.Max(0, brushSizeSq - 1 - dx * dx))));
 			Mods.GetMapCoordinatesModV2(num, mapCoords.Y - halfHeight, 1, out var columnTop);
 			Mods.GetMapCoordinatesModV2(num + 1, mapCoords.Y + halfHeight + 1, 1, out var columnBottom);
-			((Rectangle)(ref rect))._002Ector(columnTop.X, columnTop.Y, columnBottom.X - columnTop.X, columnBottom.Y - columnTop.Y);
-			if (((Rectangle)(ref rect)).Intersects(screenRect))
+			rect = new Rectangle(columnTop.X, columnTop.Y, columnBottom.X - columnTop.X, columnBottom.Y - columnTop.Y);
+			if (rect.Intersects(screenRect))
 			{
-				Rectangle.Intersect(ref screenRect, ref rect, ref result);
-				((Rectangle)(ref result)).Offset(-screenRect.X, -screenRect.Y);
+				result = Rectangle.Intersect(screenRect, rect);
+				result.Offset(-screenRect.X, -screenRect.Y);
 				spriteBatch.Draw(texture, result, (Rectangle?)new Rectangle(0, 0, 1, 1), color);
 			}
 		}
