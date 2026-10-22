@@ -25,7 +25,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, Jefes, Teleport, Jugadores, Info, Inventario, Guia }
+    private enum Tab { Jugador, Mundo, Items, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -61,6 +61,65 @@ internal static class HerosModPanel
     private static string itemQuery = "";
     private static string itemAmount = "1";
     private static string itemPrefix = "-1";
+    // Herramientas adicionales de moderación/comandos (requieren servidor con TShock/plugins).
+    private static string moderationTarget = "";
+    private static string moderationReason = "";
+    private static int toolsPage;
+
+    private static readonly (string label, string command)[] extraTools = new (string, string)[]
+    {
+        ("Kick jugador", "/kick {target} {reason}"),
+        ("Ban jugador", "/ban {target} {reason}"),
+        ("Silenciar", "/mute {target}"),
+        ("Quitar silencio", "/unmute {target}"),
+        ("Teletransportarme", "/tp {target}"),
+        ("Traer jugador", "/tphere {target}"),
+        ("Eliminar jugador", "/kill {target}"),
+        ("Curar jugador", "/heal {target}"),
+        ("Slap / empujar", "/slap {target}"),
+        ("Ver usuario", "/userinfo {target}"),
+        ("Lista de jugadores", "/who"),
+        ("Quién está jugando", "/playing"),
+        ("Ver reglas", "/rules"),
+        ("Mensaje del día", "/motd"),
+        ("Ayuda del servidor", "/help"),
+        ("Ir al spawn", "/spawn"),
+        ("Volver a casa", "/home"),
+        ("Volver atrás", "/back"),
+        ("Listar warps", "/warp list"),
+        ("Usar warp", "/warp {target}"),
+        ("Eliminar enemigos", "/butcher"),
+        ("Asentar líquidos", "/settle"),
+        ("Poner de día", "/time day"),
+        ("Poner de noche", "/time night"),
+        ("Poner mediodía", "/time noon"),
+        ("Poner medianoche", "/time midnight"),
+        ("Iniciar lluvia", "/rain start"),
+        ("Detener lluvia", "/rain stop"),
+        ("Luna de sangre", "/bloodmoon"),
+        ("Eclipse solar", "/eclipse"),
+        ("Invasión goblin", "/invasion goblin"),
+        ("Invasión helada", "/invasion frost"),
+        ("Invasión pirata", "/invasion pirate"),
+        ("Invasión marciana", "/invasion martian"),
+        ("Luna de calabaza", "/invasion pumpkin"),
+        ("Luna helada", "/invasion frostmoon"),
+        ("Evento Solar", "/invasion solar"),
+        ("Evento Vortex", "/invasion vortex"),
+        ("Evento Nebula", "/invasion nebula"),
+        ("Evento Stardust", "/invasion stardust"),
+        ("Crecer plantas", "/grow"),
+        ("Invocar meteorito", "/dropmeteor"),
+        ("Activar Hardmode", "/hardmode"),
+        ("Listar grupos", "/group list"),
+        ("Listar usuarios", "/user list"),
+        ("Listar regiones", "/region list"),
+        ("Info de región", "/region info {target}"),
+        ("Cambiar clave servidor", "/serverpassword {target}"),
+        ("Buscar actualizaciones", "/checkupdates"),
+        ("Info del mundo", "/world")
+    };
+
 
     private static string statusMessage = "HERO's Mod listo.";
     private static int statusTimer;
@@ -202,7 +261,7 @@ internal static class HerosModPanel
         }
 
         Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Info, Tab.Inventario, Tab.Guia];
+                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
         for (int i = 0; i < tabs.Length; i++)
@@ -253,6 +312,9 @@ internal static class HerosModPanel
                 break;
             case Tab.Inventario:
                 DrawInventoryTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.Herramientas:
+                DrawToolsTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Guia:
                 DrawGuideTab(sb, pixel, panelRect, ref contentY);
@@ -1080,6 +1142,81 @@ internal static class HerosModPanel
         }
     }
 
+
+    // ------------------------------------------------------------------ Herramientas adicionales: 50 acciones paginadas
+
+    private static void DrawToolsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Centro de moderación y administración · 50 herramientas");
+        Utils.DrawBorderString(sb, "Objetivo (jugador/warp/región/clave):", new Vector2(panel.X + Pad, y), Color.White, 0.66f);
+        Utils.DrawBorderString(sb, "Motivo (kick/ban):", new Vector2(panel.X + 330, y), Color.White, 0.66f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 300, 25), 4, moderationTarget, mouse, "Nombre exacto o argumento...");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 320, y, 300, 25), 5, moderationReason, mouse, "Motivo opcional...");
+        y += 32;
+
+        int pageSize = 10;
+        int first = toolsPage * pageSize;
+        int cols = 2;
+        int buttonW = (Width - Pad * 2 - 8) / cols;
+        for (int localIndex = 0; localIndex < pageSize; localIndex++)
+        {
+            int index = first + localIndex;
+            if (index >= extraTools.Length)
+                break;
+
+            int col = localIndex % cols;
+            int row = localIndex / cols;
+            var rect = new Rectangle(panel.X + Pad + col * (buttonW + 8), y + row * 29, buttonW, 25);
+            Color color = index < 10 ? new Color(112, 55, 62)
+                : index < 20 ? new Color(45, 86, 120)
+                : index < 30 ? new Color(92, 76, 43)
+                : index < 40 ? new Color(92, 58, 112)
+                : new Color(48, 91, 75);
+            if (DrawButton(sb, pixel, rect, $"{index + 1:00}. {extraTools[index].label}", mouse, color))
+                RunExtraTool(index);
+        }
+
+        int navY = panel.Bottom - 73;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, navY, 130, 23), "Anterior", mouse))
+            toolsPage = Math.Max(0, toolsPage - 1);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 138, navY, 130, 23), "Siguiente", mouse))
+            toolsPage = Math.Min((extraTools.Length - 1) / pageSize, toolsPage + 1);
+        Utils.DrawBorderString(sb, $"Página {toolsPage + 1}/5 · {extraTools.Length} acciones",
+            new Vector2(panel.X + Pad + 285, navY + 4), new Color(180, 205, 235), 0.72f);
+        Utils.DrawBorderString(sb, "Solo se envían comandos; el servidor y sus permisos deciden si se ejecutan.",
+            new Vector2(panel.X + Pad, panel.Bottom - 43), new Color(235, 195, 120), 0.61f);
+    }
+
+    private static void RunExtraTool(int index)
+    {
+        if (index < 0 || index >= extraTools.Length)
+            return;
+
+        if (Main.netMode != 1 || serverMode != ServerMode.Comandos)
+        {
+            SetStatus("Estas herramientas requieren multijugador y modo COMANDOS (TShock/plugins).");
+            return;
+        }
+
+        string template = extraTools[index].command;
+        if (template.Contains("{target}") && string.IsNullOrWhiteSpace(moderationTarget))
+        {
+            SetStatus("Escribe primero el objetivo en el campo superior.");
+            return;
+        }
+
+        string target = Quote(moderationTarget.Trim());
+        string reason = string.IsNullOrWhiteSpace(moderationReason) ? "" : Quote(moderationReason.Trim());
+        string command = template.Replace("{target}", target).Replace("{reason}", reason);
+        while (command.Contains("  "))
+            command = command.Replace("  ", " ");
+        command = command.Trim();
+
+        SendCmd(command);
+        SetStatus($"Herramienta enviada: {extraTools[index].label}. El servidor debe permitir el comando.");
+    }
+
     // ------------------------------------------------------------------ dibujo comun
 
     private static void DrawSectionHeader(SpriteBatch sb, Rectangle panel, ref int y, string title)
@@ -1155,6 +1292,10 @@ internal static class HerosModPanel
             itemAmount = Main.GetInputText(itemAmount);
         else if (activeField == 3)
             itemPrefix = Main.GetInputText(itemPrefix);
+        else if (activeField == 4)
+            moderationTarget = Main.GetInputText(moderationTarget);
+        else if (activeField == 5)
+            moderationReason = Main.GetInputText(moderationReason);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
