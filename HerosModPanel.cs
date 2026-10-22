@@ -1617,16 +1617,20 @@ internal static class HerosModPanel
             return;
         }
 
-        // statLifeMax2/statManaMax2 se recalculan desde equipo y mejoras; aquí solo se ajustan
-        // los valores actuales dentro de los límites reales permitidos por el jugador.
-        p.statLife = Math.Clamp(currentLife, 0, Math.Max(1, p.statLifeMax2));
-        p.statMana = Math.Clamp(currentMana, 0, Math.Max(0, p.statManaMax2));
+        // Cambia los máximos base del personaje local. En multijugador el servidor puede
+        // ignorarlos o recalcularlos, ya que no es una API administrativa del servidor.
+        p.statLifeMax = maxLife;
+        p.statManaMax = maxMana;
+        p.statLifeMax2 = maxLife;
+        p.statManaMax2 = maxMana;
+        p.statLife = Math.Clamp(currentLife, 0, maxLife);
+        p.statMana = Math.Clamp(currentMana, 0, maxMana);
         lifeCurrent = p.statLife.ToString();
         lifeMaximum = p.statLifeMax2.ToString();
         manaCurrent = p.statMana.ToString();
         manaMaximum = p.statManaMax2.ToString();
         SyncSelf();
-        SetStatus("Valores actuales aplicados dentro de los máximos reales del personaje.");
+        SetStatus("Vida y maná ajustados localmente. En servidores, el servidor puede sobrescribirlos.");
     }
 
 
