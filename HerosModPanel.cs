@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -25,7 +26,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Personalizar }
 
     private const int Width = 760;
     private const int Height = 640;
@@ -58,6 +59,18 @@ internal static class HerosModPanel
     private const float FlySpeed = 12f;
 
     private static int activeField;
+    // Personalización local del panel: no cambia la lógica de las herramientas existentes.
+    private static string uiImagePath = "";
+    private static bool uiUseImage = false;
+    private static bool uiImageLoaded = false;
+    private static Texture2D uiImageTexture;
+    private static int uiTheme = 0;
+    private static int uiOpacity = 92;
+    private static bool uiCompactHeader = false;
+    private static bool uiShowStatus = true;
+    private static bool uiShowDecorations = true;
+    private static bool uiSettingsLoaded = false;
+    private static string uiSettingsPath => Path.Combine(Main.SavePath, "HerosModUI.txt");
     private static string itemQuery = "";
     private static string itemAmount = "1";
     private static string itemPrefix = "-1";
@@ -252,15 +265,23 @@ internal static class HerosModPanel
             Main.mouseLeftRelease = false;
         }
 
-        sb.Draw(pixel, panelRect, new Color(18, 21, 29) * 0.99f);
-        // Marco y acento superior para separar el panel del mundo.
-        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 2), new Color(85, 165, 230));
-        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, 2, panelRect.Height), new Color(55, 75, 100));
-        sb.Draw(pixel, new Rectangle(panelRect.Right - 2, panelRect.Y, 2, panelRect.Height), new Color(55, 75, 100));
-        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Bottom - 2, panelRect.Width, 2), new Color(55, 75, 100));
-        sb.Draw(pixel, titleRect, new Color(35, 42, 56));
-        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 30, panelRect.Width, 1), new Color(70, 125, 175));
-        Utils.DrawBorderString(sb, "ADMIN • CONTROL CENTER", new Vector2(panelRect.X + 12, panelRect.Y + 20), new Color(155, 180, 210), 0.55f);
+        LoadUiSettingsOnce();
+        Color uiAccent = GetUiAccent();
+        sb.Draw(pixel, panelRect, new Color(18, 21, 29) * (uiOpacity / 100f));
+        if (uiUseImage && uiImageTexture != null && !uiImageTexture.IsDisposed)
+            sb.Draw(uiImageTexture, panelRect, Color.White * (uiOpacity / 100f));
+        // Marco y acento configurable; la imagen es solo decorativa y no tapa los controles.
+        if (uiShowDecorations)
+        {
+            sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 3), uiAccent);
+            sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, 2, panelRect.Height), uiAccent * 0.75f);
+            sb.Draw(pixel, new Rectangle(panelRect.Right - 2, panelRect.Y, 2, panelRect.Height), uiAccent * 0.75f);
+            sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Bottom - 2, panelRect.Width, 2), uiAccent * 0.75f);
+        }
+        sb.Draw(pixel, titleRect, GetUiHeaderColor());
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 30, panelRect.Width, 1), uiAccent);
+        if (!uiCompactHeader)
+            Utils.DrawBorderString(sb, "ADMIN • CONTROL CENTER", new Vector2(panelRect.X + 12, panelRect.Y + 20), new Color(155, 180, 210), 0.55f);
         Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.Gold, 0.85f);
 
         string modeText = !InMultiplayer
@@ -280,7 +301,7 @@ internal static class HerosModPanel
         }
 
         Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia];
+                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Personalizar];
         int tabCols = 4;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
         for (int i = 0; i < tabs.Length; i++)
@@ -290,7 +311,7 @@ internal static class HerosModPanel
             var tabRect = new Rectangle(panelRect.X + Pad + col * (tabWidth + 4),
                 panelRect.Y + 36 + row * 27, tabWidth, 23);
             bool selected = currentTab == tabs[i];
-            Color tabColor = selected ? new Color(70, 130, 180) : new Color(45, 50, 60);
+            Color tabColor = selected ? GetUiAccent() : new Color(34, 40, 52);
             string tabLabel = tabs[i] switch
             {
                 Tab.Jugadores => "Jugadores",
@@ -298,6 +319,7 @@ internal static class HerosModPanel
                 Tab.EditorItems => "Editor Items",
                 Tab.WorldEdit => "WorldEdit",
                 Tab.Teleport => "Teleport",
+                Tab.Personalizar => "Personalizar",
                 _ => tabs[i].ToString()
             };
             if (DrawButton(sb, pixel, tabRect, tabLabel, mouse, tabColor) && !selected)
@@ -348,9 +370,12 @@ internal static class HerosModPanel
             case Tab.Guia:
                 DrawGuideTab(sb, pixel, panelRect, ref contentY);
                 break;
+            case Tab.Personalizar:
+                DrawUiCustomizeTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
         }
 
-        if (statusTimer > 0)
+        if (uiShowStatus && statusTimer > 0)
         {
             statusTimer--;
             sb.Draw(pixel, new Rectangle(panelRect.X + 8, panelRect.Bottom - 32, panelRect.Width - 16, 1), new Color(55, 70, 90));
@@ -1525,7 +1550,7 @@ internal static class HerosModPanel
     {
         bool hover = rect.Contains(mouse);
         Color bg = hover ? new Color(66, 105, 145) : (customBg ?? new Color(39, 46, 60));
-        Color edge = hover ? new Color(130, 195, 245) : new Color(66, 79, 101);
+        Color edge = hover ? GetUiAccent() : new Color(66, 79, 101);
         sb.Draw(pixel, rect, edge);
         if (rect.Width > 2 && rect.Height > 2)
             sb.Draw(pixel, new Rectangle(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2), bg);
@@ -1614,12 +1639,195 @@ internal static class HerosModPanel
             worldTileType = Main.GetInputText(worldTileType);
         else if (activeField == 13)
             worldReplaceType = Main.GetInputText(worldReplaceType);
+        else if (activeField == 14)
+            uiImagePath = Main.GetInputText(uiImagePath);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
             activeField = 0;
             Main.clrInput();
         }
+    }
+
+    // ------------------------------------------------------------------ Personalización de interfaz
+
+    private static Color GetUiAccent()
+    {
+        return uiTheme switch
+        {
+            1 => new Color(70, 210, 145), // Verde
+            2 => new Color(190, 105, 245), // Violeta
+            3 => new Color(245, 155, 65), // Naranja
+            4 => new Color(235, 85, 110), // Rojo
+            _ => new Color(85, 165, 230) // Azul
+        };
+    }
+
+    private static Color GetUiHeaderColor()
+    {
+        return uiTheme switch
+        {
+            1 => new Color(26, 55, 43),
+            2 => new Color(48, 33, 62),
+            3 => new Color(66, 44, 26),
+            4 => new Color(65, 31, 40),
+            _ => new Color(35, 42, 56)
+        };
+    }
+
+    private static void LoadUiSettingsOnce()
+    {
+        if (uiSettingsLoaded) return;
+        uiSettingsLoaded = true;
+        try
+        {
+            if (!File.Exists(uiSettingsPath)) return;
+            foreach (string line in File.ReadAllLines(uiSettingsPath))
+            {
+                int split = line.IndexOf('=');
+                if (split < 1) continue;
+                string key = line.Substring(0, split);
+                string value = line.Substring(split + 1);
+                if (key == "image") uiImagePath = value;
+                else if (key == "useImage") uiUseImage = value == "1";
+                else if (key == "theme" && int.TryParse(value, out int theme)) uiTheme = Math.Clamp(theme, 0, 4);
+                else if (key == "opacity" && int.TryParse(value, out int opacity)) uiOpacity = Math.Clamp(opacity, 45, 100);
+                else if (key == "compact") uiCompactHeader = value == "1";
+                else if (key == "status") uiShowStatus = value == "1";
+                else if (key == "decorations") uiShowDecorations = value == "1";
+            }
+            if (uiUseImage && !string.IsNullOrWhiteSpace(uiImagePath)) TryLoadUiImage();
+        }
+        catch (Exception ex)
+        {
+            SetStatus("No se pudo cargar la configuración UI: " + ex.Message);
+        }
+    }
+
+    private static void SaveUiSettings()
+    {
+        try
+        {
+            File.WriteAllLines(uiSettingsPath, new[]
+            {
+                "image=" + uiImagePath,
+                "useImage=" + (uiUseImage ? "1" : "0"),
+                "theme=" + uiTheme,
+                "opacity=" + uiOpacity,
+                "compact=" + (uiCompactHeader ? "1" : "0"),
+                "status=" + (uiShowStatus ? "1" : "0"),
+                "decorations=" + (uiShowDecorations ? "1" : "0")
+            });
+            SetStatus("Personalización guardada en " + uiSettingsPath);
+        }
+        catch (Exception ex)
+        {
+            SetStatus("No se pudo guardar: " + ex.Message);
+        }
+    }
+
+    private static void TryLoadUiImage()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(uiImagePath) || !File.Exists(uiImagePath))
+            {
+                SetStatus("No existe esa imagen. Usa la ruta completa a un PNG o JPG.");
+                return;
+            }
+            using var stream = File.OpenRead(uiImagePath);
+            Texture2D newTexture = Texture2D.FromStream(Main.instance.GraphicsDevice, stream);
+            if (uiImageTexture != null && !uiImageTexture.IsDisposed)
+                uiImageTexture.Dispose();
+            uiImageTexture = newTexture;
+            uiImageLoaded = true;
+            uiUseImage = true;
+            SetStatus("Imagen cargada. Guarda la configuración para conservarla.");
+        }
+        catch (Exception ex)
+        {
+            uiImageLoaded = false;
+            SetStatus("No se pudo cargar la imagen: " + ex.Message);
+        }
+    }
+
+    private static void DrawUiCustomizeTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Personaliza la apariencia");
+        int half = (Width - Pad * 2 - 10) / 2;
+        Utils.DrawBorderString(sb, "Tema de color", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        y += 20;
+        string[] themes = { "Azul", "Verde", "Violeta", "Naranja", "Rojo" };
+        for (int i = 0; i < themes.Length; i++)
+        {
+            int col = i % 3;
+            int row = i / 3;
+            var r = new Rectangle(panel.X + Pad + col * 112, y + row * 30, 106, 25);
+            Color swatch = i switch
+            {
+                1 => new Color(70, 210, 145),
+                2 => new Color(190, 105, 245),
+                3 => new Color(245, 155, 65),
+                4 => new Color(235, 85, 110),
+                _ => new Color(85, 165, 230)
+            };
+            if (DrawButton(sb, pixel, r, (uiTheme == i ? "✓ " : "") + themes[i], mouse, swatch))
+            {
+                uiTheme = i;
+                SetStatus("Tema cambiado a " + themes[i] + ".");
+            }
+        }
+        y += 64;
+        Utils.DrawBorderString(sb, "Imagen de fondo (PNG/JPG) — ruta completa:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        y += 20;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), 14, uiImagePath, mouse,
+            @"Ejemplo: C:\Users\pc\Pictures\fondo.png");
+        y += RowH + 6;
+        int buttonW = (Width - Pad * 2 - 12) / 3;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, buttonW, RowH), "Cargar imagen", mouse))
+            TryLoadUiImage();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + buttonW + 6, y, buttonW, RowH),
+            uiUseImage ? "Imagen: ON" : "Imagen: OFF", mouse))
+        {
+            uiUseImage = !uiUseImage;
+            if (uiUseImage && (uiImageTexture == null || uiImageTexture.IsDisposed)) TryLoadUiImage();
+            SetStatus(uiUseImage ? "Fondo de imagen activado." : "Fondo de imagen desactivado.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (buttonW + 6) * 2, y, buttonW, RowH), "Quitar imagen", mouse))
+        {
+            uiUseImage = false;
+            uiImagePath = "";
+            if (uiImageTexture != null && !uiImageTexture.IsDisposed) uiImageTexture.Dispose();
+            uiImageTexture = null;
+            uiImageLoaded = false;
+            SetStatus("Imagen quitada del panel.");
+        }
+        y += RowH + 14;
+        Utils.DrawBorderString(sb, "Opacidad del fondo: " + uiOpacity + "%", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        y += 22;
+        int smallW = (Width - Pad * 2 - 18) / 4;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, smallW, RowH), "-15%", mouse))
+            uiOpacity = Math.Max(45, uiOpacity - 15);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + smallW + 6, y, smallW, RowH), "-5%", mouse))
+            uiOpacity = Math.Max(45, uiOpacity - 5);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (smallW + 6) * 2, y, smallW, RowH), "+5%", mouse))
+            uiOpacity = Math.Min(100, uiOpacity + 5);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (smallW + 6) * 3, y, smallW, RowH), "+15%", mouse))
+            uiOpacity = Math.Min(100, uiOpacity + 15);
+        y += RowH + 12;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), uiCompactHeader ? "Cabecera compacta: ON" : "Cabecera compacta: OFF", mouse))
+            uiCompactHeader = !uiCompactHeader;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 10, y, half, RowH), uiShowDecorations ? "Bordes decorativos: ON" : "Bordes decorativos: OFF", mouse))
+            uiShowDecorations = !uiShowDecorations;
+        y += RowH + 6;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), uiShowStatus ? "Mensajes inferiores: ON" : "Mensajes inferiores: OFF", mouse))
+            uiShowStatus = !uiShowStatus;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 10, y, half, RowH), "Guardar configuración", mouse, new Color(40, 110, 75)))
+            SaveUiSettings();
+        y += RowH + 10;
+        Utils.DrawBorderString(sb, "Se guarda localmente en HerosModUI.txt dentro de la carpeta de guardado de Terraria.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
+        y += 18;
+        Utils.DrawBorderString(sb, "La imagen solo decora el panel; no se sube al servidor ni se comparte.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
     }
 
     // ------------------------------------------------------------------ servidor
