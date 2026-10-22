@@ -70,6 +70,8 @@ internal static class HerosModPanel
     private static bool uiShowStatus = true;
     private static bool uiShowDecorations = true;
     private static bool uiSettingsLoaded = false;
+    private static Keys uiToggleKey = Keys.OemTilde;
+    private static bool waitingForToggleKey = false;
     private static string uiSettingsPath => Path.Combine(Main.SavePath, "HerosModUI.txt");
     private static string itemQuery = "";
     private static string itemAmount = "1";
@@ -1600,12 +1602,39 @@ internal static class HerosModPanel
         if (Main.drawingPlayerChat || activeField != 0)
             return;
 
-        bool tilde = Main.keyState.IsKeyDown(Keys.OemTilde) && Main.oldKeyState.IsKeyUp(Keys.OemTilde);
-        bool f8 = Main.keyState.IsKeyDown(Keys.F8) && Main.oldKeyState.IsKeyUp(Keys.F8);
-        if (tilde || f8)
+        if (waitingForToggleKey)
         {
-            Visible = !Visible;
+            Keys[] pressed = Main.keyState.GetPressedKeys();
+            foreach (Keys key in pressed)
+            {
+                if (Main.oldKeyState.IsKeyDown(key))
+                    continue;
+
+                // Escape cancels capture without changing the current shortcut.
+                if (key == Keys.Escape)
+                {
+                    waitingForToggleKey = false;
+                    SetStatus("Cambio de tecla cancelado.");
+                    return;
+                }
+
+                // Ignore modifiers by themselves; choose the actual key.
+                if (key == Keys.LeftShift || key == Keys.RightShift ||
+                    key == Keys.LeftControl || key == Keys.RightControl ||
+                    key == Keys.LeftAlt || key == Keys.RightAlt)
+                    continue;
+
+                uiToggleKey = key;
+                waitingForToggleKey = false;
+                SaveUiSettings();
+                SetStatus("Tecla de HERO's Mod cambiada a " + uiToggleKey + ".");
+                return;
+            }
+            return;
         }
+
+        if (Main.keyState.IsKeyDown(uiToggleKey) && Main.oldKeyState.IsKeyUp(uiToggleKey))
+            Visible = !Visible;
     }
 
     private static void HandleTyping()
@@ -1695,6 +1724,7 @@ internal static class HerosModPanel
                 else if (key == "compact") uiCompactHeader = value == "1";
                 else if (key == "status") uiShowStatus = value == "1";
                 else if (key == "decorations") uiShowDecorations = value == "1";
+                else if (key == "toggleKey" && Enum.TryParse(value, out Keys parsedKey)) uiToggleKey = parsedKey;
             }
             if (uiUseImage && !string.IsNullOrWhiteSpace(uiImagePath)) TryLoadUiImage();
         }
@@ -1716,7 +1746,8 @@ internal static class HerosModPanel
                 "opacity=" + uiOpacity,
                 "compact=" + (uiCompactHeader ? "1" : "0"),
                 "status=" + (uiShowStatus ? "1" : "0"),
-                "decorations=" + (uiShowDecorations ? "1" : "0")
+                "decorations=" + (uiShowDecorations ? "1" : "0"),
+                "toggleKey=" + uiToggleKey
             });
             SetStatus("Personalización guardada en " + uiSettingsPath);
         }
@@ -1825,7 +1856,22 @@ internal static class HerosModPanel
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 10, y, half, RowH), "Guardar configuración", mouse, new Color(40, 110, 75)))
             SaveUiSettings();
         y += RowH + 10;
-        Utils.DrawBorderString(sb, "Se guarda localmente en HerosModUI.txt dentro de la carpeta de guardado de Terraria.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH),
+            waitingForToggleKey ? "Pulsa una tecla..." : "Tecla para abrir: " + uiToggleKey, mouse, new Color(55, 80, 115)))
+        {
+            waitingForToggleKey = true;
+            SetStatus("Pulsa la nueva tecla. Escape cancela.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 10, y, half, RowH),
+            "Restablecer tecla (~)", mouse))
+        {
+            uiToggleKey = Keys.OemTilde;
+            waitingForToggleKey = false;
+            SaveUiSettings();
+            SetStatus("Tecla restablecida a ~ (OemTilde).");
+        }
+        y += RowH + 6;
+        Utils.DrawBorderString(sb, "La tecla se guarda localmente. Escape cancela la captura.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
         y += 18;
         Utils.DrawBorderString(sb, "La imagen solo decora el panel; no se sube al servidor ni se comparte.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
     }
