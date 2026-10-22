@@ -10,8 +10,6 @@ using Terraria.GameContent;
 using Terraria.GameInput;
 using Terraria.ID;
 using Terraria.UI.Chat;
-using Terraria.ZazaMod;
-using Terraria.ZazaMod.UI;
 
 namespace Terraria.Unified.Features;
 
@@ -826,7 +824,7 @@ internal static partial class HerosModPanel
                 DrawCustomizeTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.ZazaMod:
-                DrawZazaModTab(sb, pixel, panelRect, ref contentY);
+                DrawZazaModTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
         }
 
@@ -2560,77 +2558,6 @@ internal static partial class HerosModPanel
     // ------------------------------------------------------------------ Personalización de la interfaz
     // Pestaña separada para integrar las funciones originales de Zaza Mod 1.4.4.9.
     // No sustituye ni modifica las pestañas originales de HERO's Mod.
-    private static void DrawZazaModTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
-    {
-        DrawSectionHeader(sb, panel, ref y, "Zaza Mod · interfaz original");
-        Utils.DrawBorderString(sb,
-            "Abre las pantallas reales de Zaza que ya existen en el proyecto.",
-            new Vector2(panel.X + Pad, y), Color.White, 0.72f);
-        y += 30;
-
-        int gap = 8;
-        int bw = (Width - Pad * 2 - gap) / 2;
-        Rectangle cheatRect = new Rectangle(panel.X + Pad, y, bw, RowH + 8);
-        Rectangle inventoryRect = new Rectangle(panel.X + Pad + bw + gap, y, bw, RowH + 8);
-
-        if (DrawButton(sb, pixel, cheatRect, "Abrir panel original Zaza", mouse, UiAccent))
-        {
-            try
-            {
-                if (Mods.customUI2 == null || ModsNewUICheatPanel.uiStateNewCheatPanel == null)
-                {
-                    SetStatus("La UI original de Zaza aún no está inicializada.");
-                }
-                else
-                {
-                    Mods.customUI2.SetState(ModsNewUICheatPanel.uiStateNewCheatPanel);
-                    Visible = false;
-                    SetStatus("Panel original de Zaza abierto.");
-                }
-            }
-            catch (Exception ex)
-            {
-                SetStatus("No se pudo abrir el panel Zaza: " + ex.Message);
-            }
-        }
-
-        if (DrawButton(sb, pixel, inventoryRect, "Inventario avanzado Zaza", mouse))
-        {
-            try
-            {
-                if (Mods.customUI2 == null)
-                {
-                    SetStatus("La interfaz de Zaza aún no está inicializada.");
-                }
-                else
-                {
-                    if (ModsNewUIInventoryViewer.instance == null)
-                    {
-                        ModsNewUIInventoryViewer.instance = new ModsNewUIInventoryViewer();
-                        ModsNewUIInventoryViewer.instance.Activate();
-                    }
-                    ModsNewUIInventoryViewer.targetPlayer = Main.myPlayer;
-                    Mods.customUI2.SetState(ModsNewUIInventoryViewer.instance);
-                    Visible = false;
-                    SetStatus("Inventario avanzado de Zaza abierto.");
-                }
-            }
-            catch (Exception ex)
-            {
-                SetStatus("No se pudo abrir el inventario Zaza: " + ex.Message);
-            }
-        }
-        y += RowH + 22;
-
-        DrawSectionHeader(sb, panel, ref y, "Herramientas integradas en HERO's");
-        DrawInfoLine(sb, panel, ref y, "WorldEdit", "Usa la pestaña WorldEdit de HERO's para selección y edición.");
-        DrawInfoLine(sb, panel, ref y, "Jugador / objetos", "Las herramientas actuales de HERO's se conservan.");
-        DrawInfoLine(sb, panel, ref y, "Compatibilidad", "Esta conexión usa los estados UI originales presentes en el código.");
-        y += 8;
-        Utils.DrawBorderString(sb,
-            "Build experimental: prueba las dos pantallas y comparte cualquier error de compilación o ejecución.",
-            new Vector2(panel.X + Pad, y), new Color(235, 195, 120), 0.65f);
-    }
 
     private static void DrawCustomizeTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
