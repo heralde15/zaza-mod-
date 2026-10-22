@@ -467,8 +467,8 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, "CENTRO DE CONTROL  /  TERRARIA", new Vector2(panelRect.X + 150, panelRect.Y + 12), new Color(177, 185, 205), 0.58f);
 
         string modeText = !InMultiplayer
-            ? "UN JUGADOR"
-            : (serverMode == ServerMode.Comandos ? "SERVIDOR: COMANDOS" : "SERVIDOR: DIRECTO");
+            ? "MODO: UN JUGADOR"
+            : (serverMode == ServerMode.Comandos ? "SERVIDOR CON PERMISOS (TShock)" : "ANÁRQUICO / DIRECTO");
         Color modeColor = !InMultiplayer ? new Color(35, 95, 75) : (serverMode == ServerMode.Comandos ? new Color(35, 82, 125) : new Color(125, 78, 30));
         if (DrawButton(sb, pixel, new Rectangle(panelRect.Right - 218, panelRect.Y + 8, 180, 24), modeText, mouse, modeColor))
         {
@@ -1890,7 +1890,7 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, "Maná máximo", new Vector2(panel.X + 230, y), Color.White, 0.72f);
         y += 18;
         DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 18, manaCurrent, mouse, "maná actual");
-        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 210, 26), 19, manaMaximum, mouse, "hasta Int32.MaxValue");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 210, 26), 19, manaMaximum, mouse, "0 - 999999");
         y += 34;
 
         Utils.DrawBorderString(sb, "Defensa personalizada", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
@@ -1965,7 +1965,7 @@ internal static partial class HerosModPanel
         var p = Main.LocalPlayer;
         if (!int.TryParse(lifeMaximum, out int maxLife) || maxLife < 1
             || !int.TryParse(lifeCurrent, out int currentLife) || currentLife < 0 || currentLife > maxLife
-            || !int.TryParse(manaMaximum, out int maxMana) || maxMana < 0
+            || !int.TryParse(manaMaximum, out int maxMana) || maxMana < 0 || maxMana > 999999
             || !int.TryParse(manaCurrent, out int currentMana) || currentMana < 0 || currentMana > maxMana
             || !int.TryParse(lifeDefense, out int newDefense) || newDefense < 0 || newDefense > 1000000)
         {
