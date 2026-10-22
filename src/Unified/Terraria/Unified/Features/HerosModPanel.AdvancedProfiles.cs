@@ -23,6 +23,8 @@ internal static partial class HerosModPanel
         public int MaxMana;
         public int SelectedSlot;
         public int Defense;
+        public int TileX;
+        public int TileY;
         public float MoveSpeed;
         public float RunAcceleration;
         public float MaxRunSpeed;
@@ -139,14 +141,14 @@ internal static partial class HerosModPanel
             SyncSelf();
             SetStatus("Se quitaron los buffs activos del jugador local.");
         }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 6, y, bw, 25), "Restaurar posición", mouse))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 6, y, bw, 25), "Volver a posición guardada", mouse))
         {
             if (profilePage >= 0 && profilePage < profileSlots.Length && profileSlots[profilePage].Valid)
             {
                 PlayerProfileSnapshot p = profileSlots[profilePage];
-                int tx = (int)(p.MoveSpeed); // no se usa como coordenada; evita alterar la posición guardada.
-                _ = tx;
-                SetStatus("La posición no forma parte del perfil; usa los marcadores de teletransporte.");
+                teleportX = p.TileX.ToString();
+                teleportY = p.TileY.ToString();
+                TeleportToCoordinates();
             }
             else
                 SetStatus("Guarda primero un perfil.");
@@ -224,6 +226,8 @@ internal static partial class HerosModPanel
         snapshot.MaxMana = p.statManaMax;
         snapshot.SelectedSlot = p.selectedItem;
         snapshot.Defense = p.statDefense;
+        snapshot.TileX = (int)(p.position.X / 16f);
+        snapshot.TileY = (int)(p.position.Y / 16f);
         snapshot.MoveSpeed = p.moveSpeed;
         snapshot.RunAcceleration = p.runAcceleration;
         snapshot.MaxRunSpeed = p.maxRunSpeed;
