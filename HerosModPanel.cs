@@ -29,7 +29,7 @@ internal static partial class HerosModPanel
     private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar }
 
     private const int Width = 760;
-    private const int Height = 600;
+    private const int Height = 700;
     private const int Pad = 10;
     private const int RowH = 26;
 
@@ -94,6 +94,13 @@ internal static partial class HerosModPanel
     private static string editorShootSpeed = "";
     private static string editorProjectile = "0";
     private static string editorRarity = "";
+    private static string editorMana = "0";
+    private static string editorUseStyle = "1";
+    private static string editorAmmo = "0";
+    private static string editorScale = "1";
+    private static bool editorAutoReuse;
+    private static bool editorConsumable;
+    private static bool editorFavorite;
     private static string teleportX = "";
     private static string teleportY = "";
     private static bool worldEditSetPos1Next = true;
@@ -1593,6 +1600,49 @@ internal static partial class HerosModPanel
         DrawTextField(sb, pixel, new Rectangle(panel.X + 400, y, 120, 24), 25, editorProjectile, mouse, "ID proyectil");
         y += 30;
 
+        // Propiedades adicionales del objeto, al estilo de un editor avanzado.
+        Utils.DrawBorderString(sb, "Maná:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "Estilo de uso:", new Vector2(panel.X + 195, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "ID de munición:", new Vector2(panel.X + 365, y), Color.White, 0.68f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 35, editorMana, mouse, "mana");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 195, y, 125, 24), 36, editorUseStyle, mouse, "useStyle");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 365, y, 125, 24), 37, editorAmmo, mouse, "ammo ID");
+        y += 29;
+        Utils.DrawBorderString(sb, "Escala:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y + 15, 125, 24), 38, editorScale, mouse, "scale");
+        int toggleW = (Width - Pad * 2 - 12) / 3;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + 195, y + 15, toggleW, 24), "Auto uso: " + (editorAutoReuse ? "SÍ" : "NO"), mouse, editorAutoReuse ? UiAccent : UiTabColor))
+            editorAutoReuse = !editorAutoReuse;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + 195 + toggleW + 6, y + 15, toggleW, 24), "Consumible: " + (editorConsumable ? "SÍ" : "NO"), mouse, editorConsumable ? UiAccent : UiTabColor))
+            editorConsumable = !editorConsumable;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + 195 + (toggleW + 6) * 2, y + 15, toggleW, 24), "Favorito: " + (editorFavorite ? "SÍ" : "NO"), mouse, editorFavorite ? UiAccent : UiTabColor))
+            editorFavorite = !editorFavorite;
+        y += 45;
+
+        // Presets de un clic: solo rellenan los campos; el usuario confirma con Aplicar cambios.
+        int presetW = (Width - Pad * 2 - 12) / 3;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, presetW, 24), "Preset: arma", mouse))
+        {
+            editorDamage = "500"; editorDefense = "0"; editorUseTime = "1"; editorUseAnimation = "1";
+            editorCrit = "100"; editorKnockback = "20"; editorShootSpeed = "20"; editorAutoReuse = true;
+            editorMana = "0"; editorScale = "1";
+            SetStatus("Preset de arma cargado en los campos; pulsa Aplicar cambios.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + presetW + 6, y, presetW, 24), "Preset: tanque", mouse))
+        {
+            editorDamage = "1"; editorDefense = "1000"; editorUseTime = "20"; editorUseAnimation = "20";
+            editorCrit = "0"; editorKnockback = "0"; editorShootSpeed = "0"; editorAutoReuse = false;
+            editorMana = "0"; editorScale = "1";
+            SetStatus("Preset de tanque cargado en los campos; pulsa Aplicar cambios.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (presetW + 6) * 2, y, presetW, 24), "Preset: rápido", mouse))
+        {
+            editorUseTime = "1"; editorUseAnimation = "1"; editorAutoReuse = true; editorShootSpeed = "30";
+            SetStatus("Preset de uso rápido cargado en los campos; pulsa Aplicar cambios.");
+        }
+        y += 30;
+
         var p = Main.LocalPlayer;
         int slot = ParseEditorSlot();
         if (slot >= 0 && slot < p.inventory.Length)
@@ -1647,6 +1697,13 @@ internal static partial class HerosModPanel
         editorShootSpeed = it.shootSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
         editorProjectile = it.shoot.ToString();
         editorRarity = it.rare.ToString();
+        editorMana = it.mana.ToString();
+        editorUseStyle = it.useStyle.ToString();
+        editorAmmo = it.useAmmo.ToString();
+        editorScale = it.scale.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        editorAutoReuse = it.autoReuse;
+        editorConsumable = it.consumable;
+        editorFavorite = it.favorited;
         SetStatus($"Datos cargados: {it.Name}.");
     }
 
@@ -1690,6 +1747,14 @@ internal static partial class HerosModPanel
                 SetStatus($"ID de proyectil fuera de rango (0-{ProjectileID.Count - 1}).");
         }
         if (int.TryParse(editorRarity, out int rarity)) it.rare = (sbyte)Math.Clamp(rarity, -1, 11);
+        if (int.TryParse(editorMana, out int mana)) it.mana = Math.Clamp(mana, 0, 100000);
+        if (int.TryParse(editorUseStyle, out int useStyle)) it.useStyle = Math.Clamp(useStyle, 0, 20);
+        if (int.TryParse(editorAmmo, out int ammo)) it.useAmmo = Math.Clamp(ammo, 0, AmmoID.Count - 1);
+        if (float.TryParse(editorScale, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float scale))
+            it.scale = Math.Clamp(scale, 0.1f, 100f);
+        it.autoReuse = editorAutoReuse;
+        it.consumable = editorConsumable;
+        it.favorited = editorFavorite;
         if (Main.netMode == 0)
             SetStatus($"Editado localmente: {it.Name}. Algunas estadísticas pueden recalcularse por el juego.");
         else
@@ -2406,6 +2471,14 @@ internal static partial class HerosModPanel
             editorShootSpeed = Main.GetInputText(editorShootSpeed);
         else if (activeField == 25)
             editorProjectile = Main.GetInputText(editorProjectile);
+        else if (activeField == 35)
+            editorMana = Main.GetInputText(editorMana);
+        else if (activeField == 36)
+            editorUseStyle = Main.GetInputText(editorUseStyle);
+        else if (activeField == 37)
+            editorAmmo = Main.GetInputText(editorAmmo);
+        else if (activeField == 38)
+            editorScale = Main.GetInputText(editorScale);
         else if (activeField == 26)
             schematicFileName = Main.GetInputText(schematicFileName);
         else if (activeField == 26)
