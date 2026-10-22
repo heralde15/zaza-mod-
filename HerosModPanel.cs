@@ -1482,6 +1482,8 @@ internal static class HerosModPanel
                 DrawInfoLine(sb, panel, ref y, "Objeto seleccionado", $"{it.Name} (ID {it.type})");
                 DrawInfoLine(sb, panel, ref y, "Estadísticas actuales", $"Daño {it.damage} · Defensa {it.defense} · UseTime {it.useTime}");
                 DrawInfoLine(sb, panel, ref y, "Cantidad / valor", $"{it.stack} / {it.value} monedas de cobre");
+                DrawInfoLine(sb, panel, ref y, "Combate", $"Crítico {it.crit}% · Retroceso {it.knockBack:0.##} · Rareza {it.rare}");
+                DrawInfoLine(sb, panel, ref y, "Uso / proyectil", $"Animación {it.useAnimation} · Velocidad {it.shootSpeed:0.##}");
             }
             else
             {
@@ -1711,7 +1713,34 @@ internal static class HerosModPanel
             SyncSelf();
             SetStatus("Maná ajustado al 50%.");
         }
-        y += RowH + 12;
+        y += RowH + 8;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Máximos estándar (500/200)", mouse))
+        {
+            p.statLifeMax = 500; p.statLifeMax2 = 500; p.statManaMax = 200; p.statManaMax2 = 200;
+            p.statLife = Math.Min(p.statLife, 500); p.statMana = Math.Min(p.statMana, 200);
+            lifeCurrent = p.statLife.ToString(); lifeMaximum = "500"; manaCurrent = p.statMana.ToString(); manaMaximum = "200";
+            SyncSelf(); SetStatus("Máximos estándar aplicados localmente.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Máximos altos (1000/500)", mouse))
+        {
+            p.statLifeMax = 1000; p.statLifeMax2 = 1000; p.statManaMax = 500; p.statManaMax2 = 500;
+            p.statLife = Math.Min(p.statLife, 1000); p.statMana = Math.Min(p.statMana, 500);
+            lifeCurrent = p.statLife.ToString(); lifeMaximum = "1000"; manaCurrent = p.statMana.ToString(); manaMaximum = "500";
+            SyncSelf(); SetStatus("Máximos altos aplicados localmente.");
+        }
+        y += RowH + 8;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Vida crítica (1 HP)", mouse, new Color(145, 55, 55)))
+        {
+            p.statLife = 1; lifeCurrent = "1"; SyncSelf(); SetStatus("Vida fijada en 1 HP.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Restablecer máximos base", mouse))
+        {
+            p.statLifeMax = 100; p.statLifeMax2 = 100; p.statManaMax = 20; p.statManaMax2 = 20;
+            p.statLife = Math.Min(p.statLife, 100); p.statMana = Math.Min(p.statMana, 20);
+            lifeCurrent = p.statLife.ToString(); lifeMaximum = "100"; manaCurrent = p.statMana.ToString(); manaMaximum = "20";
+            SyncSelf(); SetStatus("Máximos base restablecidos localmente.");
+        }
+        y += RowH + 8;
         Utils.DrawBorderString(sb, "Nota: en multijugador el servidor puede corregir o rechazar cambios locales.",
             new Vector2(panel.X + Pad, y), new Color(235, 195, 120), 0.66f);
     }
