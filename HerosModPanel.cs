@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -79,7 +79,7 @@ internal static class HerosModPanel
     private static string hoverTip;
 
     // Portapapeles local: guarda una copia de los objetos del inventario para pegarla
-    // únicamente en espacios vacíos. No sobrescribe objetos existentes.
+    // Ãºnicamente en espacios vacÃ­os. No sobrescribe objetos existentes.
     private static Item[] inventoryClipboard;
     private static string inventoryClipboardOwner = "";
     private static int inventoryPage;
@@ -187,7 +187,7 @@ internal static class HerosModPanel
 
         string modeText = !InMultiplayer
             ? "Un jugador"
-            : (serverMode == ServerMode.Comandos ? "Servidor: COMANDOS (TShock)" : "Servidor: DIRECTO (vanilla/anarquía)");
+            : (serverMode == ServerMode.Comandos ? "Servidor: COMANDOS (TShock)" : "Servidor: DIRECTO (vanilla/anarquÃ­a)");
         Color modeColor = !InMultiplayer ? new Color(50, 90, 60) : (serverMode == ServerMode.Comandos ? new Color(40, 100, 140) : new Color(150, 90, 30));
         if (DrawButton(sb, pixel, new Rectangle(panelRect.X + 100, panelRect.Y + 5, 260, 20), modeText, mouse, modeColor))
         {
@@ -322,7 +322,7 @@ internal static class HerosModPanel
         }
         y += RowH + 6;
 
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Curar Full Vida/Maná", mouse))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Curar Full Vida/ManÃ¡", mouse))
         {
             if (IsServer)
             {
@@ -334,7 +334,7 @@ internal static class HerosModPanel
                 p.statLife = p.statLifeMax2;
                 p.statMana = p.statManaMax2;
                 SyncSelf();
-                SetStatus("¡Salud y maná restaurados al máximo!");
+                SetStatus("Â¡Salud y manÃ¡ restaurados al mÃ¡ximo!");
             }
         }
 
@@ -370,18 +370,18 @@ internal static class HerosModPanel
             }
             else
             {
-                SetStatus("Esta versión de Unified no expone la configuración de spawn; no se modificó el mundo.");
+                SetStatus("Esta versiÃ³n de Unified no expone la configuraciÃ³n de spawn; no se modificÃ³ el mundo.");
             }
         }
         y += RowH + 14;
 
-        DrawSectionHeader(sb, panel, ref y, "Buffs Rápidos (10 minutos)");
+        DrawSectionHeader(sb, panel, ref y, "Buffs RÃ¡pidos (10 minutos)");
         (int id, string name)[] buffs =
         {
-            (BuffID.Regeneration, "Regeneración"),
+            (BuffID.Regeneration, "RegeneraciÃ³n"),
             (BuffID.Swiftness, "Velocidad"),
             (BuffID.Ironskin, "Piel de Hierro"),
-            (BuffID.ManaRegeneration, "Maná Regen"),
+            (BuffID.ManaRegeneration, "ManÃ¡ Regen"),
             (BuffID.Spelunker, "Spelunker"),
             (BuffID.Shine, "Resplandor"),
         };
@@ -415,7 +415,7 @@ internal static class HerosModPanel
         DrawSectionHeader(sb, panel, ref y, "Control de Tiempo y Clima");
         int btnW = (Width - (Pad * 2) - 8) / 2;
 
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Establecer: Día", mouse))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Establecer: DÃ­a", mouse))
         {
             if (IsServer)
             {
@@ -429,7 +429,7 @@ internal static class HerosModPanel
             {
                 Main.dayTime = true;
                 Main.time = 0;
-                SetStatus("Hora cambiada al Día.");
+                SetStatus("Hora cambiada al DÃ­a.");
             }
         }
 
@@ -452,7 +452,7 @@ internal static class HerosModPanel
         }
         y += RowH + 6;
 
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Establecer: Mediodía", mouse))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Establecer: MediodÃ­a", mouse))
         {
             if (IsServer)
             {
@@ -466,7 +466,7 @@ internal static class HerosModPanel
             {
                 Main.dayTime = true;
                 Main.time = 27000.0;
-                SetStatus("Hora cambiada al Mediodía.");
+                SetStatus("Hora cambiada al MediodÃ­a.");
             }
         }
 
@@ -542,7 +542,7 @@ internal static class HerosModPanel
 
     private static void DrawItemsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Generador de Objetos (Spawn de Ítems)");
+        DrawSectionHeader(sb, panel, ref y, "Generador de Objetos (Spawn de Ãtems)");
 
         EnsureItemNames();
         RefreshBrowser();
@@ -746,7 +746,7 @@ internal static class HerosModPanel
 
     private static void DrawBossesTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Invocador Rápido de Jefes (Bosses)");
+        DrawSectionHeader(sb, panel, ref y, "Invocador RÃ¡pido de Jefes (Bosses)");
         int btnW = (Width - (Pad * 2) - 8) / 2;
 
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Rey Slime", mouse))
@@ -774,12 +774,12 @@ internal static class HerosModPanel
         DrawBossState(sb, panel, ref y, "Rey Slime", NPC.downedSlimeKing);
         DrawBossState(sb, panel, ref y, "Ojo de Cthulhu", NPC.downedBoss1);
         DrawBossState(sb, panel, ref y, "Devoramundos / Cerebro", NPC.downedBoss2);
-        DrawBossState(sb, panel, ref y, "Esqueletrón", NPC.downedBoss3);
+        DrawBossState(sb, panel, ref y, "EsqueletrÃ³n", NPC.downedBoss3);
         DrawBossState(sb, panel, ref y, "Abeja Reina", NPC.downedQueenBee);
-        DrawBossState(sb, panel, ref y, "Jefes mecánicos", NPC.downedMechBoss1 && NPC.downedMechBoss2 && NPC.downedMechBoss3);
+        DrawBossState(sb, panel, ref y, "Jefes mecÃ¡nicos", NPC.downedMechBoss1 && NPC.downedMechBoss2 && NPC.downedMechBoss3);
         DrawBossState(sb, panel, ref y, "Plantera", NPC.downedPlantBoss);
         DrawBossState(sb, panel, ref y, "Golem", NPC.downedGolemBoss);
-        DrawBossState(sb, panel, ref y, "Señor de la Luna", NPC.downedMoonlord);
+        DrawBossState(sb, panel, ref y, "SeÃ±or de la Luna", NPC.downedMoonlord);
     }
 
     private static void DrawBossState(SpriteBatch sb, Rectangle panel, ref int y, string name, bool defeated)
@@ -836,7 +836,7 @@ internal static class HerosModPanel
 
     private static void DrawPlayersTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Jugadores Conectados (Moderación)");
+        DrawSectionHeader(sb, panel, ref y, "Jugadores Conectados (ModeraciÃ³n)");
 
         int nameW = 120;
         int gap = 4;
@@ -854,7 +854,7 @@ internal static class HerosModPanel
                 break;
 
             bool isSelf = i == Main.myPlayer;
-            string label = isSelf ? $"{target.name} (Tú)" : target.name;
+            string label = isSelf ? $"{target.name} (TÃº)" : target.name;
             Utils.DrawBorderString(sb, label, new Vector2(panel.X + Pad, y + 5), Color.White, 0.7f);
 
             if (!isSelf)
@@ -940,21 +940,21 @@ internal static class HerosModPanel
         DrawSectionHeader(sb, panel, ref y, "Resumen del mundo");
         string mode = Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal";
         DrawInfoLine(sb, panel, ref y, "Mundo", string.IsNullOrWhiteSpace(Main.worldName) ? "(sin nombre)" : Main.worldName);
-        DrawInfoLine(sb, panel, ref y, "Tamaño", $"{Main.maxTilesX} x {Main.maxTilesY} tiles");
+        DrawInfoLine(sb, panel, ref y, "TamaÃ±o", $"{Main.maxTilesX} x {Main.maxTilesY} tiles");
         DrawInfoLine(sb, panel, ref y, "Dificultad", mode);
         DrawInfoLine(sb, panel, ref y, "Hardmode", Main.hardMode ? "Activado" : "No activado");
-        DrawInfoLine(sb, panel, ref y, "Hora", Main.dayTime ? "Día" : "Noche");
+        DrawInfoLine(sb, panel, ref y, "Hora", Main.dayTime ? "DÃ­a" : "Noche");
         DrawInfoLine(sb, panel, ref y, "Clima", Main.raining ? "Lluvia" : "Sin lluvia");
         y += 5;
         DrawSectionHeader(sb, panel, ref y, "Tu personaje");
         DrawInfoLine(sb, panel, ref y, "Vida", $"{p.statLife}/{p.statLifeMax2}");
-        DrawInfoLine(sb, panel, ref y, "Maná", $"{p.statMana}/{p.statManaMax2}");
+        DrawInfoLine(sb, panel, ref y, "ManÃ¡", $"{p.statMana}/{p.statManaMax2}");
         DrawInfoLine(sb, panel, ref y, "Defensa", p.statDefense.ToString());
-        DrawInfoLine(sb, panel, ref y, "Posición", $"X {(int)(p.position.X / 16f)}  Y {(int)(p.position.Y / 16f)}");
+        DrawInfoLine(sb, panel, ref y, "PosiciÃ³n", $"X {(int)(p.position.X / 16f)}  Y {(int)(p.position.Y / 16f)}");
         DrawInfoLine(sb, panel, ref y, "Bioma", p.ZoneDungeon ? "Mazmorra" : p.ZoneUnderworldHeight ? "Inframundo" :
             p.ZoneJungle ? "Jungla" : p.ZoneSnow ? "Nieve" : p.ZoneDesert ? "Desierto" :
-            p.ZoneBeach ? "Playa" : p.ZoneCorrupt ? "Corrupción" : p.ZoneCrimson ? "Carmesí" :
-            p.ZoneHallow ? "Sagrado" : p.ZoneForest ? "Superficie/otro" : "Subsuelo/otro");
+            p.ZoneBeach ? "Playa" : p.ZoneCorrupt ? "CorrupciÃ³n" : p.ZoneCrimson ? "CarmesÃ­" :
+            p.ZoneHallow ? "Sagrado" : (p.position.Y / 16f < Main.worldSurface ? "Superficie/otro" : "Subsuelo/otro"));
         Utils.DrawBorderString(sb, "Los datos mostrados son locales; el servidor controla el estado autoritativo.",
             new Vector2(panel.X + Pad, panel.Bottom - 48), new Color(220, 190, 120), 0.62f);
     }
@@ -1010,8 +1010,8 @@ internal static class HerosModPanel
             }
         }
         y += RowH + 6;
-        DrawInfoLine(sb, panel, ref y, "Portapapeles", inventoryClipboard == null ? "Vacío" : inventoryClipboardOwner);
-        DrawInfoLine(sb, panel, ref y, "Regla", "Solo pega en espacios vacíos");
+        DrawInfoLine(sb, panel, ref y, "Portapapeles", inventoryClipboard == null ? "VacÃ­o" : inventoryClipboardOwner);
+        DrawInfoLine(sb, panel, ref y, "Regla", "Solo pega en espacios vacÃ­os");
         y += 3;
         DrawSectionHeader(sb, panel, ref y, "Contenido (mochila)");
         int first = inventoryPage * 16;
@@ -1021,7 +1021,7 @@ internal static class HerosModPanel
         for (int i = first; i < last; i++)
         {
             Item item = p.inventory[i];
-            string itemName = item == null || item.IsAir ? "(vacío)" : item.Name;
+            string itemName = item == null || item.IsAir ? "(vacÃ­o)" : item.Name;
             string stack = item == null || item.IsAir ? "" : $" x{item.stack}";
             int col = (i - first) / 8;
             int row = (i - first) % 8;
@@ -1035,7 +1035,7 @@ internal static class HerosModPanel
             inventoryPage = Math.Max(0, inventoryPage - 1);
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 128, navY, 120, 22), "Siguiente", mouse))
             inventoryPage = Math.Min(Math.Max(0, (p.inventory.Length - 1) / 16), inventoryPage + 1);
-        Utils.DrawBorderString(sb, $"Página {inventoryPage + 1}", new Vector2(panel.X + Pad + 260, navY + 4),
+        Utils.DrawBorderString(sb, $"PÃ¡gina {inventoryPage + 1}", new Vector2(panel.X + Pad + 260, navY + 4),
             Color.LightGray, 0.7f);
         Utils.DrawBorderString(sb, "La copia es local y no lee el inventario privado de otros jugadores.",
             new Vector2(panel.X + Pad, panel.Bottom - 46), new Color(220, 190, 120), 0.62f);
@@ -1045,35 +1045,35 @@ internal static class HerosModPanel
 
     private static void DrawGuideTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y)
     {
-        DrawSectionHeader(sb, panel, ref y, "Guía rápida: crafteos, buffs y progresión");
+        DrawSectionHeader(sb, panel, ref y, "GuÃ­a rÃ¡pida: crafteos, buffs y progresiÃ³n");
         string[] tips =
         {
-            "Crafteos: consulta el objeto en el menú de fabricación del juego",
-            "y acércate a la estación requerida para ver recetas disponibles.",
-            "Materiales: guarda minerales, barras, gemas, telarañas y almas;",
+            "Crafteos: consulta el objeto en el menÃº de fabricaciÃ³n del juego",
+            "y acÃ©rcate a la estaciÃ³n requerida para ver recetas disponibles.",
+            "Materiales: guarda minerales, barras, gemas, telaraÃ±as y almas;",
             "muchas recetas dependen del progreso del mundo.",
             "",
-            "BUFFS ÚTILES",
-            "Regeneración — recuperación de vida.",
-            "Piel de hierro — aumenta la defensa.",
-            "Velocidad — aumenta la velocidad de movimiento.",
-            "Regeneración de maná — acelera la recuperación de maná.",
-            "Espeleólogo — resalta minerales y tesoros.",
-            "Resplandor — ilumina el entorno.",
+            "BUFFS ÃšTILES",
+            "RegeneraciÃ³n â€” recuperaciÃ³n de vida.",
+            "Piel de hierro â€” aumenta la defensa.",
+            "Velocidad â€” aumenta la velocidad de movimiento.",
+            "RegeneraciÃ³n de manÃ¡ â€” acelera la recuperaciÃ³n de manÃ¡.",
+            "EspeleÃ³logo â€” resalta minerales y tesoros.",
+            "Resplandor â€” ilumina el entorno.",
             "",
-            "PROGRESIÓN",
+            "PROGRESIÃ“N",
             "Pre-Hardmode: Rey Slime, Ojo de Cthulhu, jefes malignos,",
-            "Abeja Reina, Esqueletrón y Muro de Carne.",
-            "Hardmode: jefes mecánicos, Plantera, Golem y eventos finales.",
+            "Abeja Reina, EsqueletrÃ³n y Muro de Carne.",
+            "Hardmode: jefes mecÃ¡nicos, Plantera, Golem y eventos finales.",
             "",
-            "Los drops y recetas pueden variar según versión/mods.",
-            "Esta pestaña es informativa; no altera el mundo."
+            "Los drops y recetas pueden variar segÃºn versiÃ³n/mods.",
+            "Esta pestaÃ±a es informativa; no altera el mundo."
         };
         foreach (string tip in tips)
         {
             if (y > panel.Bottom - 40)
                 break;
-            Color color = tip == "BUFFS ÚTILES" || tip == "PROGRESIÓN"
+            Color color = tip == "BUFFS ÃšTILES" || tip == "PROGRESIÃ“N"
                 ? new Color(130, 180, 240) : (string.IsNullOrEmpty(tip) ? Color.Gray : Color.White);
             Utils.DrawBorderString(sb, tip, new Vector2(panel.X + Pad, y), color, 0.68f);
             y += 19;
@@ -1174,7 +1174,7 @@ internal static class HerosModPanel
     {
         if (Main.netMode != 1)
         {
-            SetStatus("Sin conexión a un servidor.");
+            SetStatus("Sin conexiÃ³n a un servidor.");
             return;
         }
 
@@ -1211,7 +1211,7 @@ internal static class HerosModPanel
         if (serverMode == ServerMode.Comandos)
         {
             serverMode = ServerMode.Directo;
-            SetStatus("Modo DIRECTO: acciones del cliente. Con anticheat (TShock) pueden kickearte; úsalo donde esté permitido.");
+            SetStatus("Modo DIRECTO: acciones del cliente. Con anticheat (TShock) pueden kickearte; Ãºsalo donde estÃ© permitido.");
         }
         else
         {
@@ -1272,7 +1272,7 @@ internal static class HerosModPanel
         }
         else
         {
-            SetStatus($"No se encontró el objeto: '{itemQuery}'");
+            SetStatus($"No se encontrÃ³ el objeto: '{itemQuery}'");
         }
     }
 
@@ -1296,7 +1296,7 @@ internal static class HerosModPanel
         }
 
         var p = Main.LocalPlayer;
-        Item.NewItem(new EntitySource_Misc("HerosMod"), (int)p.position.X, (int)p.position.Y, p.width, p.height, id, count, false, prefixValue);
+        Item.NewItem(new EntitySource_WorldEvent(), (int)p.position.X, (int)p.position.Y, p.width, p.height, id, count, false, prefixValue);
         SetStatus($"Objeto entregado: {Lang.GetItemNameValue(id)} (x{count})");
     }
 
@@ -1309,7 +1309,7 @@ internal static class HerosModPanel
         }
 
         NPC.SpawnOnPlayer(Main.myPlayer, npcId);
-        SetStatus($"¡{bossName} ha sido invocado!");
+        SetStatus($"Â¡{bossName} ha sido invocado!");
     }
 
     private static void TeleportPlayer(int worldX, int worldY, string destination)
@@ -1328,7 +1328,7 @@ internal static class HerosModPanel
     private static void TeleportToMe(Player target)
     {
         target.Teleport(Main.LocalPlayer.Center, 1);
-        SetStatus($"{target.name} fue traído hacia ti.");
+        SetStatus($"{target.name} fue traÃ­do hacia ti.");
     }
 
     private static void HealPlayer(Player target)
