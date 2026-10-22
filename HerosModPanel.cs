@@ -25,7 +25,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static partial class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -48,6 +48,17 @@ internal static partial class HerosModPanel
     private static bool IsServer => Main.netMode == 1 && serverMode == ServerMode.Comandos;
 
     private static Tab currentTab = Tab.Jugador;
+    // Apariencia del panel; solo cambia el dibujo, no altera las funciones del mod.
+    private static int uiTheme = 0;
+    private static bool uiHighContrast;
+    private static readonly Color[] UiAccents =
+    {
+        new Color(70, 130, 180), // Azul
+        new Color(80, 165, 115), // Verde
+        new Color(160, 105, 205), // Violeta
+        new Color(210, 125, 65), // Naranja
+        new Color(205, 80, 95), // Rojo
+    };
     private static Vector2 position = new(120f, 80f);
     private static bool dragging;
     private static Vector2 dragOffset;
@@ -417,8 +428,8 @@ internal static partial class HerosModPanel
             Main.mouseLeftRelease = false;
         }
 
-        sb.Draw(pixel, panelRect, new Color(30, 33, 40) * 0.98f);
-        sb.Draw(pixel, titleRect, new Color(50, 56, 70));
+        sb.Draw(pixel, panelRect, UiPanelColor);
+        sb.Draw(pixel, titleRect, UiTitleColor);
         Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.Gold, 0.85f);
 
         string modeText = !InMultiplayer
@@ -438,7 +449,7 @@ internal static partial class HerosModPanel
         }
 
         Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.EditorVida, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Perfiles];
+                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Perfiles, Tab.Personalizar];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
         for (int i = 0; i < tabs.Length; i++)
@@ -448,7 +459,7 @@ internal static partial class HerosModPanel
             var tabRect = new Rectangle(panelRect.X + Pad + col * (tabWidth + 4),
                 panelRect.Y + 36 + row * 27, tabWidth, 23);
             bool selected = currentTab == tabs[i];
-            Color tabColor = selected ? new Color(70, 130, 180) : new Color(45, 50, 60);
+            Color tabColor = selected ? UiAccent : UiTabColor;
             string tabLabel = tabs[i] switch
             {
                 Tab.Jugadores => "Jugadores",
@@ -458,6 +469,7 @@ internal static partial class HerosModPanel
                 Tab.WorldEdit => "WorldEdit",
                 Tab.Teleport => "Teleport",
                 Tab.Perfiles => "Perfiles",
+                Tab.Personalizar => "Personalizar UI",
                 _ => tabs[i].ToString()
             };
             if (DrawButton(sb, pixel, tabRect, tabLabel, mouse, tabColor) && !selected)
@@ -511,6 +523,9 @@ internal static partial class HerosModPanel
                 break;
             case Tab.Perfiles:
                 DrawProfilesTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.Personalizar:
+                DrawCustomizeTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
         }
 
@@ -1971,18 +1986,81 @@ internal static partial class HerosModPanel
         SetStatus($"Herramienta enviada: {extraTools[index].label}. El servidor debe permitir el comando.");
     }
 
+    // ------------------------------------------------------------------ Personalización de la interfaz
+    private static void DrawCustomizeTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Personalizar interfaz");
+        Utils.DrawBorderString(sb, "Cambia los colores del panel sin desactivar ni reemplazar ninguna función.",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
+        y += 28;
+
+        string[] themeNames = { "Azul", "Verde", "Violeta", "Naranja", "Rojo" };
+        int gap = 7;
+        int bw = (Width - Pad * 2 - gap * 4) / 5;
+        for (int i = 0; i < themeNames.Length; i++)
+        {
+            var rect = new Rectangle(panel.X + Pad + i * (bw + gap), y, bw, 32);
+            if (DrawButton(sb, pixel, rect, themeNames[i], mouse, UiAccents[i]))
+            {
+                uiTheme = i;
+                SetStatus($"Tema aplicado: {themeNames[i]}.");
+            }
+            if (uiTheme == i)
+                sb.Draw(pixel, new Rectangle(rect.X, rect.Bottom - 3, rect.Width, 3), Color.White);
+        }
+        y += 44;
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, 245, RowH + 4),
+            uiHighContrast ? "Contraste alto: ACTIVADO" : "Contraste alto: desactivado", mouse,
+            uiHighContrast ? UiAccent : null))
+        {
+            uiHighContrast = !uiHighContrast;
+            SetStatus(uiHighContrast ? "Contraste alto activado." : "Contraste alto desactivado.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 253, y, 245, RowH + 4),
+            "Restablecer apariencia", mouse))
+        {
+            uiTheme = 0;
+            uiHighContrast = false;
+            SetStatus("Apariencia predeterminada restaurada.");
+        }
+        y += RowH + 18;
+
+        DrawSectionHeader(sb, panel, ref y, "Vista previa");
+        var preview = new Rectangle(panel.X + Pad, y, Width - Pad * 2, 76);
+        sb.Draw(pixel, preview, UiPanelColor);
+        sb.Draw(pixel, new Rectangle(preview.X, preview.Y, preview.Width, 23), UiTitleColor);
+        Utils.DrawBorderString(sb, "HERO's Mod · Vista previa", new Vector2(preview.X + 9, preview.Y + 4), Color.White, 0.75f);
+        sb.Draw(pixel, new Rectangle(preview.X + 9, preview.Y + 34, 135, 27), UiAccent);
+        Utils.DrawBorderString(sb, "Botón destacado", new Vector2(preview.X + 18, preview.Y + 39), Color.White, 0.68f);
+        sb.Draw(pixel, new Rectangle(preview.X + 153, preview.Y + 34, 135, 27), UiTabColor);
+        Utils.DrawBorderString(sb, "Botón normal", new Vector2(preview.X + 162, preview.Y + 39), Color.White, 0.68f);
+        y += 91;
+
+        Utils.DrawBorderString(sb, "Los cambios son visuales y duran mientras siga abierta esta sesión del juego.",
+            new Vector2(panel.X + Pad, y), new Color(235, 195, 120), 0.66f);
+        y += 20;
+        Utils.DrawBorderString(sb, "Consejo: arrastra la barra superior para mover el panel y usa F8 para abrir/cerrar.",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.66f);
+    }
+
     // ------------------------------------------------------------------ dibujo comun
 
     private static void DrawSectionHeader(SpriteBatch sb, Rectangle panel, ref int y, string title)
     {
-        Utils.DrawBorderString(sb, title, new Vector2(panel.X + Pad, y), new Color(130, 180, 240), 0.8f);
+        Utils.DrawBorderString(sb, title, new Vector2(panel.X + Pad, y), UiAccent, 0.82f);
         y += 22;
     }
+
+    private static Color UiAccent => UiAccents[Math.Clamp(uiTheme, 0, UiAccents.Length - 1)];
+    private static Color UiPanelColor => uiHighContrast ? new Color(12, 14, 20) : new Color(30, 33, 40);
+    private static Color UiTitleColor => uiHighContrast ? new Color(25, 30, 42) : new Color(50, 56, 70);
+    private static Color UiTabColor => uiHighContrast ? new Color(25, 29, 39) : new Color(45, 50, 60);
 
     private static bool DrawButton(SpriteBatch sb, Texture2D pixel, Rectangle rect, string text, Point mouse, Color? customBg = null)
     {
         bool hover = rect.Contains(mouse);
-        Color bg = hover ? new Color(75, 85, 110) : (customBg ?? new Color(50, 55, 68));
+        Color bg = hover ? Color.Lerp(UiAccent, Color.White, 0.18f) : (customBg ?? new Color(50, 55, 68));
         sb.Draw(pixel, rect, bg);
 
         var font = FontAssets.MouseText.Value;
