@@ -29,7 +29,13 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static partial class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar }
+    // Fuente de entidad usada por las acciones de invocación añadidas desde Zaza.
+    private sealed class PanelEntitySource : IEntitySource
+    {
+        public string Context => "HerosModPanel";
+    }
+
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, NPCs, Proyectiles }
 
     private const int Width = 760;
     private const int Height = 800;
@@ -508,14 +514,16 @@ internal static partial class HerosModPanel
         [
             [Tab.Jugador, Tab.EditorVida, Tab.Inventario, Tab.Items, Tab.EditorItems],
             [Tab.Mundo, Tab.WorldEdit, Tab.Teleport, Tab.Perfiles, Tab.Guia],
-            [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar]
+            [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar],
+            [Tab.NPCs, Tab.Proyectiles]
         ];
-        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES"];
+        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES", "NPC  /  PROYECTILES"];
         string[] tabLabels =
         [
             "Jugador", "Editor vida", "Inventario", "Items", "Editor items",
             "Mundo", "WorldEdit", "Teleport", "Perfiles", "Guía",
-            "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar"
+            "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar",
+            "NPCs", "Proyectiles"
         ];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
@@ -539,7 +547,7 @@ internal static partial class HerosModPanel
             }
         }
 
-        int contentY = panelRect.Y + 151;
+        int contentY = panelRect.Y + 185;
         var contentRect = new Rectangle(panelRect.X + 5, contentY - 3, panelRect.Width - 10, panelRect.Bottom - contentY - 8);
         sb.Draw(pixel, contentRect, new Color(13, 15, 24, 210));
         sb.Draw(pixel, new Rectangle(contentRect.X, contentRect.Y, 2, contentRect.Height), UiAccent * 0.65f);
@@ -571,6 +579,12 @@ internal static partial class HerosModPanel
                 break;
             case Tab.Jugadores:
                 DrawPlayersTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.NPCs:
+                DrawNPCsTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.Proyectiles:
+                DrawProjectilesTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Info:
                 DrawInfoTab(sb, pixel, panelRect, ref contentY);
@@ -2511,6 +2525,136 @@ internal static partial class HerosModPanel
 
         SendCmd(command);
         SetStatus($"Herramienta enviada: {extraTools[index].label}. El servidor debe permitir el comando.");
+    }
+
+
+    // Herramientas inspiradas en Zaza: administración local de NPC y monitor de proyectiles.
+    // En servidores remotos, el servidor conserva la autoridad sobre las entidades.
+    private static void DrawNPCsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Administrador de NPC");
+        Utils.DrawBorderString(sb, "Invocación rápida cerca de tu personaje:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        y += 24;
+        int gap = 8;
+        int bw = (Width - Pad * 2 - gap) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Invocar Slime azul", mouse, new Color(45, 90, 145)))
+            SpawnPanelNpc(1);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + gap, y, bw, RowH), "Invocar Zombie", mouse, new Color(90, 100, 65)))
+            SpawnPanelNpc(3);
+        y += RowH + 6;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Invocar Guía", mouse, new Color(70, 115, 80)))
+            SpawnPanelNpc(22);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + gap, y, bw, RowH), "Invocar Conejo", mouse, new Color(130, 90, 105)))
+            SpawnPanelNpc(46);
+        y += RowH + 8;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Eliminar NPC hostiles locales", mouse, new Color(145, 55, 45)))
+            RemovePanelHostileNpcs();
+        y += RowH + 12;
+        DrawSectionHeader(sb, panel, ref y, "NPC activos");
+        int shown = 0;
+        for (int i = 0; i < Main.npc.Length && shown < 10; i++)
+        {
+            NPC npc = Main.npc[i];
+            if (npc == null || !npc.active) continue;
+            if (y + 22 > panel.Bottom - 42) break;
+            string name = Lang.GetNPCNameValue(npc.type);
+            if (string.IsNullOrWhiteSpace(name)) name = "NPC " + npc.type;
+            Utils.DrawBorderString(sb, $"#{i} {name} · vida {npc.life}/{Math.Max(1, npc.lifeMax)}",
+                new Vector2(panel.X + Pad, y + 3), Color.White, 0.65f);
+            y += 21;
+            shown++;
+        }
+        if (shown == 0)
+            Utils.DrawBorderString(sb, "No hay NPC activos.", new Vector2(panel.X + Pad, y), Color.Gray, 0.7f);
+        Utils.DrawBorderString(sb, "En multijugador, los cambios locales pueden ser rechazados por el servidor.",
+            new Vector2(panel.X + Pad, panel.Bottom - 36), new Color(230, 190, 100), 0.58f);
+    }
+
+    private static void SpawnPanelNpc(int id)
+    {
+        if (IsServer)
+        {
+            SendCmd($"/spawnmob {id} 1");
+            SetStatus("Solicitud de invocación enviada al servidor.");
+            return;
+        }
+        Player player = Main.LocalPlayer;
+        int index = NPC.NewNPC(new PanelEntitySource(), (int)player.Center.X, (int)player.Center.Y, id);
+        SetStatus(index >= 0 && index < Main.npc.Length
+            ? $"Invocación solicitada: {Lang.GetNPCNameValue(id)}."
+            : "No se pudo invocar el NPC.");
+    }
+
+    private static void RemovePanelHostileNpcs()
+    {
+        if (IsServer)
+        {
+            SendCmd("/butcher");
+            SetStatus("Comando /butcher enviado al servidor.");
+            return;
+        }
+        int removed = 0;
+        foreach (NPC npc in Main.npc)
+        {
+            if (npc != null && npc.active && !npc.friendly && !npc.townNPC && npc.lifeMax > 5)
+            {
+                npc.active = false;
+                removed++;
+            }
+        }
+        SetStatus($"NPC hostiles desactivados localmente: {removed}.");
+    }
+
+    private static void DrawProjectilesTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Monitor de proyectiles");
+        int active = 0;
+        foreach (Projectile projectile in Main.projectile)
+            if (projectile != null && projectile.active) active++;
+        Utils.DrawBorderString(sb, $"Proyectiles activos: {active}", new Vector2(panel.X + Pad, y), Color.LightGray, 0.78f);
+        y += 30;
+        int bw = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Eliminar todos (local)", mouse, new Color(145, 50, 45)))
+        {
+            if (IsServer)
+                SetStatus("La limpieza de proyectiles requiere soporte del servidor; no se envió un comando inventado.");
+            else
+            {
+                int removed = 0;
+                foreach (Projectile projectile in Main.projectile)
+                    if (projectile != null && projectile.active) { projectile.active = false; removed++; }
+                SetStatus($"Proyectiles desactivados localmente: {removed}.");
+            }
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Solo no amistosos", mouse, new Color(120, 70, 45)))
+        {
+            if (IsServer)
+                SetStatus("Esta acción requiere soporte del servidor.");
+            else
+            {
+                int removed = 0;
+                foreach (Projectile projectile in Main.projectile)
+                    if (projectile != null && projectile.active && !projectile.friendly) { projectile.active = false; removed++; }
+                SetStatus($"Proyectiles no amistosos desactivados localmente: {removed}.");
+            }
+        }
+        y += RowH + 14;
+        DrawSectionHeader(sb, panel, ref y, "Proyectiles activos (hasta 12)");
+        int shown = 0;
+        for (int i = 0; i < Main.projectile.Length && shown < 12; i++)
+        {
+            Projectile projectile = Main.projectile[i];
+            if (projectile == null || !projectile.active) continue;
+            if (y + 22 > panel.Bottom - 40) break;
+            Utils.DrawBorderString(sb, $"#{i} · tipo {projectile.type} · daño {projectile.damage} · dueño {projectile.owner}",
+                new Vector2(panel.X + Pad, y + 3), Color.White, 0.64f);
+            y += 21;
+            shown++;
+        }
+        if (shown == 0)
+            Utils.DrawBorderString(sb, "No hay proyectiles activos.", new Vector2(panel.X + Pad, y), Color.Gray, 0.7f);
+        Utils.DrawBorderString(sb, "Las acciones locales no garantizan cambios en servidores remotos.",
+            new Vector2(panel.X + Pad, panel.Bottom - 36), new Color(230, 190, 100), 0.58f);
     }
 
     // ------------------------------------------------------------------ Personalización de la interfaz
