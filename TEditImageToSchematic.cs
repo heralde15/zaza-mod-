@@ -54,13 +54,13 @@ internal class TEditImageToSchematic
 						if (buildSchematic)
 						{
 							LegacyTile legacyTile = new LegacyTile();
-							if (((Color)(ref val)).A < 25)
+							if (val.A < 25)
 							{
 								Mods.copiedTiles.Add(legacyTile);
 							}
 							else
 							{
-								string finalHtmlColor = $"#{((Color)(ref val)).A:X2}{((Color)(ref val)).R:X2}{((Color)(ref val)).G:X2}{((Color)(ref val)).B:X2}";
+								string finalHtmlColor = $"#{val.A:X2}{val.R:X2}{val.G:X2}{val.B:X2}";
 								TileWallData tileWallData = ClrsTileWallData.FirstOrDefault((TileWallData t) => t.Color.Equals(finalHtmlColor, StringComparison.OrdinalIgnoreCase));
 								if (tileWallData != null)
 								{
@@ -92,10 +92,10 @@ internal class TEditImageToSchematic
 		Span<byte> pixels = pixmap.GetPixelSpan();
 		int offset = y * pixmap.RowBytes + x * 4;
 		Color color = default(Color);
-		((Color)(ref color))._002Ector((int)pixels[offset + 2], (int)pixels[offset + 1], (int)pixels[offset], (int)pixels[offset + 3]);
-		if (includeTransparent || ((Color)(ref color)).A != 0)
+		color = new Color((int)pixels[offset + 2], (int)pixels[offset + 1], (int)pixels[offset], (int)pixels[offset + 3]);
+		if (includeTransparent || color.A != 0)
 		{
-			if (includeTransparent && ((Color)(ref color)).A == 0)
+			if (includeTransparent && color.A == 0)
 			{
 				color = Color.Lime;
 			}
