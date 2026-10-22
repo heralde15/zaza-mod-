@@ -108,6 +108,9 @@ internal static partial class HerosModPanel
     private static string lifeMaximum = "";
     private static string manaCurrent = "";
     private static string manaMaximum = "";
+    private static string lifeDefense = "";
+    private static int defenseOverride;
+    private static bool defenseOverrideEnabled;
     private static Point? worldPos1;
     private static Point? worldPos2;
     private static string worldTileType = "1";
@@ -356,6 +359,12 @@ internal static partial class HerosModPanel
         if (IsServer && flyEnabled)
         {
             flyEnabled = false;
+        }
+
+        if (defenseOverrideEnabled && local.active && !IsServer)
+        {
+            // Refuerza la defensa configurada en el editor local; el servidor puede sobrescribirla.
+            local.statDefense = defenseOverride;
         }
 
         if (godmodeEnabled && local.active)
@@ -1861,30 +1870,35 @@ internal static partial class HerosModPanel
             SetStatus("Campos actualizados con los valores actuales del personaje.");
         }
         DrawInfoLine(sb, panel, ref y, "Estado actual", $"Vida {p.statLife}/{p.statLifeMax2}  ·  Maná {p.statMana}/{p.statManaMax2}");
-        DrawInfoLine(sb, panel, ref y, "Límites base", $"Vida base {p.statLifeMax}  ·  Maná base {p.statManaMax}");
+        DrawInfoLine(sb, panel, ref y, "Límites base", $"Vida base {p.statLifeMax}  ·  Maná base {p.statManaMax}  ·  Defensa {p.statDefense}");
         y += 4;
 
         if (string.IsNullOrEmpty(lifeCurrent)) lifeCurrent = p.statLife.ToString();
         if (string.IsNullOrEmpty(lifeMaximum)) lifeMaximum = p.statLifeMax2.ToString();
         if (string.IsNullOrEmpty(manaCurrent)) manaCurrent = p.statMana.ToString();
         if (string.IsNullOrEmpty(manaMaximum)) manaMaximum = p.statManaMax2.ToString();
+        if (string.IsNullOrEmpty(lifeDefense)) lifeDefense = p.statDefense.ToString();
 
         Utils.DrawBorderString(sb, "Vida actual", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
-        Utils.DrawBorderString(sb, "Vida máxima", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Vida máxima (sin tope artificial)", new Vector2(panel.X + 230, y), Color.White, 0.72f);
         y += 18;
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 16, lifeCurrent, mouse, "1 - 999999");
-        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 26), 17, lifeMaximum, mouse, "máximo");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 16, lifeCurrent, mouse, "vida actual");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 210, 26), 17, lifeMaximum, mouse, "hasta Int32.MaxValue");
         y += 34;
 
         Utils.DrawBorderString(sb, "Maná actual", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
         Utils.DrawBorderString(sb, "Maná máximo", new Vector2(panel.X + 230, y), Color.White, 0.72f);
         y += 18;
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 18, manaCurrent, mouse, "0 - 999999");
-        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 26), 19, manaMaximum, mouse, "máximo");
-        y += 36;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 18, manaCurrent, mouse, "maná actual");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 210, 26), 19, manaMaximum, mouse, "hasta Int32.MaxValue");
+        y += 34;
+
+        Utils.DrawBorderString(sb, "Defensa personalizada", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y - 3, 210, 26), 39, lifeDefense, mouse, "0 - 1000000");
+        y += 32;
 
         int bw = (Width - Pad * 2 - 8) / 2;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Aplicar vida y maná", mouse, new Color(45, 115, 75)))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Aplicar vida, maná y defensa", mouse, new Color(45, 115, 75)))
             ApplyLifeEditor();
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Curar al máximo", mouse, new Color(45, 90, 135)))
         {
@@ -1894,8 +1908,9 @@ internal static partial class HerosModPanel
             lifeMaximum = p.statLifeMax2.ToString();
             manaCurrent = p.statMana.ToString();
             manaMaximum = p.statManaMax2.ToString();
+            lifeDefense = p.statDefense.ToString();
             SyncSelf();
-            SetStatus("Vida y maná restaurados al máximo permitido.");
+            SetStatus("Vida y maná restaurados al máximo configurado.");
         }
         y += RowH + 8;
 
@@ -1948,12 +1963,13 @@ internal static partial class HerosModPanel
     private static void ApplyLifeEditor()
     {
         var p = Main.LocalPlayer;
-        if (!int.TryParse(lifeMaximum, out int maxLife) || maxLife < 1 || maxLife > 999999
+        if (!int.TryParse(lifeMaximum, out int maxLife) || maxLife < 1
             || !int.TryParse(lifeCurrent, out int currentLife) || currentLife < 0 || currentLife > maxLife
-            || !int.TryParse(manaMaximum, out int maxMana) || maxMana < 0 || maxMana > 999999
-            || !int.TryParse(manaCurrent, out int currentMana) || currentMana < 0 || currentMana > maxMana)
+            || !int.TryParse(manaMaximum, out int maxMana) || maxMana < 0
+            || !int.TryParse(manaCurrent, out int currentMana) || currentMana < 0 || currentMana > maxMana
+            || !int.TryParse(lifeDefense, out int newDefense) || newDefense < 0 || newDefense > 1000000)
         {
-            SetStatus("Valores inválidos: actual debe estar entre 0 y máximo; revisa los cuatro campos.");
+            SetStatus("Valores inválidos: la vida máxima debe ser mayor que 0, la vida/maná actual no pueden superar su máximo y la defensa debe estar entre 0 y 1000000.");
             return;
         }
 
@@ -1963,14 +1979,18 @@ internal static partial class HerosModPanel
         p.statManaMax = maxMana;
         p.statLifeMax2 = maxLife;
         p.statManaMax2 = maxMana;
-        p.statLife = Math.Clamp(currentLife, 0, maxLife);
-        p.statMana = Math.Clamp(currentMana, 0, maxMana);
+        p.statLife = currentLife;
+        p.statMana = currentMana;
+        defenseOverride = newDefense;
+        defenseOverrideEnabled = true;
+        p.statDefense = newDefense;
         lifeCurrent = p.statLife.ToString();
         lifeMaximum = p.statLifeMax2.ToString();
         manaCurrent = p.statMana.ToString();
         manaMaximum = p.statManaMax2.ToString();
+        lifeDefense = newDefense.ToString();
         SyncSelf();
-        SetStatus("Vida y maná ajustados localmente. En servidores, el servidor puede sobrescribirlos.");
+        SetStatus("Vida, maná y defensa aplicados localmente. Valores extremos pueden causar errores de juego; el servidor puede sobrescribirlos.");
     }
 
 
@@ -2459,6 +2479,8 @@ internal static partial class HerosModPanel
             manaCurrent = Main.GetInputText(manaCurrent);
         else if (activeField == 19)
             manaMaximum = Main.GetInputText(manaMaximum);
+        else if (activeField == 39)
+            lifeDefense = Main.GetInputText(lifeDefense);
         else if (activeField == 20)
             editorKnockback = Main.GetInputText(editorKnockback);
         else if (activeField == 21)
