@@ -406,12 +406,13 @@ internal static partial class HerosModPanel
         UpdateLogic();
         HandleToggleKey();
 
+        var pixel = TextureAssets.MagicPixel.Value;
+        DrawWorldSelectionOverlay(sb, pixel);
+
         if (!Visible)
             return;
 
         hoverTip = null;
-
-        var pixel = TextureAssets.MagicPixel.Value;
         var mouse = new Point(Main.mouseX, Main.mouseY);
         var panelRect = new Rectangle((int)position.X, (int)position.Y, Width, Height);
 
@@ -1104,6 +1105,8 @@ internal static partial class HerosModPanel
         sb.Draw(pixel, new Rectangle(area.X + cols / 2 * cell - 2, area.Y + rows / 2 * cell - 2, 5, 5), Color.Cyan);
         if (worldEdit)
         {
+            if (worldPos1.HasValue && worldPos2.HasValue)
+                DrawMiniMapSelection(sb, pixel, area, left, top, worldPos1.Value, worldPos2.Value, span, cell);
             if (worldPos1.HasValue) DrawMapMarker(sb, pixel, area, left, top, worldPos1.Value, span, cell, Color.LimeGreen);
             if (worldPos2.HasValue) DrawMapMarker(sb, pixel, area, left, top, worldPos2.Value, span, cell, Color.Orange);
         }
@@ -1119,6 +1122,63 @@ internal static partial class HerosModPanel
             else { worldPos2 = new Point(wx, wy); worldEditSetPos1Next = true; SetStatus($"POS2: {wx}, {wy}"); }
         }
         else { teleportX = wx.ToString(); teleportY = wy.ToString(); SetStatus($"Destino seleccionado: {wx}, {wy}"); }
+    }
+
+    private static void DrawMiniMapSelection(SpriteBatch sb, Texture2D pixel, Rectangle area, int left, int top,
+        Point p1, Point p2, int span, int cell)
+    {
+        int minX = Math.Min(p1.X, p2.X), maxX = Math.Max(p1.X, p2.X);
+        int minY = Math.Min(p1.Y, p2.Y), maxY = Math.Max(p1.Y, p2.Y);
+        int x1 = area.X + (minX - left) / span * cell;
+        int y1 = area.Y + (minY - top) / span * cell;
+        int x2 = area.X + (maxX - left) / span * cell + cell - 1;
+        int y2 = area.Y + (maxY - top) / span * cell + cell - 1;
+        int thickness = 2;
+        Color outline = new Color(90, 245, 150, 230);
+        if (x2 < area.X || x1 >= area.Right || y2 < area.Y || y1 >= area.Bottom) return;
+        x1 = Math.Clamp(x1, area.X, area.Right - 1);
+        x2 = Math.Clamp(x2, area.X, area.Right - 1);
+        y1 = Math.Clamp(y1, area.Y, area.Bottom - 1);
+        y2 = Math.Clamp(y2, area.Y, area.Bottom - 1);
+        sb.Draw(pixel, new Rectangle(x1, y1, Math.Max(1, x2 - x1 + 1), thickness), outline);
+        sb.Draw(pixel, new Rectangle(x1, Math.Max(area.Y, y2 - thickness + 1), Math.Max(1, x2 - x1 + 1), thickness), outline);
+        sb.Draw(pixel, new Rectangle(x1, y1, thickness, Math.Max(1, y2 - y1 + 1)), outline);
+        sb.Draw(pixel, new Rectangle(Math.Max(area.X, x2 - thickness + 1), y1, thickness, Math.Max(1, y2 - y1 + 1)), outline);
+    }
+
+    // Dibuja la selección en coordenadas de mundo incluso cuando el panel está cerrado.
+    private static void DrawWorldSelectionOverlay(SpriteBatch sb, Texture2D pixel)
+    {
+        if (!worldPos1.HasValue || !worldPos2.HasValue || Main.gameMenu || Main.dedServ)
+            return;
+
+        int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X) + 1, 1, Main.maxTilesX - 1);
+        int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y) + 1, 1, Main.maxTilesY - 1);
+
+        Matrix transform = Main.GameViewMatrix.TransformationMatrix;
+        Vector2 a = Vector2.Transform(new Vector2(x1 * 16f, y1 * 16f), transform);
+        Vector2 b = Vector2.Transform(new Vector2(x2 * 16f, y2 * 16f), transform);
+        int left = (int)MathF.Floor(Math.Min(a.X, b.X));
+        int top = (int)MathF.Floor(Math.Min(a.Y, b.Y));
+        int right = (int)MathF.Ceiling(Math.Max(a.X, b.X));
+        int bottom = (int)MathF.Ceiling(Math.Max(a.Y, b.Y));
+        if (right <= 0 || bottom <= 0 || left >= Main.screenWidth || top >= Main.screenHeight)
+            return;
+
+        left = Math.Clamp(left, 0, Main.screenWidth - 1);
+        right = Math.Clamp(right, left + 1, Main.screenWidth);
+        top = Math.Clamp(top, 0, Main.screenHeight - 1);
+        bottom = Math.Clamp(bottom, top + 1, Main.screenHeight);
+        int width = right - left, height = bottom - top, thickness = 2;
+        Color fill = new Color(35, 190, 95, 28);
+        Color edge = new Color(80, 255, 145, 220);
+        sb.Draw(pixel, new Rectangle(left, top, width, height), fill);
+        sb.Draw(pixel, new Rectangle(left, top, width, Math.Min(thickness, height)), edge);
+        sb.Draw(pixel, new Rectangle(left, Math.Max(top, bottom - thickness), width, Math.Min(thickness, height)), edge);
+        sb.Draw(pixel, new Rectangle(left, top, Math.Min(thickness, width), height), edge);
+        sb.Draw(pixel, new Rectangle(Math.Max(left, right - thickness), top, Math.Min(thickness, width), height), edge);
     }
 
     private static void DrawMapMarker(SpriteBatch sb, Texture2D pixel, Rectangle area, int left, int top, Point p, int span, int cell, Color color)
@@ -2012,6 +2072,12 @@ internal static partial class HerosModPanel
         int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
         int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
         int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        long selectedArea = (long)(x2 - x1 + 1) * (y2 - y1 + 1);
+        if (selectedArea > 100000)
+        {
+            SetStatus("Selección demasiado grande para editar de una vez (máximo 100 000 tiles). Reduce el área.");
+            return;
+        }
         int tileId = int.TryParse(worldTileType, out int parsedTile) ? parsedTile : 1;
         int replaceId = int.TryParse(worldReplaceType, out int parsedReplace) ? parsedReplace : 0;
         if (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count)
@@ -2055,7 +2121,13 @@ internal static partial class HerosModPanel
             return;
         }
         foreach (var entry in worldEditUndo)
-            Main.tile[entry.x, entry.y].CopyFrom(entry.tile);
+        {
+            if (entry.x < 0 || entry.x >= Main.maxTilesX || entry.y < 0 || entry.y >= Main.maxTilesY)
+                continue;
+            Tile current = Main.tile[entry.x, entry.y];
+            if (current != null && entry.tile != null)
+                current.CopyFrom(entry.tile);
+        }
         int count = worldEditUndo.Count;
         worldEditUndo.Clear();
         SetStatus($"Undo completado: restaurados {count} tiles.");
