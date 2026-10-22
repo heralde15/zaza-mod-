@@ -1465,8 +1465,8 @@ internal static partial class HerosModPanel
             ResetItemEditorSlot();
         y += RowH + 10;
 
-        Utils.DrawBorderString(sb, "ID del objeto:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
-        Utils.DrawBorderString(sb, "Prefijo (0 = ninguno):", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "ID del objeto:", new Vector2(panel.X + Pad, y), UiAccent, 0.72f);
+        Utils.DrawBorderString(sb, "Prefijo (0 = ninguno):", new Vector2(panel.X + 230, y), UiAccent, 0.72f);
         y += 18;
         DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 110, 26), 14, editorType, mouse, "ID");
         DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 130, 26), 15, editorPrefix, mouse, "prefijo");
@@ -1688,6 +1688,14 @@ internal static partial class HerosModPanel
     {
         var p = Main.LocalPlayer;
         DrawSectionHeader(sb, panel, ref y, "Editor de vida y maná");
+        if (DrawButton(sb, pixel, new Rectangle(panel.Right - Pad - 155, y - 22, 155, 22), "Leer valores actuales", mouse, UiAccent))
+        {
+            lifeCurrent = p.statLife.ToString();
+            lifeMaximum = p.statLifeMax2.ToString();
+            manaCurrent = p.statMana.ToString();
+            manaMaximum = p.statManaMax2.ToString();
+            SetStatus("Campos actualizados con los valores actuales del personaje.");
+        }
         DrawInfoLine(sb, panel, ref y, "Estado actual", $"Vida {p.statLife}/{p.statLifeMax2}  ·  Maná {p.statMana}/{p.statManaMax2}");
         DrawInfoLine(sb, panel, ref y, "Límites base", $"Vida base {p.statLifeMax}  ·  Maná base {p.statManaMax}");
         y += 4;
@@ -1813,13 +1821,24 @@ internal static partial class HerosModPanel
         string p2 = worldPos2.HasValue ? $"{worldPos2.Value.X}, {worldPos2.Value.Y}" : "Sin seleccionar";
         DrawInfoLine(sb, panel, ref y, "POS1", p1);
         DrawInfoLine(sb, panel, ref y, "POS2", p2);
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Marcar POS1 aquí", mouse, new Color(45, 90, 135)))
+        if (worldPos1.HasValue && worldPos2.HasValue)
+        {
+            int areaWidth = Math.Abs(worldPos1.Value.X - worldPos2.Value.X) + 1;
+            int areaHeight = Math.Abs(worldPos1.Value.Y - worldPos2.Value.Y) + 1;
+            long areaTiles = (long)areaWidth * areaHeight;
+            DrawInfoLine(sb, panel, ref y, "Área seleccionada", $"{areaWidth} × {areaHeight} tiles ({areaTiles:N0} tiles)");
+        }
+        else
+        {
+            DrawInfoLine(sb, panel, ref y, "Área seleccionada", "Marca POS1 y POS2 para calcular el área");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Marcar POS1 aquí", mouse, UiAccent))
         {
             var p = Main.LocalPlayer;
             worldPos1 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
             SetStatus($"POS1: {worldPos1.Value.X}, {worldPos1.Value.Y}");
         }
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Marcar POS2 aquí", mouse, new Color(45, 90, 135)))
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Marcar POS2 aquí", mouse, UiAccent))
         {
             var p = Main.LocalPlayer;
             worldPos2 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
