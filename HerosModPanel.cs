@@ -763,7 +763,7 @@ internal static partial class HerosModPanel
             {
                 SetStatus("La configuración de poderes de Aventura/Viaje requiere ser anfitrión o usar permisos del servidor.");
             }
-            else if (!Main.GameModeInfo.IsJourneyMode)
+            else if (Main.GameMode != GameModeId.Creative || Main.LocalPlayer.difficulty != 3)
             {
                 SetStatus("Esta opción requiere un mundo de Modo Viaje/Aventura. No cambia la dificultad del mundo automáticamente.");
             }
