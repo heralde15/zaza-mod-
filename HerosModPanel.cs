@@ -73,6 +73,14 @@ internal static class HerosModPanel
     private static string editorValue = "";
     private static string editorType = "1";
     private static string editorPrefix = "0";
+    private static string editorKnockback = "";
+    private static string editorCrit = "";
+    private static string editorUseAnimation = "";
+    private static string editorShootSpeed = "";
+    private static string editorRarity = "";
+    private static string teleportX = "";
+    private static string teleportY = "";
+    private static bool worldEditSetPos1Next = true;
     private static string lifeCurrent = "";
     private static string lifeMaximum = "";
     private static string manaCurrent = "";
@@ -1035,6 +1043,69 @@ internal static class HerosModPanel
         y += 18;
     }
 
+    // Mini mapa del panel: muestrea tiles alrededor del jugador y permite elegir coordenadas.
+    private static void DrawWorldMiniMap(SpriteBatch sb, Texture2D pixel, Rectangle area, Point mouse, bool worldEdit)
+    {
+        sb.Draw(pixel, area, new Color(15, 18, 24));
+        int cell = 7, span = 4;
+        int cols = Math.Max(1, area.Width / cell), rows = Math.Max(1, area.Height / cell);
+        int cx = (int)(Main.LocalPlayer.Center.X / 16f), cy = (int)(Main.LocalPlayer.Center.Y / 16f);
+        int left = cx - cols * span / 2, top = cy - rows * span / 2;
+        for (int gy = 0; gy < rows; gy++)
+        for (int gx = 0; gx < cols; gx++)
+        {
+            int tx = Math.Clamp(left + gx * span, 1, Main.maxTilesX - 2);
+            int ty = Math.Clamp(top + gy * span, 1, Main.maxTilesY - 2);
+            Tile t = Main.tile[tx, ty];
+            Color c = new Color(35, 40, 48);
+            if (t != null && t.HasTile)
+                c = t.TileType switch
+                {
+                    TileID.Dirt or TileID.Grass or TileID.CorruptGrass or TileID.CrimsonGrass or TileID.JungleGrass => new Color(83,145,70),
+                    TileID.Stone or TileID.Ebonstone or TileID.Crimstone => new Color(105,105,115),
+                    TileID.Sand or TileID.HardenedSand => new Color(205,184,118),
+                    TileID.SnowBlock or TileID.IceBlock => new Color(170,210,225),
+                    TileID.Ash or TileID.Hellstone => new Color(190,80,55),
+                    _ => new Color(120,125,135)
+                };
+            sb.Draw(pixel, new Rectangle(area.X + gx * cell, area.Y + gy * cell, cell - 1, cell - 1), c);
+        }
+        sb.Draw(pixel, new Rectangle(area.X + cols / 2 * cell - 2, area.Y + rows / 2 * cell - 2, 5, 5), Color.Cyan);
+        if (worldEdit)
+        {
+            if (worldPos1.HasValue) DrawMapMarker(sb, pixel, area, left, top, worldPos1.Value, span, cell, Color.LimeGreen);
+            if (worldPos2.HasValue) DrawMapMarker(sb, pixel, area, left, top, worldPos2.Value, span, cell, Color.Orange);
+        }
+        if (!area.Contains(mouse) || !Clicked) return;
+        int col = Math.Clamp((mouse.X - area.X) / cell, 0, cols - 1);
+        int row = Math.Clamp((mouse.Y - area.Y) / cell, 0, rows - 1);
+        int wx = Math.Clamp(left + col * span, 1, Main.maxTilesX - 2);
+        int wy = Math.Clamp(top + row * span, 1, Main.maxTilesY - 2);
+        Main.mouseLeftRelease = false;
+        if (worldEdit)
+        {
+            if (worldEditSetPos1Next) { worldPos1 = new Point(wx, wy); worldEditSetPos1Next = false; SetStatus($"POS1: {wx}, {wy}"); }
+            else { worldPos2 = new Point(wx, wy); worldEditSetPos1Next = true; SetStatus($"POS2: {wx}, {wy}"); }
+        }
+        else { teleportX = wx.ToString(); teleportY = wy.ToString(); SetStatus($"Destino seleccionado: {wx}, {wy}"); }
+    }
+
+    private static void DrawMapMarker(SpriteBatch sb, Texture2D pixel, Rectangle area, int left, int top, Point p, int span, int cell, Color color)
+    {
+        int x = area.X + (p.X - left) / span * cell, y = area.Y + (p.Y - top) / span * cell;
+        if (x >= area.X && x < area.Right && y >= area.Y && y < area.Bottom)
+            sb.Draw(pixel, new Rectangle(x, y, cell, cell), color);
+    }
+
+    private static void TeleportToCoordinates()
+    {
+        if (!int.TryParse(teleportX, out int x) || !int.TryParse(teleportY, out int y)
+            || x < 1 || x >= Main.maxTilesX - 1 || y < 1 || y >= Main.maxTilesY - 1)
+        { SetStatus("Coordenadas inválidas."); return; }
+        if (IsServer) SendCmd($"/tppos {x} {y}");
+        else TeleportPlayer(x * 16, y * 16, $"Coordenadas {x}, {y}");
+    }
+
     // ------------------------------------------------------------------ Teleport
 
     private static void DrawTeleportTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
@@ -1066,7 +1137,21 @@ internal static class HerosModPanel
             else
                 TeleportPlayer(Main.dungeonX * 16, Main.dungeonY * 16, "Mazmorra");
         }
-        y += RowH + 12;
+        y += RowH + 8;
+        Utils.DrawBorderString(sb, "Destino X (tiles):", new Vector2(panel.X + Pad, y), Color.White, 0.7f);
+        Utils.DrawBorderString(sb, "Destino Y (tiles):", new Vector2(panel.X + 230, y), Color.White, 0.7f);
+        y += 17;
+        if (string.IsNullOrEmpty(teleportX)) teleportX = ((int)(Main.LocalPlayer.Center.X / 16f)).ToString();
+        if (string.IsNullOrEmpty(teleportY)) teleportY = ((int)(Main.LocalPlayer.Center.Y / 16f)).ToString();
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 24), 26, teleportX, mouse, "X");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 24), 27, teleportY, mouse, "Y");
+        y += 29;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Teletransportar a X/Y", mouse, new Color(45, 100, 150)))
+            TeleportToCoordinates();
+        y += RowH + 6;
+        Utils.DrawBorderString(sb, "Mini mapa · clic para elegir destino", new Vector2(panel.X + Pad, y), new Color(145, 200, 240), 0.68f);
+        y += 18;
+        DrawWorldMiniMap(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, Math.Max(50, panel.Bottom - y - 35)), mouse, false);
     }
 
     // ------------------------------------------------------------------ Jugadores
@@ -1372,6 +1457,20 @@ internal static class HerosModPanel
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bwExtra + 8, y, bwExtra, RowH), "Vaciar ranura", mouse, new Color(135, 55, 55)))
             ClearItemEditorSlot();
         y += RowH + 8;
+        Utils.DrawBorderString(sb, "Retroceso:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "Crítico:", new Vector2(panel.X + 195, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "Rareza:", new Vector2(panel.X + 365, y), Color.White, 0.68f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 20, editorKnockback, mouse, "knockback");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 195, y, 100, 24), 21, editorCrit, mouse, "crítico");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 365, y, 100, 24), 22, editorRarity, mouse, "rareza");
+        y += 30;
+        Utils.DrawBorderString(sb, "Animación:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, "Velocidad proyectil:", new Vector2(panel.X + 230, y), Color.White, 0.68f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 23, editorUseAnimation, mouse, "useAnimation");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 140, 24), 24, editorShootSpeed, mouse, "shootSpeed");
+        y += 30;
 
         var p = Main.LocalPlayer;
         int slot = ParseEditorSlot();
@@ -1419,6 +1518,11 @@ internal static class HerosModPanel
         editorValue = it.value.ToString();
         editorType = it.type.ToString();
         editorPrefix = it.prefix.ToString();
+        editorKnockback = it.knockBack.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        editorCrit = it.crit.ToString();
+        editorUseAnimation = it.useAnimation.ToString();
+        editorShootSpeed = it.shootSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        editorRarity = it.rare.ToString();
         SetStatus($"Datos cargados: {it.Name}.");
     }
 
@@ -1449,6 +1553,13 @@ internal static class HerosModPanel
         if (int.TryParse(editorUseTime, out int useTime)) it.useTime = Math.Clamp(useTime, 1, 10000);
         if (int.TryParse(editorStack, out int stack)) it.stack = Math.Clamp(stack, 1, Math.Max(1, it.maxStack));
         if (int.TryParse(editorValue, out int value)) it.value = Math.Clamp(value, 0, int.MaxValue);
+        if (float.TryParse(editorKnockback, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float knockback))
+            it.knockBack = Math.Clamp(knockback, 0f, 10000f);
+        if (int.TryParse(editorCrit, out int crit)) it.crit = Math.Clamp(crit, 0, 1000);
+        if (int.TryParse(editorUseAnimation, out int animation)) it.useAnimation = Math.Clamp(animation, 1, 10000);
+        if (float.TryParse(editorShootSpeed, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float shootSpeed))
+            it.shootSpeed = Math.Clamp(shootSpeed, 0f, 10000f);
+        if (int.TryParse(editorRarity, out int rarity)) it.rare = (sbyte)Math.Clamp(rarity, -1, 11);
         if (Main.netMode == 0)
             SetStatus($"Editado localmente: {it.Name}. Algunas estadísticas pueden recalcularse por el juego.");
         else
@@ -1673,7 +1784,10 @@ internal static class HerosModPanel
             ApplyWorldEdit("replace");
         if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse))
             UndoWorldEdit();
-        y += RowH + 10;
+        y += RowH + 7;
+        Utils.DrawBorderString(sb, "Mini mapa: clic alterna POS1 y POS2.", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
+        y += 18;
+        DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(48, panel.Bottom - y - 45)), mouse, true);
         Utils.DrawBorderString(sb, "Por seguridad, solo funciona en un jugador. Máximo 4.000 tiles por operación.",
             new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
     }
@@ -1937,6 +2051,20 @@ internal static class HerosModPanel
             manaCurrent = Main.GetInputText(manaCurrent);
         else if (activeField == 19)
             manaMaximum = Main.GetInputText(manaMaximum);
+        else if (activeField == 20)
+            editorKnockback = Main.GetInputText(editorKnockback);
+        else if (activeField == 21)
+            editorCrit = Main.GetInputText(editorCrit);
+        else if (activeField == 22)
+            editorRarity = Main.GetInputText(editorRarity);
+        else if (activeField == 23)
+            editorUseAnimation = Main.GetInputText(editorUseAnimation);
+        else if (activeField == 24)
+            editorShootSpeed = Main.GetInputText(editorShootSpeed);
+        else if (activeField == 26)
+            teleportX = Main.GetInputText(teleportX);
+        else if (activeField == 27)
+            teleportY = Main.GetInputText(teleportY);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
