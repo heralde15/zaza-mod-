@@ -62,127 +62,121 @@ internal static partial class HerosModPanel
     private static bool profileConfirmRestore;
     private static int profileNoticeTimer;
 
+    private static bool showBookmarkPage;
+
     private static void DrawProfilesTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         Player player = Main.LocalPlayer;
-        DrawSectionHeader(sb, panel, ref y, "Perfiles y accesos rápidos");
-        Utils.DrawBorderString(sb, "Guarda estadísticas y efectos seleccionados en 4 espacios temporales.",
-            new Vector2(panel.X + Pad, y), new Color(190, 205, 225), 0.68f);
-        y += 24;
+        DrawSectionHeader(sb, panel, ref y, showBookmarkPage ? "Marcadores de teletransporte" : "Perfiles del jugador");
+        if (DrawButton(sb, pixel, new Rectangle(panel.Right - 170, y - 21, 160, 22),
+            showBookmarkPage ? "Volver a perfiles" : "Abrir marcadores", mouse, new Color(50, 80, 115)))
+            showBookmarkPage = !showBookmarkPage;
 
-        Utils.DrawBorderString(sb, "Nombre del perfil:", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
-        y += 17;
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 270, 24), 31, profileNameInput, mouse, "Nombre del perfil");
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 280, y, 150, 24), "Guardar actual", mouse, new Color(45, 105, 75)))
-            SavePlayerProfile(profilePage);
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 438, y, 170, 24), "Restaurar perfil", mouse, new Color(55, 85, 130)))
+        if (!showBookmarkPage)
         {
-            if (profilePage >= 0 && profilePage < profileSlots.Length && profileSlots[profilePage].Valid)
-            {
+            Utils.DrawBorderString(sb, "4 espacios temporales: guardan estadísticas y posición en tiles.",
+                new Vector2(panel.X + Pad, y), new Color(190, 205, 225), 0.68f);
+            y += 22;
+            Utils.DrawBorderString(sb, "Nombre:", new Vector2(panel.X + Pad, y + 4), Color.White, 0.68f);
+            DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + 58, y, 235, 24), 31, profileNameInput, mouse, "Mi perfil");
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 302, y, 145, 24), "Guardar espacio", mouse, new Color(45, 105, 75)))
+                SavePlayerProfile(profilePage);
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 455, y, 153, 24), "Restaurar", mouse, new Color(55, 85, 130)))
                 RestorePlayerProfile(profilePage);
-            }
-            else
-            {
-                SetStatus("Primero guarda un perfil en ese espacio.");
-            }
-        }
-        y += 32;
+            y += 30;
 
-        for (int i = 0; i < profileSlots.Length; i++)
-        {
-            PlayerProfileSnapshot p = profileSlots[i];
-            int rowY = y + i * 31;
-            Color c = i == profilePage ? new Color(56, 80, 105) : new Color(38, 42, 52);
-            sb.Draw(pixel, new Rectangle(panel.X + Pad, rowY, Width - Pad * 2, 27), c);
-            string summary = p.Valid
-                ? $"{i + 1}. {p.Name}  | Vida {p.Life}/{p.MaxLife}  | Maná {p.Mana}/{p.MaxMana}  | Defensa {p.Defense}"
-                : $"{i + 1}. (vacío)";
-            Utils.DrawBorderString(sb, summary, new Vector2(panel.X + Pad + 7, rowY + 5), Color.White, 0.68f);
-            if (new Rectangle(panel.X + Pad, rowY, Width - Pad * 2, 27).Contains(mouse) && Clicked)
+            for (int i = 0; i < profileSlots.Length; i++)
             {
-                Main.mouseLeftRelease = false;
-                profilePage = i;
-                selectedProfile = i;
-                if (p.Valid)
-                    profileNameInput = p.Name;
+                PlayerProfileSnapshot p = profileSlots[i];
+                int rowY = y + i * 31;
+                bool selected = i == profilePage;
+                var row = new Rectangle(panel.X + Pad, rowY, Width - Pad * 2, 27);
+                sb.Draw(pixel, row, selected ? new Color(56, 80, 105) : new Color(38, 42, 52));
+                string summary = p.Valid
+                    ? $"{i + 1}. {p.Name} | HP {p.Life}/{p.MaxLife} | MP {p.Mana}/{p.MaxMana} | Pos {p.TileX},{p.TileY}"
+                    : $"{i + 1}. (espacio vacío)";
+                Utils.DrawBorderString(sb, summary, new Vector2(row.X + 7, row.Y + 5), Color.White, 0.68f);
+                if (row.Contains(mouse) && Clicked)
+                {
+                    Main.mouseLeftRelease = false;
+                    profilePage = i;
+                    selectedProfile = i;
+                    if (p.Valid) profileNameInput = p.Name;
+                }
             }
-        }
-        y += profileSlots.Length * 31 + 8;
-
-        DrawSectionHeader(sb, panel, ref y, "Acciones rápidas");
-        int bw = (Width - Pad * 2 - 12) / 3;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, 25), "Curar al máximo", mouse, new Color(45, 105, 65)))
-        {
-            player.statLife = player.statLifeMax2;
-            player.statMana = player.statManaMax2;
-            SyncSelf();
-            SetStatus("Vida y maná restaurados localmente.");
-        }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 6, y, bw, 25), "Vida al 50%", mouse))
-        {
-            player.statLife = Math.Max(1, player.statLifeMax2 / 2);
-            SyncSelf();
-            SetStatus("Vida ajustada al 50%.");
-        }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (bw + 6) * 2, y, bw, 25), "Maná al 50%", mouse))
-        {
-            player.statMana = Math.Max(0, player.statManaMax2 / 2);
-            SyncSelf();
-            SetStatus("Maná ajustado al 50%.");
-        }
-        y += 31;
-
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, 25), "Quitar todos los buffs", mouse, new Color(110, 65, 55)))
-        {
-            for (int i = 0; i < player.buffType.Length; i++)
+            y += profileSlots.Length * 31 + 5;
+            DrawSectionHeader(sb, panel, ref y, "Acciones rápidas");
+            int bw = (Width - Pad * 2 - 12) / 3;
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, 25), "Curar al máximo", mouse, new Color(45, 105, 65)))
             {
-                if (player.buffType[i] > 0)
-                    player.DelBuff(i);
+                player.statLife = player.statLifeMax2;
+                player.statMana = player.statManaMax2;
+                SyncSelf();
+                SetStatus("Vida y maná restaurados localmente.");
             }
-            SyncSelf();
-            SetStatus("Se quitaron los buffs activos del jugador local.");
-        }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 6, y, bw, 25), "Volver a posición guardada", mouse))
-        {
-            if (profilePage >= 0 && profilePage < profileSlots.Length && profileSlots[profilePage].Valid)
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 6, y, bw, 25), "Vida al 50%", mouse))
             {
-                PlayerProfileSnapshot p = profileSlots[profilePage];
-                teleportX = p.TileX.ToString();
-                teleportY = p.TileY.ToString();
-                TeleportToCoordinates();
+                player.statLife = Math.Max(1, player.statLifeMax2 / 2);
+                SyncSelf();
+                SetStatus("Vida ajustada al 50%.");
             }
-            else
-                SetStatus("Guarda primero un perfil.");
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (bw + 6) * 2, y, bw, 25), "Maná al 50%", mouse))
+            {
+                player.statMana = Math.Max(0, player.statManaMax2 / 2);
+                SyncSelf();
+                SetStatus("Maná ajustado al 50%.");
+            }
+            y += 31;
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, 25), "Quitar buffs", mouse, new Color(110, 65, 55)))
+            {
+                for (int i = player.buffType.Length - 1; i >= 0; i--)
+                    if (player.buffType[i] > 0) player.DelBuff(i);
+                SyncSelf();
+                SetStatus("Se quitaron los buffs activos del jugador local.");
+            }
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 6, y, bw, 25), "Volver a posición", mouse))
+            {
+                if (profileSlots[profilePage].Valid)
+                {
+                    teleportX = profileSlots[profilePage].TileX.ToString();
+                    teleportY = profileSlots[profilePage].TileY.ToString();
+                    TeleportToCoordinates();
+                }
+                else SetStatus("Guarda primero ese perfil.");
+            }
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (bw + 6) * 2, y, bw, 25), "Limpiar selección", mouse))
+            {
+                selectedProfile = -1;
+                profileConfirmRestore = false;
+                SetStatus("Selección del perfil limpiada.");
+            }
+            y += 32;
+            Utils.DrawBorderString(sb, "Los perfiles no se guardan en disco. En servidores, algunos valores pueden revertirse.",
+                new Vector2(panel.X + Pad, y), new Color(235, 195, 120), 0.62f);
+            return;
         }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (bw + 6) * 2, y, bw, 25), "Limpiar selección", mouse))
-        {
-            selectedProfile = -1;
-            profileConfirmRestore = false;
-            SetStatus("Selección del perfil limpiada.");
-        }
-        y += 34;
 
-        DrawSectionHeader(sb, panel, ref y, "Marcadores de teletransporte");
+        Utils.DrawBorderString(sb, "Coordenadas en tiles. El servidor puede requerir permisos para teletransportarte.",
+            new Vector2(panel.X + Pad, y), new Color(190, 205, 225), 0.66f);
+        y += 23;
         Utils.DrawBorderString(sb, "X:", new Vector2(panel.X + Pad, y + 4), Color.White, 0.7f);
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + 20, y, 80, 24), 32, bookmarkXInput, mouse, "X");
-        Utils.DrawBorderString(sb, "Y:", new Vector2(panel.X + Pad + 110, y + 4), Color.White, 0.7f);
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + 130, y, 80, 24), 33, bookmarkYInput, mouse, "Y");
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + 220, y, 170, 24), 34, bookmarkNameInput, mouse, "Nombre del marcador");
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 400, y, 205, 24), "Guardar coordenadas", mouse, new Color(45, 105, 75)))
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + 20, y, 75, 24), 32, bookmarkXInput, mouse, "X");
+        Utils.DrawBorderString(sb, "Y:", new Vector2(panel.X + Pad + 102, y + 4), Color.White, 0.7f);
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + 122, y, 75, 24), 33, bookmarkYInput, mouse, "Y");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad + 205, y, 175, 24), 34, bookmarkNameInput, mouse, "Nombre");
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 388, y, 220, 24), "Guardar / reemplazar", mouse, new Color(45, 105, 75)))
             SaveTeleportBookmark();
         y += 31;
 
-        int visibleCount = 3;
-        for (int i = 0; i < visibleCount; i++)
+        for (int i = 0; i < teleportBookmarks.Length; i++)
         {
-            int idx = i + bookmarkPage * visibleCount;
-            TeleportBookmark b = teleportBookmarks[idx];
-            int rowY = y + i * 28;
-            string label = b.Valid ? $"{idx + 1}. {b.Name}  ({b.X}, {b.Y})" : $"{idx + 1}. (vacío)";
-            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, rowY, 365, 24), label, mouse,
-                selectedBookmark == idx ? new Color(65, 90, 125) : new Color(42, 47, 57)))
+            TeleportBookmark b = teleportBookmarks[i];
+            int rowY = y + i * 34;
+            string label = b.Valid ? $"{i + 1}. {b.Name} ({b.X}, {b.Y})" : $"{i + 1}. (vacío)";
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, rowY, 365, 27), label, mouse,
+                selectedBookmark == i ? new Color(65, 90, 125) : new Color(42, 47, 57)))
             {
-                selectedBookmark = idx;
+                selectedBookmark = i;
                 if (b.Valid)
                 {
                     bookmarkXInput = b.X.ToString();
@@ -190,23 +184,18 @@ internal static partial class HerosModPanel
                     bookmarkNameInput = b.Name;
                 }
             }
-            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 373, rowY, 110, 24), "Ir", mouse, new Color(45, 105, 75)))
-                GoToTeleportBookmark(idx);
-            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 491, rowY, 114, 24), "Eliminar", mouse, new Color(110, 55, 55)))
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 373, rowY, 110, 27), "Ir", mouse, new Color(45, 105, 75)))
+                GoToTeleportBookmark(i);
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 491, rowY, 117, 27), "Eliminar", mouse, new Color(110, 55, 55)))
             {
-                teleportBookmarks[idx] = new TeleportBookmark(false, "", 0, 0);
-                if (selectedBookmark == idx) selectedBookmark = -1;
-                SetStatus($"Marcador {idx + 1} eliminado.");
+                teleportBookmarks[i] = new TeleportBookmark(false, "", 0, 0);
+                if (selectedBookmark == i) selectedBookmark = -1;
+                SetStatus($"Marcador {i + 1} eliminado.");
             }
         }
-        y += visibleCount * 28 + 5;
-
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, 160, 23), "Marcadores 1-3", mouse))
-            bookmarkPage = 0;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 168, y, 160, 23), "Marcadores 4-6", mouse))
-            bookmarkPage = 1;
-        Utils.DrawBorderString(sb, "Las coordenadas son tiles del mundo; multijugador puede requerir permisos del servidor.",
-            new Vector2(panel.X + Pad, y + 27), new Color(235, 195, 120), 0.62f);
+        y += teleportBookmarks.Length * 34 + 2;
+        Utils.DrawBorderString(sb, "Consejo: selecciona un marcador para editar sus coordenadas y guardarlo encima.",
+            new Vector2(panel.X + Pad, y), new Color(190, 205, 225), 0.62f);
     }
 
     private static void SavePlayerProfile(int index)
