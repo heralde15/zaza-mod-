@@ -1830,17 +1830,12 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, "Mini mapa: clic alterna POS1 y POS2.", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
         y += 18;
         DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(48, panel.Bottom - y - 45)), mouse, true);
-        Utils.DrawBorderString(sb, "Sin límite artificial de selección. Las áreas enormes pueden congelar el juego; multijugador requiere soporte del servidor.",
+        Utils.DrawBorderString(sb, "WorldEdit del cliente sin bloqueo por modo. En multijugador, el servidor puede descartar cambios locales.",
             new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
     }
 
     private static void ApplyWorldEdit(string operation)
     {
-        if (Main.netMode != 0)
-        {
-            SetStatus("WorldEdit local está bloqueado en multijugador; hace falta un handler del servidor.");
-            return;
-        }
         if (!worldPos1.HasValue || !worldPos2.HasValue)
         {
             SetStatus("Marca POS1 y POS2 antes de editar.");
@@ -1887,11 +1882,6 @@ internal static partial class HerosModPanel
 
     private static void UndoWorldEdit()
     {
-        if (Main.netMode != 0)
-        {
-            SetStatus("Undo local solo funciona en un jugador.");
-            return;
-        }
         if (worldEditUndo.Count == 0)
         {
             SetStatus("No hay una operación para deshacer.");
