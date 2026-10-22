@@ -1888,11 +1888,119 @@ internal static partial class HerosModPanel
         if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse))
             UndoWorldEdit();
         y += RowH + 7;
+        Utils.DrawBorderString(sb, "Archivo de construcción (.hws):", new Vector2(bx, y), UiAccent, 0.68f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(bx, y, 220, 25), 26, schematicFileName, mouse, "nombre del archivo");
+        int fileButtonW = (Width - Pad * 2 - 240 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(bx + 228, y, fileButtonW, 25), "Exportar", mouse, UiAccent))
+            ExportWorldSchematic();
+        if (DrawButton(sb, pixel, new Rectangle(bx + 228 + fileButtonW + 8, y, fileButtonW, 25), "Importar en POS1", mouse))
+            ImportWorldSchematic();
+        y += 30;
+        Utils.DrawBorderString(sb, worldSchematicStatus, new Vector2(bx, y), new Color(190, 220, 255), 0.62f);
+        y += 17;
         Utils.DrawBorderString(sb, "Mini mapa: clic alterna POS1 y POS2.", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
         y += 18;
-        DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(48, panel.Bottom - y - 45)), mouse, true);
-        Utils.DrawBorderString(sb, "WorldEdit del cliente sin bloqueo por modo. En multijugador, el servidor puede descartar cambios locales.",
+        DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(32, panel.Bottom - y - 45)), mouse, true);
+        Utils.DrawBorderString(sb, "Los .hws guardan tiles; en multijugador el servidor puede revertir cambios.",
             new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+    }
+
+    private static string GetSchematicPath()
+    {
+        string name = Path.GetFileNameWithoutExtension(schematicFileName ?? "construccion");
+        foreach (char invalid in Path.GetInvalidFileNameChars())
+            name = name.Replace(invalid, '_');
+        if (string.IsNullOrWhiteSpace(name)) name = "construccion";
+        string directory = Path.Combine(Main.SavePath, "HerosMod", "Schematics");
+        Directory.CreateDirectory(directory);
+        return Path.Combine(directory, name + ".hws");
+    }
+
+    private static void ExportWorldSchematic()
+    {
+        if (!worldPos1.HasValue || !worldPos2.HasValue) { SetStatus("Marca POS1 y POS2 antes de exportar."); return; }
+        try
+        {
+            int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+            int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+            int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+            int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+            long area = (long)(x2 - x1 + 1) * (y2 - y1 + 1);
+            if (area > 500000) { SetStatus("Selección demasiado grande: máximo 500 000 tiles."); return; }
+            string path = GetSchematicPath();
+            using (var writer = new StreamWriter(path, false))
+            {
+                writer.WriteLine("HEROSMOD_SCHEMATIC_1");
+                writer.WriteLine((x2 - x1 + 1) + "," + (y2 - y1 + 1));
+                for (int yy = y1; yy <= y2; yy++)
+                {
+                    for (int xx = x1; xx <= x2; xx++)
+                    {
+                        Tile tile = Main.tile[xx, yy];
+                        writer.Write(tile != null && tile.HasTile ? tile.TileType + 1 : 0);
+                        if (xx < x2) writer.Write(',');
+                    }
+                    writer.WriteLine();
+                }
+            }
+            worldSchematicStatus = "Exportado: " + Path.GetFileName(path) + " (" + area.ToString("N0") + " tiles)";
+            SetStatus("Archivo guardado en " + path);
+        }
+        catch (Exception ex) { worldSchematicStatus = "Error al exportar: " + ex.Message; SetStatus("No se pudo exportar el archivo."); }
+    }
+
+    private static void ImportWorldSchematic()
+    {
+        if (!worldPos1.HasValue) { SetStatus("Marca POS1 como esquina superior izquierda."); return; }
+        try
+        {
+            string path = GetSchematicPath();
+            if (!File.Exists(path)) { worldSchematicStatus = "No existe " + Path.GetFileName(path); SetStatus(worldSchematicStatus); return; }
+            int width, height;
+            using (var reader = new StreamReader(path))
+            {
+                if (reader.ReadLine() != "HEROSMOD_SCHEMATIC_1") throw new InvalidDataException("Formato .hws no reconocido.");
+                string[] dims = (reader.ReadLine() ?? "").Split(',');
+                if (dims.Length != 2 || !int.TryParse(dims[0], out width) || !int.TryParse(dims[1], out height) ||
+                    width < 1 || height < 1 || (long)width * height > 500000)
+                    throw new InvalidDataException("Dimensiones inválidas o demasiado grandes.");
+                if (worldPos1.Value.X < 1 || worldPos1.Value.Y < 1 ||
+                    worldPos1.Value.X + width >= Main.maxTilesX - 1 || worldPos1.Value.Y + height >= Main.maxTilesY - 1)
+                    throw new InvalidDataException("La construcción no cabe desde POS1.");
+                for (int row = 0; row < height; row++)
+                {
+                    string[] cells = (reader.ReadLine() ?? "").Split(',');
+                    if (cells.Length != width) throw new InvalidDataException("Fila incompleta: " + (row + 1));
+                    for (int col = 0; col < width; col++)
+                        if (!int.TryParse(cells[col], out int encoded) || encoded < 0 || encoded > TileID.Count)
+                            throw new InvalidDataException("ID de tile inválido.");
+                }
+            }
+            int changed = 0;
+            using (var reader = new StreamReader(path))
+            {
+                reader.ReadLine();
+                reader.ReadLine();
+                for (int row = 0; row < height; row++)
+                {
+                    string[] cells = (reader.ReadLine() ?? "").Split(',');
+                    for (int col = 0; col < width; col++)
+                    {
+                        int encoded = int.Parse(cells[col]);
+                        int x = worldPos1.Value.X + col;
+                        int yy = worldPos1.Value.Y + row;
+                        if (Main.tile[x, yy] == null) continue;
+                        WorldGen.KillTile(x, yy, false, false, true);
+                        if (encoded > 0) WorldGen.PlaceTile(x, yy, encoded - 1, true, true);
+                        changed++;
+                    }
+                }
+            }
+            worldSchematicStatus = "Importado " + Path.GetFileName(path) + " · " + width + "×" + height;
+            SetStatus("Construcción importada en POS1: " + changed.ToString("N0") + " tiles.");
+        }
+        catch (Exception ex) { worldSchematicStatus = "Error al importar: " + ex.Message; SetStatus("No se pudo importar el archivo."); }
     }
 
     private static void ApplyWorldEdit(string operation)
@@ -2214,6 +2322,8 @@ internal static partial class HerosModPanel
             editorShootSpeed = Main.GetInputText(editorShootSpeed);
         else if (activeField == 25)
             editorProjectile = Main.GetInputText(editorProjectile);
+        else if (activeField == 26)
+            schematicFileName = Main.GetInputText(schematicFileName);
         else if (activeField == 26)
             schematicFileName = Main.GetInputText(schematicFileName);
         else if (activeField == 26)
