@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -49,7 +50,7 @@ internal static partial class HerosModPanel
 
     private static Tab currentTab = Tab.Jugador;
     // Apariencia del panel; solo cambia el dibujo, no altera las funciones del mod.
-    private static int uiTheme = 0;
+    private static int uiTheme = 5;
     private static bool uiHighContrast;
     private static readonly Color[] UiAccents =
     {
@@ -58,6 +59,8 @@ internal static partial class HerosModPanel
         new Color(160, 105, 205), // Violeta
         new Color(210, 125, 65), // Naranja
         new Color(205, 80, 95), // Rojo
+        new Color(255, 105, 190), // Anime Sakura
+        new Color(110, 220, 255), // Anime Cyan
     };
     private static Vector2 position = new(120f, 80f);
     private static bool dragging;
@@ -77,6 +80,7 @@ internal static partial class HerosModPanel
     private static string moderationReason = "";
     private static int toolsPage;
     private static string editorSlot = "1";
+    private static string schematicFileName = "construccion";
     private static string editorDamage = "";
     private static string editorDefense = "";
     private static string editorUseTime = "";
@@ -101,6 +105,7 @@ internal static partial class HerosModPanel
     private static Point? worldPos2;
     private static string worldTileType = "1";
     private static string worldReplaceType = "0";
+    private static string worldSchematicStatus = "Marca POS1 y POS2 para exportar.";
     private static int worldEditUndoType = -1;
     private static readonly List<(int x, int y, Tile tile)> worldEditUndo = new();
 
@@ -350,7 +355,15 @@ internal static partial class HerosModPanel
 
         if (godmodeEnabled && local.active)
         {
+            // Refuerzo de god mode local; un servidor puede sobrescribirlo.
             local.creativeGodMode = true;
+            if (Main.netMode == 0)
+            {
+                local.statLife = local.statLifeMax2;
+                local.statMana = local.statManaMax2;
+                local.immune = true;
+                local.immuneTime = Math.Max(local.immuneTime, 2);
+            }
             for (int i = 0; i < local.buffType.Length; i++)
             {
                 if (local.buffType[i] > 0 && Main.debuff[local.buffType[i]])
@@ -1434,6 +1447,20 @@ internal static partial class HerosModPanel
     private static void DrawItemEditorTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         DrawSectionHeader(sb, panel, ref y, "Editor de objetos · inventario local");
+        var player = Main.LocalPlayer;
+        int selectedSlot = Math.Clamp(player.selectedItem, 0, player.inventory.Length - 1);
+        Item heldItem = player.inventory[selectedSlot];
+        string heldName = heldItem == null || heldItem.IsAir ? "Mano vacía" : heldItem.Name + " · ID " + heldItem.type;
+        DrawInfoLine(sb, panel, ref y, "Objeto equipado actualmente", "Ranura " + (selectedSlot + 1) + ": " + heldName);
+        int slotButtonW = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, slotButtonW, RowH), "Editar objeto equipado", mouse, UiAccent))
+        {
+            editorSlot = (selectedSlot + 1).ToString();
+            LoadItemEditorSlot();
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + slotButtonW + 8, y, slotButtonW, RowH), "Cargar ranura", mouse))
+            LoadItemEditorSlot();
+        y += RowH + 7;
         Utils.DrawBorderString(sb, "Ranura de mochila (1-50):", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
         Utils.DrawBorderString(sb, "Cantidad:", new Vector2(panel.X + 230, y), Color.White, 0.72f);
         Utils.DrawBorderString(sb, "Daño:", new Vector2(panel.X + 390, y), Color.White, 0.72f);
@@ -1814,7 +1841,7 @@ internal static partial class HerosModPanel
 
     private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección y edición");
+        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección, archivos y edición");
         int bx = panel.X + Pad;
         int bw = (Width - Pad * 2 - 8) / 2;
         string p1 = worldPos1.HasValue ? $"{worldPos1.Value.X}, {worldPos1.Value.Y}" : "Sin seleccionar";
@@ -2013,9 +2040,9 @@ internal static partial class HerosModPanel
             new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
         y += 28;
 
-        string[] themeNames = { "Azul", "Verde", "Violeta", "Naranja", "Rojo" };
+        string[] themeNames = { "Azul", "Verde", "Violeta", "Naranja", "Rojo", "Anime Sakura", "Anime Cyan" };
         int gap = 7;
-        int bw = (Width - Pad * 2 - gap * 4) / 5;
+        int bw = (Width - Pad * 2 - gap * (themeNames.Length - 1)) / themeNames.Length;
         for (int i = 0; i < themeNames.Length; i++)
         {
             var rect = new Rectangle(panel.X + Pad + i * (bw + gap), y, bw, 32);
@@ -2187,6 +2214,8 @@ internal static partial class HerosModPanel
             editorShootSpeed = Main.GetInputText(editorShootSpeed);
         else if (activeField == 25)
             editorProjectile = Main.GetInputText(editorProjectile);
+        else if (activeField == 26)
+            schematicFileName = Main.GetInputText(schematicFileName);
         else if (activeField == 26)
             teleportX = Main.GetInputText(teleportX);
         else if (activeField == 27)
