@@ -346,11 +346,9 @@ internal static partial class HerosModPanel
         var local = Main.LocalPlayer;
 
         // En servidor las funciones solo-cliente quedan apagadas (el servidor manda).
-        if (IsServer && (godmodeEnabled || flyEnabled))
+        if (IsServer && flyEnabled)
         {
-            godmodeEnabled = false;
             flyEnabled = false;
-            local.creativeGodMode = false;
         }
 
         if (godmodeEnabled && local.active)
@@ -567,26 +565,26 @@ internal static partial class HerosModPanel
         DrawSectionHeader(sb, panel, ref y, "Modificaciones del Jugador");
         int btnW = (Width - (Pad * 2) - 8) / 2;
 
-        string godText = IsServer ? "Godmode (comando)" : (godmodeEnabled ? "Godmode: [ON]" : "Godmode: [OFF]");
-        Color godColor = godmodeEnabled ? new Color(40, 140, 60) : new Color(50, 55, 70);
+        string godText = godmodeEnabled ? "Godmode local: ACTIVADO" : "Godmode local: desactivado";
+        Color godColor = godmodeEnabled ? UiAccent : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), godText, mouse, godColor))
         {
-            if (IsServer)
+            godmodeEnabled = !godmodeEnabled;
+            Main.LocalPlayer.creativeGodMode = godmodeEnabled;
+            if (godmodeEnabled)
             {
-                SendCmd("/godmode");
-            }
-            else
-            {
-                godmodeEnabled = !godmodeEnabled;
-                Main.LocalPlayer.creativeGodMode = godmodeEnabled;
-                if (godmodeEnabled)
+                var p = Main.LocalPlayer;
+                p.statLife = p.statLifeMax2;
+                p.statMana = p.statManaMax2;
+                if (Main.netMode == 0)
                 {
-                    var p = Main.LocalPlayer;
-                    p.statLife = p.statLifeMax2;
-                    p.statMana = p.statManaMax2;
+                    p.immune = true;
+                    p.immuneTime = 2;
                 }
-                SetStatus(godmodeEnabled ? "Godmode activado (nativo)." : "Godmode desactivado.");
             }
+            SetStatus(godmodeEnabled
+                ? "Godmode local activado sin comandos ni plugins. En multijugador el servidor puede ignorarlo."
+                : "Godmode local desactivado.");
         }
 
         string flyText = flyEnabled ? "Vuelo Libre: [ON]" : "Vuelo Libre: [OFF]";
@@ -2207,9 +2205,9 @@ internal static partial class HerosModPanel
     }
 
     private static Color UiAccent => UiAccents[Math.Clamp(uiTheme, 0, UiAccents.Length - 1)];
-    private static Color UiPanelColor => uiHighContrast ? new Color(12, 14, 20) : new Color(30, 33, 40);
-    private static Color UiTitleColor => uiHighContrast ? new Color(25, 30, 42) : new Color(50, 56, 70);
-    private static Color UiTabColor => uiHighContrast ? new Color(25, 29, 39) : new Color(45, 50, 60);
+    private static Color UiPanelColor => uiHighContrast ? new Color(14, 10, 24) : new Color(25, 20, 39);
+    private static Color UiTitleColor => uiHighContrast ? new Color(45, 18, 54) : new Color(66, 31, 75);
+    private static Color UiTabColor => uiHighContrast ? new Color(26, 18, 39) : new Color(43, 31, 58);
 
     private static bool DrawButton(SpriteBatch sb, Texture2D pixel, Rectangle rect, string text, Point mouse, Color? customBg = null)
     {
