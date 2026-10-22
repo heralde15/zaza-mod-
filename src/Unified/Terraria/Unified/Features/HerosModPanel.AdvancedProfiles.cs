@@ -56,6 +56,7 @@ internal static partial class HerosModPanel
     private static string bookmarkXInput = "";
     private static string bookmarkYInput = "";
     private static int profilePage;
+    private static int bookmarkPage;
     private static int selectedProfile = -1;
     private static int selectedBookmark = -1;
     private static bool profileConfirmRestore;
@@ -174,7 +175,7 @@ internal static partial class HerosModPanel
         int visibleCount = 3;
         for (int i = 0; i < visibleCount; i++)
         {
-            int idx = i + (profilePage % 2) * visibleCount;
+            int idx = i + bookmarkPage * visibleCount;
             TeleportBookmark b = teleportBookmarks[idx];
             int rowY = y + i * 28;
             string label = b.Valid ? $"{idx + 1}. {b.Name}  ({b.X}, {b.Y})" : $"{idx + 1}. (vacío)";
@@ -201,9 +202,9 @@ internal static partial class HerosModPanel
         y += visibleCount * 28 + 5;
 
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, 160, 23), "Marcadores 1-3", mouse))
-            profilePage = 0;
+            bookmarkPage = 0;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 168, y, 160, 23), "Marcadores 4-6", mouse))
-            profilePage = 1;
+            bookmarkPage = 1;
         Utils.DrawBorderString(sb, "Las coordenadas son tiles del mundo; multijugador puede requerir permisos del servidor.",
             new Vector2(panel.X + Pad, y + 27), new Color(235, 195, 120), 0.62f);
     }
