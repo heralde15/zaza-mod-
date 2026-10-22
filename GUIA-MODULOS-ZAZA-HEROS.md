@@ -8,10 +8,10 @@ Esta rama contiene un módulo separado de navegación, `HerosModPanel.ZazaModule
 
 ## Estructura recomendada para añadir módulos
 
-Guarda los módulos nuevos en la misma carpeta que `HerosModPanel.cs`:
+Guarda los módulos nuevos en `src/Unified/Terraria/Unified/Features/` dentro de este repositorio o en la carpeta equivalente de tu checkout completo de Terraria Unified. El archivo de entrada de esta integración está en esa ruta:
 
 - `HerosModPanel.cs` — panel principal, pestañas y funciones compartidas.
-- `HerosModPanel.ZazaModules.cs` — navegación y entrada a los módulos de Zaza.
+- `HerosModPanel.ZazaModules.cs` — navegación y entrada a los módulos de Zaza. En esta rama ya está colocado también en `src/Unified/Terraria/Unified/Features/`.
 - `HerosZazaPlayerModule.cs` — funciones de jugador.
 - `HerosZazaItemsModule.cs` — objetos e inventario.
 - `HerosZazaWorldEditModule.cs` — selección, pinceles y operaciones de mundo.
@@ -50,7 +50,7 @@ internal static partial class HerosModPanel
 
 ## Cómo compilar para pruebas
 
-Desde la raíz de la copia local del repositorio, ejecuta el comando que corresponde al proyecto que tengas realmente:
+Desde la raíz de tu checkout completo de Terraria Unified, ejecuta:
 
 ```powershell
 dotnet build .\Terraria.csproj -c Release --no-incremental -v:minimal
@@ -65,3 +65,7 @@ La ubicación del proyecto puede variar si tienes el checkout completo de Terrar
 3. Portar el sistema de inicialización y ciclo de vida de los `UIState`.
 4. Conectar cada botón a una función real, conservando validaciones de mundo/servidor.
 5. Compilar y probar por módulos; no activar funciones de administración en multijugador sin comprobar el comportamiento del servidor.
+
+## Estado de compilación comprobable
+
+La ejecución automática de GitHub Actions de esta rama no llegó a compilar el código: falló en el paso Restore porque el workflow intenta restaurar `Terraria-zMod.csproj`, archivo que no existe en la raíz de esta rama. Por tanto, no debe interpretarse como un error C# del módulo ni como una compilación correcta. Para validar los cambios, usa el checkout completo de Unified y el comando anterior.
