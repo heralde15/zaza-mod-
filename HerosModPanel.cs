@@ -1791,7 +1791,7 @@ internal static partial class HerosModPanel
 
     private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección y edición local");
+        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección y edición");
         int bx = panel.X + Pad;
         int bw = (Width - Pad * 2 - 8) / 2;
         string p1 = worldPos1.HasValue ? $"{worldPos1.Value.X}, {worldPos1.Value.Y}" : "Sin seleccionar";
@@ -1830,7 +1830,7 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, "Mini mapa: clic alterna POS1 y POS2.", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
         y += 18;
         DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(48, panel.Bottom - y - 45)), mouse, true);
-        Utils.DrawBorderString(sb, "Sin plugins en un jugador. En multijugador se necesita lógica integrada del servidor. Máximo 4.000 tiles.",
+        Utils.DrawBorderString(sb, "Sin límite artificial de selección. Las áreas enormes pueden congelar el juego; multijugador requiere soporte del servidor.",
             new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
     }
 
@@ -1850,11 +1850,6 @@ internal static partial class HerosModPanel
         int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
         int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
         int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
-        if ((long)(x2 - x1 + 1) * (y2 - y1 + 1) > 4000)
-        {
-            SetStatus("Selección demasiado grande: reduce el área a 4.000 tiles o menos.");
-            return;
-        }
         int tileId = int.TryParse(worldTileType, out int parsedTile) ? parsedTile : 1;
         int replaceId = int.TryParse(worldReplaceType, out int parsedReplace) ? parsedReplace : 0;
         if (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count)
