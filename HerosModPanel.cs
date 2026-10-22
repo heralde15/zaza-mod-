@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Collections;
+using System.Reflection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -67,6 +69,7 @@ internal static partial class HerosModPanel
     private static Vector2 dragOffset;
 
     private static bool godmodeEnabled;
+    private static bool adventureUnrestrictedEnabled;
     private static bool noSpawnsEnabled;
     private static bool flyEnabled;
     private const float FlySpeed = 12f;
@@ -382,28 +385,33 @@ internal static partial class HerosModPanel
             local.statDefense = defenseOverride;
         }
 
-        if (godmodeEnabled && local.active)
+        if (godmodeEnabled && local.active && !IsServer)
         {
-            // Refuerzo de god mode local; un servidor puede sobrescribirlo.
+            // Mismo comportamiento del God Mode de Zaza: activa el flag creativo,
+            // mantiene vida/maná al máximo y elimina debuffs. El servidor conserva autoridad.
             local.creativeGodMode = true;
+            local.statLife = Math.Max(1, local.statLifeMax2);
+            local.statMana = Math.Max(0, local.statManaMax2);
             if (Main.netMode == 0)
             {
-                local.statLife = local.statLifeMax2;
-                local.statMana = local.statManaMax2;
                 local.immune = true;
                 local.immuneTime = Math.Max(local.immuneTime, 2);
             }
-            for (int i = 0; i < local.buffType.Length; i++)
+            for (int i = local.buffType.Length - 1; i >= 0; i--)
             {
-                if (local.buffType[i] > 0 && Main.debuff[local.buffType[i]])
-                {
+                int buff = local.buffType[i];
+                if (buff > 0 && buff < Main.debuff.Length && Main.debuff[buff])
                     local.DelBuff(i);
-                }
             }
         }
-        else if (local.active)
+        else if (local.active && !godmodeEnabled)
         {
             local.creativeGodMode = false;
+        }
+
+        if (adventureUnrestrictedEnabled && local.active && Main.netMode == 0)
+        {
+            ApplyUnrestrictedAdventurePermissions(true);
         }
 
         if (flyEnabled && local.active && activeField == 0 && !Main.drawingPlayerChat)
@@ -606,31 +614,129 @@ internal static partial class HerosModPanel
 
     // ------------------------------------------------------------------ Jugador
 
+    // Desbloquea los permisos de los poderes creativos en mundos Journey/Viaje.
+    // Reflection evita acoplar el panel a una firma concreta entre revisiones de Unified.
+    private static bool ApplyUnrestrictedAdventurePermissions(bool enable)
+    {
+        try
+        {
+            Type managerType = Type.GetType("Terraria.GameContent.Creative.CreativePowerManager, Terraria");
+            if (managerType == null)
+                return false;
+
+            PropertyInfo instanceProperty = managerType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
+            object manager = instanceProperty?.GetValue(null);
+            if (manager == null)
+                return false;
+
+            bool changed = false;
+            var visited = new HashSet<object>();
+            var pending = new Stack<object>();
+            pending.Push(manager);
+
+            while (pending.Count > 0)
+            {
+                object current = pending.Pop();
+                if (current == null || !visited.Add(current))
+                    continue;
+
+                Type type = current.GetType();
+                if (type.IsEnum || type.IsPrimitive || current is string)
+                    continue;
+
+                if (type.Name.Contains("CreativePower") || type.GetInterfaces().Any(i => i.Name == "ICreativePower"))
+                {
+                    Type permissionType = type.GetProperty("CurrentPermissionLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.PropertyType
+                        ?? type.GetMethod("SetPermissionLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetParameters().FirstOrDefault()?.ParameterType;
+                    if (permissionType != null && permissionType.IsEnum)
+                    {
+                        string wanted = enable
+                            ? (Enum.GetNames(permissionType).FirstOrDefault(n => n.Contains("Everyone") && !n.Contains("Locked")) ?? Enum.GetNames(permissionType).FirstOrDefault(n => n.Contains("CanBeChangedByEveryone")))
+                            : Enum.GetNames(permissionType).FirstOrDefault(n => n.Contains("CanBeChangedByHostAlone"));
+                        if (wanted != null)
+                        {
+                            object value = Enum.Parse(permissionType, wanted);
+                            PropertyInfo permissionProperty = type.GetProperty("CurrentPermissionLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (permissionProperty?.CanWrite == true)
+                            {
+                                permissionProperty.SetValue(current, value);
+                                changed = true;
+                            }
+                            MethodInfo setter = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                                .FirstOrDefault(m => m.Name == "SetPermissionLevel" && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == permissionType);
+                            if (setter != null)
+                            {
+                                setter.Invoke(current, new[] { value });
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+
+                if (current is IDictionary dictionary)
+                {
+                    foreach (DictionaryEntry entry in dictionary)
+                        if (entry.Value != null) pending.Push(entry.Value);
+                }
+                else if (current is IEnumerable enumerable && current is not string)
+                {
+                    foreach (object entry in enumerable)
+                        if (entry != null) pending.Push(entry);
+                }
+
+                foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                {
+                    if (field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(string))
+                        continue;
+                    try
+                    {
+                        object value = field.GetValue(current);
+                        if (value != null && value != current) pending.Push(value);
+                    }
+                    catch { }
+                }
+            }
+            return changed;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static void DrawPlayerTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         DrawSectionHeader(sb, panel, ref y, "Modificaciones del Jugador");
         int btnW = (Width - (Pad * 2) - 8) / 2;
 
-        string godText = godmodeEnabled ? "Godmode local: ACTIVADO" : "Godmode local: desactivado";
+        string godText = godmodeEnabled ? "God Mode Zaza: ACTIVADO" : "God Mode Zaza: desactivado";
         Color godColor = godmodeEnabled ? UiAccent : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), godText, mouse, godColor))
         {
-            godmodeEnabled = !godmodeEnabled;
-            Main.LocalPlayer.creativeGodMode = godmodeEnabled;
-            if (godmodeEnabled)
+            if (IsServer)
             {
-                var p = Main.LocalPlayer;
-                p.statLife = p.statLifeMax2;
-                p.statMana = p.statManaMax2;
-                if (Main.netMode == 0)
-                {
-                    p.immune = true;
-                    p.immuneTime = 2;
-                }
+                SetStatus("God Mode local no puede activarse en modo COMANDOS; usa modo DIRECTO o un comando del servidor.");
             }
-            SetStatus(godmodeEnabled
-                ? "Godmode local activado sin comandos ni plugins. En multijugador el servidor puede ignorarlo."
-                : "Godmode local desactivado.");
+            else
+            {
+                godmodeEnabled = !godmodeEnabled;
+                var p = Main.LocalPlayer;
+                p.creativeGodMode = godmodeEnabled;
+                if (godmodeEnabled)
+                {
+                    p.statLife = Math.Max(1, p.statLifeMax2);
+                    p.statMana = Math.Max(0, p.statManaMax2);
+                    if (Main.netMode == 0)
+                    {
+                        p.immune = true;
+                        p.immuneTime = Math.Max(p.immuneTime, 2);
+                    }
+                }
+                SyncSelf();
+                SetStatus(godmodeEnabled
+                    ? "God Mode Zaza activado: vida/maná máximos y limpieza de debuffs. En multijugador el servidor puede sobrescribirlo."
+                    : "God Mode Zaza desactivado.");
+            }
         }
 
         string flyText = flyEnabled ? "Vuelo Libre: [ON]" : "Vuelo Libre: [OFF]";
@@ -645,6 +751,28 @@ internal static partial class HerosModPanel
             {
                 flyEnabled = !flyEnabled;
                 SetStatus(flyEnabled ? "Vuelo: WASD + Espacio (subir) + Shift (bajar)." : "Vuelo desactivado.");
+            }
+        }
+        y += RowH + 6;
+
+        string adventureText = adventureUnrestrictedEnabled ? "Aventura sin restricciones: ACTIVADA" : "Aventura sin restricciones: desactivada";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), adventureText, mouse, adventureUnrestrictedEnabled ? new Color(40, 115, 75) : UiTabColor))
+        {
+            if (Main.netMode != 0)
+            {
+                SetStatus("La configuración de poderes de Aventura/Viaje requiere ser anfitrión o usar permisos del servidor.");
+            }
+            else if (!Main.GameModeInfo.IsJourneyMode)
+            {
+                SetStatus("Esta opción requiere un mundo de Modo Viaje/Aventura. No cambia la dificultad del mundo automáticamente.");
+            }
+            else
+            {
+                adventureUnrestrictedEnabled = !adventureUnrestrictedEnabled;
+                bool applied = ApplyUnrestrictedAdventurePermissions(adventureUnrestrictedEnabled);
+                SetStatus(applied
+                    ? (adventureUnrestrictedEnabled ? "Poderes de Aventura/Viaje desbloqueados para todos." : "Se restauraron los niveles de permiso predeterminados de los poderes.")
+                    : "No se pudieron cambiar los permisos de poderes en esta versión; no se alteró el mundo.");
             }
         }
         y += RowH + 6;
