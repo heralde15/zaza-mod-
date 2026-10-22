@@ -25,7 +25,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -71,6 +71,12 @@ internal static class HerosModPanel
     private static string editorUseTime = "";
     private static string editorStack = "";
     private static string editorValue = "";
+    private static string editorType = "1";
+    private static string editorPrefix = "0";
+    private static string lifeCurrent = "";
+    private static string lifeMaximum = "";
+    private static string manaCurrent = "";
+    private static string manaMaximum = "";
     private static Point? worldPos1;
     private static Point? worldPos2;
     private static string worldTileType = "1";
@@ -422,7 +428,7 @@ internal static class HerosModPanel
             return;
         }
 
-        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
+        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.EditorVida, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
                       Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
@@ -439,6 +445,7 @@ internal static class HerosModPanel
                 Tab.Jugadores => "Jugadores",
                 Tab.Inventario => "Inventario",
                 Tab.EditorItems => "Editor Items",
+                Tab.EditorVida => "Editor Vida",
                 Tab.WorldEdit => "WorldEdit",
                 Tab.Teleport => "Teleport",
                 _ => tabs[i].ToString()
@@ -450,7 +457,7 @@ internal static class HerosModPanel
             }
         }
 
-        int contentY = panelRect.Y + 94;
+        int contentY = panelRect.Y + 121;
         switch (currentTab)
         {
             case Tab.Jugador:
@@ -464,6 +471,9 @@ internal static class HerosModPanel
                 break;
             case Tab.EditorItems:
                 DrawItemEditorTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.EditorVida:
+                DrawLifeEditorTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.WorldEdit:
                 DrawWorldEditTab(sb, pixel, panelRect, ref contentY, mouse);
@@ -1350,6 +1360,19 @@ internal static class HerosModPanel
             ResetItemEditorSlot();
         y += RowH + 10;
 
+        Utils.DrawBorderString(sb, "ID del objeto:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Prefijo (0 = ninguno):", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 110, 26), 14, editorType, mouse, "ID");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 130, 26), 15, editorPrefix, mouse, "prefijo");
+        y += 34;
+        int bwExtra = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bwExtra, RowH), "Crear / reemplazar ranura", mouse, new Color(45, 105, 145)))
+            CreateItemEditorSlot();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bwExtra + 8, y, bwExtra, RowH), "Vaciar ranura", mouse, new Color(135, 55, 55)))
+            ClearItemEditorSlot();
+        y += RowH + 8;
+
         var p = Main.LocalPlayer;
         int slot = ParseEditorSlot();
         if (slot >= 0 && slot < p.inventory.Length)
@@ -1394,6 +1417,8 @@ internal static class HerosModPanel
         editorUseTime = it.useTime.ToString();
         editorStack = it.stack.ToString();
         editorValue = it.value.ToString();
+        editorType = it.type.ToString();
+        editorPrefix = it.prefix.ToString();
         SetStatus($"Datos cargados: {it.Name}.");
     }
 
@@ -1408,6 +1433,17 @@ internal static class HerosModPanel
         }
 
         Item it = p.inventory[slot];
+        if (int.TryParse(editorType, out int requestedType) && requestedType > 0 && requestedType < ItemID.Count && requestedType != it.type)
+        {
+            it.SetDefaults(requestedType);
+            it.stack = 1;
+        }
+        if (int.TryParse(editorPrefix, out int requestedPrefix))
+        {
+            int safePrefix = Math.Clamp(requestedPrefix, 0, PrefixID.Count - 1);
+            if (safePrefix == 0 || it.CanApplyPrefix(safePrefix))
+                it.prefix = (byte)safePrefix;
+        }
         if (int.TryParse(editorDamage, out int damage)) it.damage = Math.Clamp(damage, 0, 1000000);
         if (int.TryParse(editorDefense, out int defense)) it.defense = Math.Clamp(defense, 0, 100000);
         if (int.TryParse(editorUseTime, out int useTime)) it.useTime = Math.Clamp(useTime, 1, 10000);
@@ -1440,6 +1476,53 @@ internal static class HerosModPanel
         SetStatus("No hay espacios vacíos en la mochila.");
     }
 
+    private static void CreateItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length)
+        {
+            SetStatus("Ranura inválida. Usa un número entre 1 y 50.");
+            return;
+        }
+        if (!int.TryParse(editorType, out int type) || type <= 0 || type >= ItemID.Count)
+        {
+            SetStatus("ID de objeto inválido.");
+            return;
+        }
+        Item created = new Item();
+        created.SetDefaults(type);
+        created.stack = 1;
+        if (int.TryParse(editorStack, out int amount))
+            created.stack = Math.Clamp(amount, 1, Math.Max(1, created.maxStack));
+        if (int.TryParse(editorPrefix, out int prefix))
+        {
+            prefix = Math.Clamp(prefix, 0, PrefixID.Count - 1);
+            if (prefix == 0 || created.CanApplyPrefix(prefix))
+                created.prefix = (byte)prefix;
+        }
+        p.inventory[slot] = created;
+        editorDamage = created.damage.ToString();
+        editorDefense = created.defense.ToString();
+        editorUseTime = created.useTime.ToString();
+        editorStack = created.stack.ToString();
+        editorValue = created.value.ToString();
+        SetStatus($"Objeto creado en ranura {slot + 1}: {created.Name}.");
+    }
+
+    private static void ClearItemEditorSlot()
+    {
+        int slot = ParseEditorSlot();
+        var p = Main.LocalPlayer;
+        if (slot < 0 || slot >= p.inventory.Length)
+        {
+            SetStatus("Ranura inválida.");
+            return;
+        }
+        p.inventory[slot].TurnToAir();
+        SetStatus($"Ranura {slot + 1} vaciada localmente.");
+    }
+
     private static void ResetItemEditorSlot()
     {
         int slot = ParseEditorSlot();
@@ -1455,6 +1538,95 @@ internal static class HerosModPanel
         p.inventory[slot].stack = Math.Clamp(stack, 1, Math.Max(1, p.inventory[slot].maxStack));
         LoadItemEditorSlot();
         SetStatus("Estadísticas restauradas a los valores base del objeto.");
+    }
+
+
+    // ------------------------------------------------------------------ Editor de vida y maná
+
+    private static void DrawLifeEditorTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        var p = Main.LocalPlayer;
+        DrawSectionHeader(sb, panel, ref y, "Editor de vida y maná");
+        DrawInfoLine(sb, panel, ref y, "Estado actual", $"Vida {p.statLife}/{p.statLifeMax2}  ·  Maná {p.statMana}/{p.statManaMax2}");
+        DrawInfoLine(sb, panel, ref y, "Límites base", $"Vida base {p.statLifeMax}  ·  Maná base {p.statManaMax}");
+        y += 4;
+
+        if (string.IsNullOrEmpty(lifeCurrent)) lifeCurrent = p.statLife.ToString();
+        if (string.IsNullOrEmpty(lifeMaximum)) lifeMaximum = p.statLifeMax2.ToString();
+        if (string.IsNullOrEmpty(manaCurrent)) manaCurrent = p.statMana.ToString();
+        if (string.IsNullOrEmpty(manaMaximum)) manaMaximum = p.statManaMax2.ToString();
+
+        Utils.DrawBorderString(sb, "Vida actual", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Vida máxima", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 16, lifeCurrent, mouse, "1 - 999999");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 26), 17, lifeMaximum, mouse, "máximo");
+        y += 34;
+
+        Utils.DrawBorderString(sb, "Maná actual", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        Utils.DrawBorderString(sb, "Maná máximo", new Vector2(panel.X + 230, y), Color.White, 0.72f);
+        y += 18;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 26), 18, manaCurrent, mouse, "0 - 999999");
+        DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 26), 19, manaMaximum, mouse, "máximo");
+        y += 36;
+
+        int bw = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Aplicar vida y maná", mouse, new Color(45, 115, 75)))
+            ApplyLifeEditor();
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Curar al máximo", mouse, new Color(45, 90, 135)))
+        {
+            p.statLife = p.statLifeMax2;
+            p.statMana = p.statManaMax2;
+            lifeCurrent = p.statLife.ToString();
+            lifeMaximum = p.statLifeMax2.ToString();
+            manaCurrent = p.statMana.ToString();
+            manaMaximum = p.statManaMax2.ToString();
+            SyncSelf();
+            SetStatus("Vida y maná restaurados al máximo permitido.");
+        }
+        y += RowH + 8;
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Vida al 50%", mouse))
+        {
+            p.statLife = Math.Max(1, p.statLifeMax2 / 2);
+            lifeCurrent = p.statLife.ToString();
+            SyncSelf();
+            SetStatus("Vida ajustada al 50%.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Maná al 50%", mouse))
+        {
+            p.statMana = Math.Max(0, p.statManaMax2 / 2);
+            manaCurrent = p.statMana.ToString();
+            SyncSelf();
+            SetStatus("Maná ajustado al 50%.");
+        }
+        y += RowH + 12;
+        Utils.DrawBorderString(sb, "Nota: en multijugador el servidor puede corregir o rechazar cambios locales.",
+            new Vector2(panel.X + Pad, y), new Color(235, 195, 120), 0.66f);
+    }
+
+    private static void ApplyLifeEditor()
+    {
+        var p = Main.LocalPlayer;
+        if (!int.TryParse(lifeMaximum, out int maxLife) || maxLife < 1 || maxLife > 999999
+            || !int.TryParse(lifeCurrent, out int currentLife) || currentLife < 0 || currentLife > maxLife
+            || !int.TryParse(manaMaximum, out int maxMana) || maxMana < 0 || maxMana > 999999
+            || !int.TryParse(manaCurrent, out int currentMana) || currentMana < 0 || currentMana > maxMana)
+        {
+            SetStatus("Valores inválidos: actual debe estar entre 0 y máximo; revisa los cuatro campos.");
+            return;
+        }
+
+        // statLifeMax2/statManaMax2 se recalculan desde equipo y mejoras; aquí solo se ajustan
+        // los valores actuales dentro de los límites reales permitidos por el jugador.
+        p.statLife = Math.Clamp(currentLife, 0, Math.Max(1, p.statLifeMax2));
+        p.statMana = Math.Clamp(currentMana, 0, Math.Max(0, p.statManaMax2));
+        lifeCurrent = p.statLife.ToString();
+        lifeMaximum = p.statLifeMax2.ToString();
+        manaCurrent = p.statMana.ToString();
+        manaMaximum = p.statManaMax2.ToString();
+        SyncSelf();
+        SetStatus("Valores actuales aplicados dentro de los máximos reales del personaje.");
     }
 
 
@@ -1749,6 +1921,18 @@ internal static class HerosModPanel
             worldTileType = Main.GetInputText(worldTileType);
         else if (activeField == 13)
             worldReplaceType = Main.GetInputText(worldReplaceType);
+        else if (activeField == 14)
+            editorType = Main.GetInputText(editorType);
+        else if (activeField == 15)
+            editorPrefix = Main.GetInputText(editorPrefix);
+        else if (activeField == 16)
+            lifeCurrent = Main.GetInputText(lifeCurrent);
+        else if (activeField == 17)
+            lifeMaximum = Main.GetInputText(lifeMaximum);
+        else if (activeField == 18)
+            manaCurrent = Main.GetInputText(manaCurrent);
+        else if (activeField == 19)
+            manaMaximum = Main.GetInputText(manaMaximum);
 
         if (Main.inputTextEnter || Main.inputTextEscape)
         {
