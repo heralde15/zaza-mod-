@@ -1201,40 +1201,58 @@ internal static partial class HerosModPanel
 
     private static void DrawBossesTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Invocador RÃ¡pido de Jefes (Bosses)");
-        int btnW = (Width - (Pad * 2) - 8) / 2;
+        DrawSectionHeader(sb, panel, ref y, "Invocador de jefes — sin cooldown ni límite de uso");
+        int gap = 5;
+        int columns = 3;
+        int btnW = (Width - Pad * 2 - gap * (columns - 1)) / columns;
+        int row = 0;
 
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Rey Slime", mouse))
-            SpawnBoss(50, "Rey Slime", "king");
+        // Invocación directa desde la interfaz: no necesita comandos /spawnboss ni plugins.
+        // Se conserva el mismo método de invocación para permitir repetir los clics sin cooldown.
+        (int id, string name)[] bosses =
+        {
+            (50, "Rey Slime"),
+            (4, "Ojo de Cthulhu"),
+            (13, "Devoramundos"),
+            (266, "Cerebro de Cthulhu"),
+            (35, "Skeletron"),
+            (222, "Abeja Reina"),
+            (113, "Muro de Carne"),
+            (657, "Reina Slime"),
+            (125, "Los Gemelos"),
+            (134, "Destructor"),
+            (127, "Skeletron Prime"),
+            (262, "Plantera"),
+            (245, "Golem"),
+            (370, "Duque Fishron"),
+            (439, "Cultista Lunático"),
+            (551, "Betsy"),
+            (636, "Emperatriz de la Luz"),
+            (668, "Ciervíclope"),
+            (398, "Señor de la Luna")
+        };
 
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + btnW + 8, y, btnW, RowH), "Ojo de Cthulhu", mouse))
-            SpawnBoss(4, "Ojo de Cthulhu", "eye");
-        y += RowH + 6;
-
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Devoramundos", mouse))
-            SpawnBoss(13, "Devoramundos", "eater");
-
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + btnW + 8, y, btnW, RowH), "Skeletron", mouse))
-            SpawnBoss(35, "Skeletron", "skeletron");
-        y += RowH + 6;
-
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Plantera", mouse))
-            SpawnBoss(262, "Plantera", "plantera");
-
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + btnW + 8, y, btnW, RowH), "Golem", mouse))
-            SpawnBoss(245, "Golem", "golem");
-        y += RowH + 10;
+        foreach (var boss in bosses)
+        {
+            int col = row % columns;
+            int line = row / columns;
+            var rect = new Rectangle(panel.X + Pad + col * (btnW + gap), y + line * (RowH + 4), btnW, RowH);
+            if (DrawButton(sb, pixel, rect, boss.name, mouse))
+                SpawnBoss(boss.id, boss.name, "");
+            row++;
+        }
+        y += ((row + columns - 1) / columns) * (RowH + 4) + 6;
 
         DrawSectionHeader(sb, panel, ref y, "Progreso de jefes del mundo");
         DrawBossState(sb, panel, ref y, "Rey Slime", NPC.downedSlimeKing);
         DrawBossState(sb, panel, ref y, "Ojo de Cthulhu", NPC.downedBoss1);
         DrawBossState(sb, panel, ref y, "Devoramundos / Cerebro", NPC.downedBoss2);
-        DrawBossState(sb, panel, ref y, "EsqueletrÃ³n", NPC.downedBoss3);
+        DrawBossState(sb, panel, ref y, "Skeletron", NPC.downedBoss3);
         DrawBossState(sb, panel, ref y, "Abeja Reina", NPC.downedQueenBee);
-        DrawBossState(sb, panel, ref y, "Jefes mecÃ¡nicos", NPC.downedMechBoss1 && NPC.downedMechBoss2 && NPC.downedMechBoss3);
+        DrawBossState(sb, panel, ref y, "Jefes mecánicos", NPC.downedMechBoss1 && NPC.downedMechBoss2 && NPC.downedMechBoss3);
         DrawBossState(sb, panel, ref y, "Plantera", NPC.downedPlantBoss);
         DrawBossState(sb, panel, ref y, "Golem", NPC.downedGolemBoss);
-        DrawBossState(sb, panel, ref y, "SeÃ±or de la Luna", NPC.downedMoonlord);
+        DrawBossState(sb, panel, ref y, "Señor de la Luna", NPC.downedMoonlord);
     }
 
     private static void DrawBossState(SpriteBatch sb, Rectangle panel, ref int y, string name, bool defeated)
@@ -1294,7 +1312,14 @@ internal static partial class HerosModPanel
             if (worldEditSetPos1Next) { worldPos1 = new Point(wx, wy); worldEditSetPos1Next = false; SetStatus($"POS1: {wx}, {wy}"); }
             else { worldPos2 = new Point(wx, wy); worldEditSetPos1Next = true; SetStatus($"POS2: {wx}, {wy}"); }
         }
-        else { teleportX = wx.ToString(); teleportY = wy.ToString(); SetStatus($"Destino seleccionado: {wx}, {wy}"); }
+        else
+        {
+            // En la pestaña Teleport, un clic en el minimapa ejecuta el TP directamente.
+            // Se mantienen las coordenadas y el botón manual para no quitar la función anterior.
+            teleportX = wx.ToString();
+            teleportY = wy.ToString();
+            TeleportToCoordinates();
+        }
     }
 
     private static void DrawMiniMapSelection(SpriteBatch sb, Texture2D pixel, Rectangle area, int left, int top,
@@ -1366,8 +1391,8 @@ internal static partial class HerosModPanel
         if (!int.TryParse(teleportX, out int x) || !int.TryParse(teleportY, out int y)
             || x < 1 || x >= Main.maxTilesX - 1 || y < 1 || y >= Main.maxTilesY - 1)
         { SetStatus("Coordenadas inválidas."); return; }
-        if (IsServer) SendCmd($"/tppos {x} {y}");
-        else TeleportPlayer(x * 16, y * 16, $"Coordenadas {x}, {y}");
+        // TP local directo desde la interfaz; no requiere /tppos ni comandos de chat.
+        TeleportPlayer(x * 16, y * 16, $"Coordenadas {x}, {y}");
     }
 
     // ------------------------------------------------------------------ Teleport
@@ -1378,29 +1403,14 @@ internal static partial class HerosModPanel
         int btnW = (Width - (Pad * 2) - 8) / 2;
 
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Spawn del Mundo", mouse))
-        {
-            if (IsServer)
-                SendCmd("/spawn");
-            else
-                TeleportPlayer(Main.spawnTileX * 16, Main.spawnTileY * 16, "Spawn");
-        }
+            TeleportPlayer(Main.spawnTileX * 16, Main.spawnTileY * 16, "Spawn");
 
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + btnW + 8, y, btnW, RowH), "Inframundo (Hell)", mouse))
-        {
-            if (IsServer)
-                SendCmd($"/tppos {Main.maxTilesX / 2} {Main.maxTilesY - 120}");
-            else
-                TeleportPlayer(Main.maxTilesX / 2 * 16, (Main.maxTilesY - 120) * 16, "Inframundo");
-        }
+            TeleportPlayer(Main.maxTilesX / 2 * 16, (Main.maxTilesY - 120) * 16, "Inframundo");
         y += RowH + 6;
 
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Mazmorra (Dungeon)", mouse))
-        {
-            if (IsServer)
-                SendCmd($"/tppos {Main.dungeonX} {Main.dungeonY}");
-            else
-                TeleportPlayer(Main.dungeonX * 16, Main.dungeonY * 16, "Mazmorra");
-        }
+            TeleportPlayer(Main.dungeonX * 16, Main.dungeonY * 16, "Mazmorra");
         y += RowH + 8;
         Utils.DrawBorderString(sb, "Destino X (tiles):", new Vector2(panel.X + Pad, y), Color.White, 0.7f);
         Utils.DrawBorderString(sb, "Destino Y (tiles):", new Vector2(panel.X + 230, y), Color.White, 0.7f);
@@ -3100,20 +3110,16 @@ internal static partial class HerosModPanel
 
     private static void SpawnBoss(int npcId, string bossName, string tshockName)
     {
-        if (IsServer)
-        {
-            SendCmd($"/spawnboss {tshockName}");
-            return;
-        }
-
+        // Invocación directa desde el panel. No depende de TShock ni de /spawnboss.
+        // No se aplica cooldown ni contador de usos; se puede volver a pulsar cuando se quiera.
         NPC.SpawnOnPlayer(Main.myPlayer, npcId);
-        SetStatus($"Â¡{bossName} ha sido invocado!");
+        SetStatus($"¡{bossName} ha sido invocado!");
     }
 
     private static void TeleportPlayer(int worldX, int worldY, string destination)
     {
         var p = Main.LocalPlayer;
-        p.Teleport(new Vector2(worldX, worldY - (p.height * 16)), 1);
+        p.Teleport(new Vector2(worldX, worldY - p.height), 1);
         SetStatus($"Teletransportado a: {destination}");
     }
 
