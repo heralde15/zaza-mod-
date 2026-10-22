@@ -101,6 +101,21 @@ internal static partial class HerosModPanel
     private static bool editorAutoReuse;
     private static bool editorConsumable;
     private static bool editorFavorite;
+    // Propiedades adicionales portadas del editor de Zaza, sin reemplazar las actuales.
+    private static bool editorAdvancedPage;
+    private static string editorPick = "0";
+    private static string editorAxe = "0";
+    private static string editorHealLife = "0";
+    private static string editorHealMana = "0";
+    private static string editorUseAmmo = "0";
+    private static string editorCreateTile = "-1";
+    private static string editorCreateWall = "-1";
+    private static string editorBuffType = "0";
+    private static string editorBuffTime = "0";
+    private static string editorMountType = "-1";
+    private static bool editorUseTurn;
+    private static bool editorNoMelee;
+    private static bool editorNoUseGraphic;
     private static string teleportX = "";
     private static string teleportY = "";
     private static bool worldEditSetPos1Next = true;
@@ -1541,6 +1556,57 @@ internal static partial class HerosModPanel
         string heldName = heldItem == null || heldItem.IsAir ? "Mano vacía" : heldItem.Name + " · ID " + heldItem.type;
         DrawInfoLine(sb, panel, ref y, "Objeto equipado actualmente", "Ranura " + (selectedSlot + 1) + ": " + heldName);
         int slotButtonW = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, 24),
+            editorAdvancedPage ? "Editor Zaza: AVANZADO (clic para volver al básico)" : "Editor Zaza: abrir propiedades AVANZADAS", mouse, editorAdvancedPage ? UiAccent : UiTabColor))
+        {
+            editorAdvancedPage = !editorAdvancedPage;
+            activeField = 0;
+        }
+        y += 30;
+        if (editorAdvancedPage)
+        {
+            DrawSectionHeader(sb, panel, ref y, "Propiedades adicionales del objeto (Zaza Mod)");
+            Utils.DrawBorderString(sb, "Pico", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Hacha", new Vector2(panel.X + 195, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Curación vida", new Vector2(panel.X + 365, y), Color.White, 0.68f);
+            y += 17;
+            DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 40, editorPick, mouse, "pick");
+            DrawTextField(sb, pixel, new Rectangle(panel.X + 195, y, 125, 24), 41, editorAxe, mouse, "axe");
+            DrawTextField(sb, pixel, new Rectangle(panel.X + 365, y, 125, 24), 42, editorHealLife, mouse, "healLife");
+            y += 30;
+            Utils.DrawBorderString(sb, "Curación maná", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Tipo de munición", new Vector2(panel.X + 195, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "ID de montura", new Vector2(panel.X + 365, y), Color.White, 0.68f);
+            y += 17;
+            DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 43, editorHealMana, mouse, "healMana");
+            DrawTextField(sb, pixel, new Rectangle(panel.X + 195, y, 125, 24), 44, editorUseAmmo, mouse, "useAmmo");
+            DrawTextField(sb, pixel, new Rectangle(panel.X + 365, y, 125, 24), 45, editorMountType, mouse, "mountType (-1 ninguno)");
+            y += 30;
+            Utils.DrawBorderString(sb, "Crear bloque (tile ID)", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Crear pared (wall ID)", new Vector2(panel.X + 230, y), Color.White, 0.68f);
+            y += 17;
+            DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 24), 46, editorCreateTile, mouse, "tile ID (-1 ninguno)");
+            DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 24), 47, editorCreateWall, mouse, "wall ID (-1 ninguno)");
+            y += 30;
+            Utils.DrawBorderString(sb, "Tipo de buff", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Duración buff (ticks)", new Vector2(panel.X + 230, y), Color.White, 0.68f);
+            y += 17;
+            DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 24), 48, editorBuffType, mouse, "buff ID (0 ninguno)");
+            DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 24), 49, editorBuffTime, mouse, "buffTime");
+            y += 32;
+            int toggleWAdvanced = (Width - Pad * 2 - 12) / 3;
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, toggleWAdvanced, 25), "UseTurn: " + (editorUseTurn ? "SÍ" : "NO"), mouse, editorUseTurn ? UiAccent : UiTabColor)) editorUseTurn = !editorUseTurn;
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + toggleWAdvanced + 6, y, toggleWAdvanced, 25), "NoMelee: " + (editorNoMelee ? "SÍ" : "NO"), mouse, editorNoMelee ? UiAccent : UiTabColor)) editorNoMelee = !editorNoMelee;
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + (toggleWAdvanced + 6) * 2, y, toggleWAdvanced, 25), "Sin gráfico: " + (editorNoUseGraphic ? "SÍ" : "NO"), mouse, editorNoUseGraphic ? UiAccent : UiTabColor)) editorNoUseGraphic = !editorNoUseGraphic;
+            y += 34;
+            int advButtonW = (Width - Pad * 2 - 8) / 2;
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, advButtonW, RowH), "Cargar datos", mouse, new Color(45, 90, 130))) LoadItemEditorSlot();
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + advButtonW + 8, y, advButtonW, RowH), "Aplicar propiedades", mouse, new Color(55, 115, 75))) ApplyItemEditorSlot();
+            y += RowH + 8;
+            Utils.DrawBorderString(sb, "Estos campos se aplican al objeto de la ranura seleccionada.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
+            Utils.DrawBorderString(sb, "En multijugador el servidor puede ignorar o sobrescribir cambios locales.", new Vector2(panel.X + Pad, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+            return;
+        }
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, slotButtonW, RowH), "Editar objeto equipado", mouse, UiAccent))
         {
             editorSlot = (selectedSlot + 1).ToString();
@@ -1713,6 +1779,19 @@ internal static partial class HerosModPanel
         editorAutoReuse = it.autoReuse;
         editorConsumable = it.consumable;
         editorFavorite = it.favorited;
+        editorPick = it.pick.ToString();
+        editorAxe = it.axe.ToString();
+        editorHealLife = it.healLife.ToString();
+        editorHealMana = it.healMana.ToString();
+        editorUseAmmo = it.useAmmo.ToString();
+        editorCreateTile = it.createTile.ToString();
+        editorCreateWall = it.createWall.ToString();
+        editorBuffType = it.buffType.ToString();
+        editorBuffTime = it.buffTime.ToString();
+        editorMountType = it.mountType.ToString();
+        editorUseTurn = it.useTurn;
+        editorNoMelee = it.noMelee;
+        editorNoUseGraphic = it.noUseGraphic;
         SetStatus($"Datos cargados: {it.Name}.");
     }
 
@@ -1764,6 +1843,19 @@ internal static partial class HerosModPanel
         it.autoReuse = editorAutoReuse;
         it.consumable = editorConsumable;
         it.favorited = editorFavorite;
+        if (int.TryParse(editorPick, out int pick)) it.pick = Math.Clamp(pick, 0, 100000);
+        if (int.TryParse(editorAxe, out int axe)) it.axe = Math.Clamp(axe, 0, 100000);
+        if (int.TryParse(editorHealLife, out int healLife)) it.healLife = Math.Clamp(healLife, 0, 1000000);
+        if (int.TryParse(editorHealMana, out int healMana)) it.healMana = Math.Clamp(healMana, 0, 1000000);
+        if (int.TryParse(editorUseAmmo, out int useAmmo)) it.useAmmo = Math.Max(0, useAmmo);
+        if (int.TryParse(editorCreateTile, out int createTile)) it.createTile = Math.Clamp(createTile, -1, TileID.Count - 1);
+        if (int.TryParse(editorCreateWall, out int createWall)) it.createWall = Math.Clamp(createWall, -1, WallID.Count - 1);
+        if (int.TryParse(editorBuffType, out int buffType)) it.buffType = Math.Clamp(buffType, 0, BuffID.Count - 1);
+        if (int.TryParse(editorBuffTime, out int buffTime)) it.buffTime = Math.Clamp(buffTime, 0, 3600000);
+        if (int.TryParse(editorMountType, out int mountType)) it.mountType = Math.Clamp(mountType, -1, MountID.Count - 1);
+        it.useTurn = editorUseTurn;
+        it.noMelee = editorNoMelee;
+        it.noUseGraphic = editorNoUseGraphic;
         if (Main.netMode == 0)
             SetStatus($"Editado localmente: {it.Name}. Algunas estadísticas pueden recalcularse por el juego.");
         else
@@ -2501,6 +2593,26 @@ internal static partial class HerosModPanel
             editorAmmo = Main.GetInputText(editorAmmo);
         else if (activeField == 38)
             editorScale = Main.GetInputText(editorScale);
+        else if (activeField == 40)
+            editorPick = Main.GetInputText(editorPick);
+        else if (activeField == 41)
+            editorAxe = Main.GetInputText(editorAxe);
+        else if (activeField == 42)
+            editorHealLife = Main.GetInputText(editorHealLife);
+        else if (activeField == 43)
+            editorHealMana = Main.GetInputText(editorHealMana);
+        else if (activeField == 44)
+            editorUseAmmo = Main.GetInputText(editorUseAmmo);
+        else if (activeField == 45)
+            editorMountType = Main.GetInputText(editorMountType);
+        else if (activeField == 46)
+            editorCreateTile = Main.GetInputText(editorCreateTile);
+        else if (activeField == 47)
+            editorCreateWall = Main.GetInputText(editorCreateWall);
+        else if (activeField == 48)
+            editorBuffType = Main.GetInputText(editorBuffType);
+        else if (activeField == 49)
+            editorBuffTime = Main.GetInputText(editorBuffTime);
         else if (activeField == 26)
             schematicFileName = Main.GetInputText(schematicFileName);
         else if (activeField == 26)
