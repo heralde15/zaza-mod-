@@ -28,8 +28,8 @@ internal static partial class HerosModPanel
 {
     private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar }
 
-    private const int Width = 640;
-    private const int Height = 540;
+    private const int Width = 760;
+    private const int Height = 600;
     private const int Pad = 10;
     private const int RowH = 26;
 
@@ -419,7 +419,7 @@ internal static partial class HerosModPanel
         if (panelRect.Contains(mouse))
             Main.LocalPlayer.mouseInterface = true;
 
-        var titleRect = new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 30);
+        var titleRect = new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 40);
         if (dragging)
         {
             if (Main.mouseLeft)
@@ -440,58 +440,72 @@ internal static partial class HerosModPanel
             Main.mouseLeftRelease = false;
         }
 
-        sb.Draw(pixel, panelRect, UiPanelColor);
+        // Nuevo marco visual: sombra, borde, cabecera y área de contenido separadas.
+        sb.Draw(pixel, new Rectangle(panelRect.X + 5, panelRect.Y + 6, panelRect.Width, panelRect.Height), new Color(0, 0, 0, 105));
+        sb.Draw(pixel, panelRect, new Color(8, 10, 18, 245));
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, 2), UiAccent);
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 2, panelRect.Width, panelRect.Height - 2), UiPanelColor);
         sb.Draw(pixel, titleRect, UiTitleColor);
-        Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 6), Color.Gold, 0.85f);
+        sb.Draw(pixel, new Rectangle(panelRect.X, panelRect.Y + 40, panelRect.Width, 1), UiAccent * 0.75f);
+        Utils.DrawBorderString(sb, "HERO's Mod", new Vector2(panelRect.X + Pad, panelRect.Y + 5), Color.White, 1.0f);
+        Utils.DrawBorderString(sb, "CENTRO DE CONTROL  /  TERRARIA", new Vector2(panelRect.X + 150, panelRect.Y + 12), new Color(177, 185, 205), 0.58f);
 
         string modeText = !InMultiplayer
-            ? "Un jugador"
-            : (serverMode == ServerMode.Comandos ? "Servidor: COMANDOS (TShock)" : "Servidor: DIRECTO (vanilla/anarquÃ­a)");
-        Color modeColor = !InMultiplayer ? new Color(50, 90, 60) : (serverMode == ServerMode.Comandos ? new Color(40, 100, 140) : new Color(150, 90, 30));
-        if (DrawButton(sb, pixel, new Rectangle(panelRect.X + 100, panelRect.Y + 5, 260, 20), modeText, mouse, modeColor))
+            ? "UN JUGADOR"
+            : (serverMode == ServerMode.Comandos ? "SERVIDOR: COMANDOS" : "SERVIDOR: DIRECTO");
+        Color modeColor = !InMultiplayer ? new Color(35, 95, 75) : (serverMode == ServerMode.Comandos ? new Color(35, 82, 125) : new Color(125, 78, 30));
+        if (DrawButton(sb, pixel, new Rectangle(panelRect.Right - 218, panelRect.Y + 8, 180, 24), modeText, mouse, modeColor))
         {
             ToggleServerMode();
         }
 
-        var closeRect = new Rectangle(panelRect.Right - 28, panelRect.Y + 5, 20, 20);
-        if (DrawButton(sb, pixel, closeRect, "X", mouse, new Color(180, 50, 50)))
+        var closeRect = new Rectangle(panelRect.Right - 30, panelRect.Y + 8, 22, 24);
+        if (DrawButton(sb, pixel, closeRect, "×", mouse, new Color(150, 45, 60)))
         {
             Visible = false;
             return;
         }
 
-        Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.EditorVida, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Perfiles, Tab.Personalizar];
+        // Navegación agrupada por tarea para que las funciones sean más fáciles de encontrar.
+        Tab[][] tabGroups =
+        [
+            [Tab.Jugador, Tab.EditorVida, Tab.Inventario, Tab.Items, Tab.EditorItems],
+            [Tab.Mundo, Tab.WorldEdit, Tab.Teleport, Tab.Perfiles, Tab.Guia],
+            [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar]
+        ];
+        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES"];
+        string[] tabLabels =
+        [
+            "Jugador", "Editor vida", "Inventario", "Items", "Editor items",
+            "Mundo", "WorldEdit", "Teleport", "Perfiles", "Guía",
+            "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar"
+        ];
         int tabCols = 5;
-        int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
-        for (int i = 0; i < tabs.Length; i++)
+        int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
+        for (int row = 0; row < tabGroups.Length; row++)
         {
-            int row = i / tabCols;
-            int col = i % tabCols;
-            var tabRect = new Rectangle(panelRect.X + Pad + col * (tabWidth + 4),
-                panelRect.Y + 36 + row * 27, tabWidth, 23);
-            bool selected = currentTab == tabs[i];
-            Color tabColor = selected ? UiAccent : UiTabColor;
-            string tabLabel = tabs[i] switch
+            int labelY = panelRect.Y + 44 + row * 34;
+            Utils.DrawBorderString(sb, groupLabels[row], new Vector2(panelRect.X + Pad + 2, labelY), new Color(155, 166, 190), 0.52f);
+            for (int col = 0; col < tabGroups[row].Length; col++)
             {
-                Tab.Jugadores => "Jugadores",
-                Tab.Inventario => "Inventario",
-                Tab.EditorItems => "Editor Items",
-                Tab.EditorVida => "Editor Vida",
-                Tab.WorldEdit => "WorldEdit",
-                Tab.Teleport => "Teleport",
-                Tab.Perfiles => "Perfiles",
-                Tab.Personalizar => "Personalizar UI",
-                _ => tabs[i].ToString()
-            };
-            if (DrawButton(sb, pixel, tabRect, tabLabel, mouse, tabColor) && !selected)
-            {
-                currentTab = tabs[i];
-                activeField = 0;
+                Tab tab = tabGroups[row][col];
+                int labelIndex = row * tabCols + col;
+                var tabRect = new Rectangle(panelRect.X + Pad + col * (tabWidth + 6),
+                    panelRect.Y + 55 + row * 34, tabWidth, 22);
+                bool selected = currentTab == tab;
+                Color tabColor = selected ? UiAccent : UiTabColor;
+                if (DrawButton(sb, pixel, tabRect, tabLabels[labelIndex], mouse, tabColor) && !selected)
+                {
+                    currentTab = tab;
+                    activeField = 0;
+                }
             }
         }
 
-        int contentY = panelRect.Y + 121;
+        int contentY = panelRect.Y + 151;
+        var contentRect = new Rectangle(panelRect.X + 5, contentY - 3, panelRect.Width - 10, panelRect.Bottom - contentY - 8);
+        sb.Draw(pixel, contentRect, new Color(13, 15, 24, 210));
+        sb.Draw(pixel, new Rectangle(contentRect.X, contentRect.Y, 2, contentRect.Height), UiAccent * 0.65f);
         switch (currentTab)
         {
             case Tab.Jugador:
