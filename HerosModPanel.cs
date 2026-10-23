@@ -1983,7 +1983,7 @@ internal static partial class HerosModPanel
         editorUseAnimation = it.useAnimation.ToString();
         editorShootSpeed = it.shootSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
         editorProjectile = it.shoot.ToString();
-        editorProjectileMultiplier = Math.Clamp((int)it.timesToShoot, 1, 128);
+        editorProjectileMultiplier = 1; // Item.timesToShoot no existe en Terraria Unified 1.4.5.8.
         editorRarity = it.rare.ToString();
         editorMana = it.mana.ToString();
         editorUseStyle = it.useStyle.ToString();
@@ -2040,7 +2040,7 @@ internal static partial class HerosModPanel
         if (int.TryParse(editorUseAnimation, out int animation)) it.useAnimation = Math.Clamp(animation, 1, 10000);
         if (float.TryParse(editorShootSpeed, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float shootSpeed))
             it.shootSpeed = Math.Clamp(shootSpeed, 0f, 10000f);
-        it.timesToShoot = (ushort)Math.Clamp(editorProjectileMultiplier, 1, 128);
+        // El multiplicador de disparo requiere un hook compatible en Player.ItemCheck_Shoot.
         if (int.TryParse(editorProjectile, out int projectileId))
         {
             if (projectileId >= 0 && projectileId < ProjectileID.Count)
