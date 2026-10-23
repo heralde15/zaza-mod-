@@ -2865,7 +2865,7 @@ internal static partial class HerosModPanel
             antiLagProjectilesEnabled = !antiLagProjectilesEnabled;
             antiLagProjectileFrameCounter = 0;
             SetStatus(antiLagProjectilesEnabled
-                ? $"Control local activado: intentará reducir proyectiles por encima de {AntiLagProjectileLimit}."
+                ? $"Control local activado: intentará reducir proyectiles por encima de {antiLagProjectileLimit}."
                 : "Control automático de proyectiles desactivado.");
         }
 
@@ -2884,8 +2884,8 @@ internal static partial class HerosModPanel
         int activeProjectiles = 0;
         foreach (Projectile projectile in Main.projectile)
             if (projectile != null && projectile.active) activeProjectiles++;
-        Utils.DrawBorderString(sb, $"Proyectiles activos: {activeProjectiles} / límite automático {AntiLagProjectileLimit}",
-            new Vector2(panel.X + Pad, y), activeProjectiles > AntiLagProjectileLimit ? new Color(255, 145, 90) : Color.LightGray, 0.72f);
+        Utils.DrawBorderString(sb, $"Proyectiles activos: {activeProjectiles} / límite automático {antiLagProjectileLimit}",
+            new Vector2(panel.X + Pad, y), activeProjectiles > antiLagProjectileLimit ? new Color(255, 145, 90) : Color.LightGray, 0.72f);
         y += 21;
         Utils.DrawBorderString(sb, $"Proyectiles retirados esta sesión: {antiLagProjectilesRemoved}",
             new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
