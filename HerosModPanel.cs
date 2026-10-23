@@ -37,10 +37,11 @@ internal static partial class HerosModPanel
 
     private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, NPCs, Proyectiles }
 
-    private const int Width = 760;
-    private const int Height = 800;
-    private const int Pad = 10;
-    private const int RowH = 26;
+    // Dimensiones ampliadas para que los controles respiren y sean más fáciles de leer.
+    private const int Width = 820;
+    private const int Height = 850;
+    private const int Pad = 12;
+    private const int RowH = 28;
 
     public static bool Visible { get; set; }
 
