@@ -356,10 +356,14 @@ internal static partial class HerosModPanel
     private static string statusMessage = "HERO's Mod listo.";
     private static int statusTimer;
 
-    // Anti-Lag visual opcional: solo desactiva partículas de polvo locales.
+    // Anti-Lag local opcional. No modifica el servidor ni puede impedir el spawn antes de que ocurra.
     private static bool antiLagEnabled;
     private static int antiLagFrameCounter;
     private static long antiLagParticlesCleared;
+    private const int AntiLagProjectileLimit = 250;
+    private static bool antiLagProjectilesEnabled;
+    private static int antiLagProjectileFrameCounter;
+    private static long antiLagProjectilesRemoved;
 
     // ---- Navegador de items (pestana Items) ----
     private const int CellSize = 40;
@@ -391,6 +395,13 @@ internal static partial class HerosModPanel
         {
             antiLagFrameCounter = 0;
             ClearAntiLagDust();
+        }
+
+        // Revisa la carga de proyectiles solo cada 15 actualizaciones para no añadir trabajo cada frame.
+        if (antiLagProjectilesEnabled && ++antiLagProjectileFrameCounter >= 15)
+        {
+            antiLagProjectileFrameCounter = 0;
+            TrimProjectilesForPerformance(false);
         }
 
         var local = Main.LocalPlayer;
@@ -2783,22 +2794,22 @@ internal static partial class HerosModPanel
     // ------------------------------------------------------------------ Personalización de la interfaz
     private static void DrawAntiLagTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Anti-Lag visual (cliente)");
+        DrawSectionHeader(sb, panel, ref y, "Anti-Lag avanzado (solo cliente)");
         Utils.DrawBorderString(sb,
-            "Reduce partículas de polvo visibles. No elimina NPCs, proyectiles, tiles ni objetos.",
+            "Limpia polvo y puede retirar proyectiles locales cuando hay demasiados.",
             new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
         y += 30;
 
         int bw = (Width - (Pad * 2) - 8) / 2;
-        string toggleText = antiLagEnabled ? "Limpieza automática: ACTIVADA" : "Limpieza automática: desactivada";
+        string toggleText = antiLagEnabled ? "Limpieza de polvo: ACTIVADA" : "Limpieza de polvo: desactivada";
         Color toggleColor = antiLagEnabled ? new Color(35, 105, 70) : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), toggleText, mouse, toggleColor))
         {
             antiLagEnabled = !antiLagEnabled;
             antiLagFrameCounter = 0;
             SetStatus(antiLagEnabled
-                ? "Anti-Lag visual activado: limpia polvo cada 30 actualizaciones."
-                : "Anti-Lag visual desactivado.");
+                ? "Limpieza de polvo activada: cada 30 actualizaciones."
+                : "Limpieza de polvo desactivada.");
         }
 
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Limpiar polvo ahora", mouse, new Color(55, 75, 115)))
@@ -2806,13 +2817,49 @@ internal static partial class HerosModPanel
             int cleared = ClearAntiLagDust();
             SetStatus($"Partículas de polvo limpiadas: {cleared}.");
         }
-        y += RowH + 12;
-        Utils.DrawBorderString(sb, $"Partículas limpiadas por esta sesión: {antiLagParticlesCleared}",
+        y += RowH + 8;
+
+        string projectileToggle = antiLagProjectilesEnabled
+            ? "Control de proyectiles: ACTIVADO"
+            : "Control de proyectiles: desactivado";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), projectileToggle, mouse,
+            antiLagProjectilesEnabled ? new Color(145, 75, 40) : UiTabColor))
+        {
+            antiLagProjectilesEnabled = !antiLagProjectilesEnabled;
+            antiLagProjectileFrameCounter = 0;
+            SetStatus(antiLagProjectilesEnabled
+                ? $"Control local activado: intentará reducir proyectiles por encima de {AntiLagProjectileLimit}."
+                : "Control automático de proyectiles desactivado.");
+        }
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Eliminar proyectiles ahora", mouse, new Color(145, 50, 45)))
+        {
+            if (IsServer)
+                SetStatus("En modo COMANDOS, el servidor controla los proyectiles; no se modificaron.");
+            else
+            {
+                int removed = TrimProjectilesForPerformance(true);
+                SetStatus($"Limpieza local: {removed} proyectiles eliminados.");
+            }
+        }
+        y += RowH + 10;
+
+        int activeProjectiles = 0;
+        foreach (Projectile projectile in Main.projectile)
+            if (projectile != null && projectile.active) activeProjectiles++;
+        Utils.DrawBorderString(sb, $"Proyectiles activos: {activeProjectiles} / límite automático {AntiLagProjectileLimit}",
+            new Vector2(panel.X + Pad, y), activeProjectiles > AntiLagProjectileLimit ? new Color(255, 145, 90) : Color.LightGray, 0.72f);
+        y += 21;
+        Utils.DrawBorderString(sb, $"Proyectiles retirados esta sesión: {antiLagProjectilesRemoved}",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
+        y += 23;
+        Utils.DrawBorderString(sb, $"Polvo limpiado esta sesión: {antiLagParticlesCleared}",
             new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
         y += 24;
-        Utils.DrawBorderString(sb, "Nota: es un ajuste visual local; no garantiza más FPS y no reduce el lag del servidor.",
-            new Vector2(panel.X + Pad, y), new Color(235, 190, 120), 0.66f);
-        y += 28;
+        Utils.DrawBorderString(sb,
+            "Solo cliente: el servidor puede volver a sincronizar proyectiles. No bloquea su creación antes del spawn ni garantiza evitar todo cierre.",
+            new Vector2(panel.X + Pad, y), new Color(235, 190, 120), 0.62f);
+        y += 30;
     }
 
     private static int ClearAntiLagDust()
@@ -2828,6 +2875,42 @@ internal static partial class HerosModPanel
         }
         antiLagParticlesCleared += cleared;
         return cleared;
+    }
+
+    // force=true limpia todos los proyectiles locales. En automático se priorizan los hostiles,
+    // después los no amistosos y los que pertenecen a otros jugadores; se preservan los propios
+    // amistosos para reducir el riesgo de borrar los disparos del jugador.
+    private static int TrimProjectilesForPerformance(bool force)
+    {
+        int active = 0;
+        for (int i = 0; i < Main.projectile.Length; i++)
+            if (Main.projectile[i] != null && Main.projectile[i].active) active++;
+
+        int target = force ? 0 : AntiLagProjectileLimit;
+        if (active <= target) return 0;
+
+        int removed = 0;
+        for (int pass = 0; pass < (force ? 1 : 3) && active > target; pass++)
+        {
+            for (int i = 0; i < Main.projectile.Length && active > target; i++)
+            {
+                Projectile projectile = Main.projectile[i];
+                if (projectile == null || !projectile.active) continue;
+
+                bool eligible = force
+                    || (pass == 0 && projectile.hostile)
+                    || (pass == 1 && !projectile.friendly)
+                    || (pass == 2 && projectile.owner != Main.myPlayer && !projectile.friendly);
+
+                if (!eligible) continue;
+                projectile.active = false;
+                active--;
+                removed++;
+            }
+        }
+
+        antiLagProjectilesRemoved += removed;
+        return removed;
     }
 
     private static void DrawCustomizeTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
