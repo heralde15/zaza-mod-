@@ -3165,7 +3165,7 @@ internal static partial class HerosModPanel
 
     private static void SpawnBoss(int npcId, string bossName, string tshockName)
     {
-        // En un jugador, el juego puede crear el NPC directamente.
+        // En un jugador, la invocación directa funciona localmente.
         if (Main.netMode == 0)
         {
             NPC.SpawnOnPlayer(Main.myPlayer, npcId);
@@ -3173,10 +3173,18 @@ internal static partial class HerosModPanel
             return;
         }
 
-        // En multijugador, el servidor es la autoridad de los NPC. SpawnOnPlayer
-        // ejecutado por un cliente no crea un jefe en el mundo del servidor.
-        // Para jefes con invocador vanilla, entregar el objeto correcto es el único
-        // flujo cliente que puede seguir usando las reglas normales del servidor.
+        // Si el servidor usa TShock y el panel está en modo COMANDOS, pedirle
+        // al servidor que cree el jefe. /spawnmob es ejecutado por el servidor,
+        // que conserva la autoridad de NPC y sincroniza la entidad a los clientes.
+        if (IsServer)
+        {
+            SendCmd($"/spawnmob {npcId} 1");
+            SetStatus($"Solicitud enviada a TShock para invocar {bossName}. Si no aparece, revisa los permisos del comando /spawnmob.");
+            return;
+        }
+
+        // En servidor vanilla/anárquico sin plugins no se puede forzar la aparición
+        // desde el cliente. Como alternativa, entregar el objeto invocador vanilla.
         int summonItemId = npcId switch
         {
             50  => 560,  // Slime Crown
@@ -3195,11 +3203,11 @@ internal static partial class HerosModPanel
         if (summonItemId > 0)
         {
             GiveItemById(summonItemId, 1, 0);
-            SetStatus($"Servidor multijugador: se entregó el invocador de {bossName}. Úsalo desde la barra rápida; el servidor decide si lo acepta según hora, bioma y progreso.");
+            SetStatus($"No hay comando de servidor activo: se entregó el invocador de {bossName}. Úsalo desde la barra rápida; el servidor puede rechazarlo.");
             return;
         }
 
-        SetStatus($"No se puede crear {bossName} directamente desde un cliente en un servidor anárquico vanilla. Este jefe requiere una acción del mundo o un mod instalado en el servidor; no existe un paquete cliente legítimo que fuerce su aparición.");
+        SetStatus($"Para invocar {bossName} directamente en multijugador, activa modo COMANDOS con TShock y permiso /spawnmob, o instala soporte de invocación en el servidor. Un cliente no puede forzar NPC en un servidor vanilla.");
     }
 
     private static void TeleportPlayer(int worldX, int worldY, string destination)
