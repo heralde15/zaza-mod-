@@ -1977,7 +1977,11 @@ internal static partial class HerosModPanel
     {
         if (!int.TryParse(editorSlot, out int slot))
             return -1;
-        return slot - 1;
+
+        // El editor debe limitarse a las 50 ranuras de la mochila principal.
+        // Evita modificar por accidente monedas, munición, armadura u otros slots internos.
+        int inventorySlots = Math.Min(50, Main.LocalPlayer.inventory.Length);
+        return slot >= 1 && slot <= inventorySlots ? slot - 1 : -1;
     }
 
     private static void LoadItemEditorSlot()
@@ -2047,7 +2051,13 @@ internal static partial class HerosModPanel
         if (int.TryParse(editorPrefix, out int requestedPrefix))
         {
             int safePrefix = Math.Clamp(requestedPrefix, 0, PrefixID.Count - 1);
-            it.prefix = (byte)safePrefix;
+            // Item.Prefix aplica también los modificadores de daño, velocidad, crítico, etc.
+            // Asignar directamente la propiedad prefix solo cambia el identificador y deja
+            // las estadísticas desincronizadas. El prefijo 0 significa "sin prefijo".
+            if (safePrefix == 0)
+                it.prefix = 0;
+            else
+                it.Prefix(safePrefix);
         }
         if (int.TryParse(editorDamage, out int damage)) it.damage = Math.Clamp(damage, 0, 1000000);
         if (int.TryParse(editorDefense, out int defense)) it.defense = Math.Clamp(defense, 0, 100000);
@@ -2090,10 +2100,11 @@ internal static partial class HerosModPanel
         it.useTurn = editorUseTurn;
         it.noMelee = editorNoMelee;
         it.noUseGraphic = editorNoUseGraphic;
+        SyncInventorySlot(p, slot, it);
         if (Main.netMode == 0)
-            SetStatus($"Editado localmente: {it.Name}. Estadísticas aplicadas; el multiplicador ×{editorProjectileMultiplier} aún no afecta el disparo sin integración en Player.cs.");
+            SetStatus($"Editado: {it.Name}. Propiedades aplicadas; el multiplicador ×{editorProjectileMultiplier} aún no afecta el disparo sin integración en Player.cs.");
         else
-            SetStatus($"Cambios aplicados solo al cliente; el servidor puede sobrescribirlos. El multiplicador ×{editorProjectileMultiplier} aún no afecta el disparo.");
+            SetStatus($"Cambios aplicados localmente y enviados para sincronización; el servidor puede rechazarlos o sobrescribirlos. El multiplicador ×{editorProjectileMultiplier} aún no afecta el disparo.");
     }
 
     private static void DuplicateItemEditorSlot()
@@ -2110,7 +2121,8 @@ internal static partial class HerosModPanel
             if (p.inventory[i] == null || p.inventory[i].IsAir)
             {
                 p.inventory[i] = p.inventory[slot].Clone();
-                SetStatus($"Copia local creada en la ranura {i + 1}.");
+                SyncInventorySlot(p, i, p.inventory[i]);
+                SetStatus($"Copia creada en la ranura {i + 1}.");
                 return;
             }
         }
@@ -2139,14 +2151,15 @@ internal static partial class HerosModPanel
         if (int.TryParse(editorPrefix, out int prefix))
         {
             prefix = Math.Clamp(prefix, 0, PrefixID.Count - 1);
-            created.prefix = (byte)prefix;
+            if (prefix > 0)
+                created.Prefix(prefix);
         }
         p.inventory[slot] = created;
-        editorDamage = created.damage.ToString();
-        editorDefense = created.defense.ToString();
-        editorUseTime = created.useTime.ToString();
-        editorStack = created.stack.ToString();
-        editorValue = created.value.ToString();
+        SyncInventorySlot(p, slot, created);
+
+        // Recargar todos los campos desde el objeto recién creado evita que "Aplicar cambios"
+        // reutilice datos antiguos del objeto anterior que estaba seleccionado en el editor.
+        LoadItemEditorSlot();
         SetStatus($"Objeto creado en ranura {slot + 1}: {created.Name}.");
     }
 
@@ -2160,7 +2173,8 @@ internal static partial class HerosModPanel
             return;
         }
         p.inventory[slot].TurnToAir();
-        SetStatus($"Ranura {slot + 1} vaciada localmente.");
+        SyncInventorySlot(p, slot, p.inventory[slot]);
+        SetStatus($"Ranura {slot + 1} vaciada.");
     }
 
     private static void ResetItemEditorSlot()
@@ -2176,6 +2190,7 @@ internal static partial class HerosModPanel
         int stack = p.inventory[slot].stack;
         p.inventory[slot].SetDefaults(type);
         p.inventory[slot].stack = Math.Clamp(stack, 1, Math.Max(1, p.inventory[slot].maxStack));
+        SyncInventorySlot(p, slot, p.inventory[slot]);
         LoadItemEditorSlot();
         SetStatus("Estadísticas restauradas a los valores base del objeto.");
     }
