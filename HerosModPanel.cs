@@ -1766,8 +1766,10 @@ internal static partial class HerosModPanel
         }
         y += 30;
 
-        // Multiplicador real de disparos del objeto (propiedad nativa timesToShoot).
-        Utils.DrawBorderString(sb, "Proyectiles por uso:", new Vector2(panel.X + Pad, y), UiAccent, 0.68f);
+        // Preferencia del editor. Terraria Unified 1.4.5.8 no expone Item.timesToShoot;
+        // el valor se conserva al cargar otra vez la ranura, pero requiere soporte en Player.cs
+        // para modificar realmente los proyectiles generados.
+        Utils.DrawBorderString(sb, "Multiplicador de disparo (experimental):", new Vector2(panel.X + Pad, y), UiAccent, 0.68f);
         y += 17;
         int[] projectileMultipliers = { 1, 2, 3, 4, 8, 16, 32, 64, 128 };
         int multiplierCols = 5;
@@ -1787,7 +1789,7 @@ internal static partial class HerosModPanel
                 editorProjectileMultiplier == multiplier ? UiAccent : UiTabColor))
             {
                 editorProjectileMultiplier = multiplier;
-                SetStatus($"Multiplicador seleccionado: ×{multiplier}. Pulsa Aplicar cambios para guardarlo en el objeto.");
+                SetStatus($"Multiplicador seleccionado: ×{multiplier}. Preferencia de interfaz; aún requiere integración en Player.cs para afectar los disparos.");
             }
         }
         y += 55;
@@ -2000,7 +2002,8 @@ internal static partial class HerosModPanel
         editorUseAnimation = it.useAnimation.ToString();
         editorShootSpeed = it.shootSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
         editorProjectile = it.shoot.ToString();
-        editorProjectileMultiplier = 1; // Item.timesToShoot no existe en Terraria Unified 1.4.5.8.
+        // No reiniciar la preferencia al recargar datos: el usuario puede volver a cargar
+        // el objeto sin perder la selección del multiplicador en esta sesión.
         editorRarity = it.rare.ToString();
         editorMana = it.mana.ToString();
         editorUseStyle = it.useStyle.ToString();
@@ -2088,9 +2091,9 @@ internal static partial class HerosModPanel
         it.noMelee = editorNoMelee;
         it.noUseGraphic = editorNoUseGraphic;
         if (Main.netMode == 0)
-            SetStatus($"Editado localmente: {it.Name}. Algunas estadísticas pueden recalcularse por el juego.");
+            SetStatus($"Editado localmente: {it.Name}. Estadísticas aplicadas; el multiplicador ×{editorProjectileMultiplier} aún no afecta el disparo sin integración en Player.cs.");
         else
-            SetStatus("Cambios aplicados solo al cliente; el servidor puede sobrescribirlos.");
+            SetStatus($"Cambios aplicados solo al cliente; el servidor puede sobrescribirlos. El multiplicador ×{editorProjectileMultiplier} aún no afecta el disparo.");
     }
 
     private static void DuplicateItemEditorSlot()
