@@ -35,7 +35,7 @@ internal static partial class HerosModPanel
         public string Context => "HerosModPanel";
     }
 
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, NPCs, Proyectiles }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, NPCs, Proyectiles, AntiLag }
 
     // Dimensiones ampliadas para que los controles respiren y sean más fáciles de leer.
     private const int Width = 820;
@@ -356,6 +356,11 @@ internal static partial class HerosModPanel
     private static string statusMessage = "HERO's Mod listo.";
     private static int statusTimer;
 
+    // Anti-Lag visual opcional: solo desactiva partículas de polvo locales.
+    private static bool antiLagEnabled;
+    private static int antiLagFrameCounter;
+    private static long antiLagParticlesCleared;
+
     // ---- Navegador de items (pestana Items) ----
     private const int CellSize = 40;
     private const int BarW = 12;
@@ -381,6 +386,12 @@ internal static partial class HerosModPanel
     {
         if (Main.dedServ || Main.gameMenu)
             return;
+
+        if (antiLagEnabled && ++antiLagFrameCounter >= 30)
+        {
+            antiLagFrameCounter = 0;
+            ClearAntiLagDust();
+        }
 
         var local = Main.LocalPlayer;
 
@@ -519,15 +530,15 @@ internal static partial class HerosModPanel
             [Tab.Jugador, Tab.EditorVida, Tab.Inventario, Tab.Items, Tab.EditorItems],
             [Tab.Mundo, Tab.WorldEdit, Tab.Teleport, Tab.Perfiles, Tab.Guia],
             [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar],
-            [Tab.NPCs, Tab.Proyectiles]
+            [Tab.NPCs, Tab.Proyectiles, Tab.AntiLag]
         ];
-        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES", "NPC  /  PROYECTILES"];
+        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES", "NPC  /  PROYECTILES  /  RENDIMIENTO"];
         string[] tabLabels =
         [
             "Jugador", "Editor vida", "Inventario", "Items", "Editor items",
             "Mundo", "WorldEdit", "Teleport", "Perfiles", "Guía",
             "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar",
-            "NPCs", "Proyectiles"
+            "NPCs", "Proyectiles", "Anti-Lag"
         ];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
@@ -589,6 +600,9 @@ internal static partial class HerosModPanel
                 break;
             case Tab.Proyectiles:
                 DrawProjectilesTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.AntiLag:
+                DrawAntiLagTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Info:
                 DrawInfoTab(sb, pixel, panelRect, ref contentY);
@@ -2767,6 +2781,55 @@ internal static partial class HerosModPanel
     }
 
     // ------------------------------------------------------------------ Personalización de la interfaz
+    private static void DrawAntiLagTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Anti-Lag visual (cliente)");
+        Utils.DrawBorderString(sb,
+            "Reduce partículas de polvo visibles. No elimina NPCs, proyectiles, tiles ni objetos.",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
+        y += 30;
+
+        int bw = (Width - (Pad * 2) - 8) / 2;
+        string toggleText = antiLagEnabled ? "Limpieza automática: ACTIVADA" : "Limpieza automática: desactivada";
+        Color toggleColor = antiLagEnabled ? new Color(35, 105, 70) : UiTabColor;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), toggleText, mouse, toggleColor))
+        {
+            antiLagEnabled = !antiLagEnabled;
+            antiLagFrameCounter = 0;
+            SetStatus(antiLagEnabled
+                ? "Anti-Lag visual activado: limpia polvo cada 30 actualizaciones."
+                : "Anti-Lag visual desactivado.");
+        }
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Limpiar polvo ahora", mouse, new Color(55, 75, 115)))
+        {
+            int cleared = ClearAntiLagDust();
+            SetStatus($"Partículas de polvo limpiadas: {cleared}.");
+        }
+        y += RowH + 12;
+        Utils.DrawBorderString(sb, $"Partículas limpiadas por esta sesión: {antiLagParticlesCleared}",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
+        y += 24;
+        Utils.DrawBorderString(sb, "Nota: es un ajuste visual local; no garantiza más FPS y no reduce el lag del servidor.",
+            new Vector2(panel.X + Pad, y), new Color(235, 190, 120), 0.66f);
+        y += 28;
+    }
+
+    private static int ClearAntiLagDust()
+    {
+        int cleared = 0;
+        for (int i = 0; i < Main.dust.Length; i++)
+        {
+            if (Main.dust[i].active)
+            {
+                Main.dust[i].active = false;
+                cleared++;
+            }
+        }
+        antiLagParticlesCleared += cleared;
+        return cleared;
+    }
+
     private static void DrawCustomizeTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         DrawSectionHeader(sb, panel, ref y, "Personalizar interfaz");
