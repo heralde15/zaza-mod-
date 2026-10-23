@@ -825,11 +825,20 @@ internal static partial class HerosModPanel
     {
         if (local == null || !local.active || local.dead || editorProjectileMultiplier <= 1)
             return;
+
         Item held = local.HeldItem;
         if (held == null || held.IsAir || held.shoot <= 0)
             return;
-        if (multipliedProjectileIdentities.Count > 12000)
-            multipliedProjectileIdentities.Clear();
+
+        // Unified no expone Projectile.identity ni GetSource_FromThis en esta versión.
+        // Usamos el índice de la ranura y retiramos entradas cuando la bala desaparece.
+        for (int n = multipliedProjectileIdentities.Count - 1; n >= 0; n--)
+        {
+            int tracked = multipliedProjectileIdentities.ElementAt(n);
+            if (tracked < 0 || tracked >= Main.maxProjectiles || Main.projectile[tracked] == null || !Main.projectile[tracked].active)
+                multipliedProjectileIdentities.Remove(tracked);
+        }
+
         int copies = Math.Min(16, Math.Max(0, editorProjectileMultiplier - 1));
         for (int i = 0; i < Main.maxProjectiles; i++)
         {
@@ -837,14 +846,15 @@ internal static partial class HerosModPanel
             if (source == null || !source.active || source.owner != local.whoAmI
                 || source.type != held.shoot || source.minion || source.sentry || source.aiStyle == 7)
                 continue;
-            if (!multipliedProjectileIdentities.Add(source.identity))
+            if (!multipliedProjectileIdentities.Add(source.whoAmI))
                 continue;
+
             for (int n = 0; n < copies; n++)
             {
-                int spawned = Projectile.NewProjectile(source.GetSource_FromThis(), source.position, source.velocity,
+                int spawned = Projectile.NewProjectile(new PanelEntitySource(), source.position, source.velocity,
                     source.type, source.damage, source.knockBack, source.owner, source.ai[0], source.ai[1], source.ai[2]);
                 if (spawned >= 0 && spawned < Main.maxProjectiles)
-                    multipliedProjectileIdentities.Add(Main.projectile[spawned].identity);
+                    multipliedProjectileIdentities.Add(Main.projectile[spawned].whoAmI);
             }
         }
     }
@@ -2295,7 +2305,7 @@ internal static partial class HerosModPanel
         it.notAmmo = editorNotAmmo;
         if (int.TryParse(editorFishingPole, out int fishingPole)) it.fishingPole = Math.Clamp(fishingPole, 0, 100000);
         if (int.TryParse(editorBait, out int bait)) it.bait = Math.Clamp(bait, 0, 100000);
-        if (int.TryParse(editorMakeNpc, out int makeNpc)) it.makeNPC = Math.Clamp(makeNpc, 0, NPCID.Count - 1);
+        if (int.TryParse(editorMakeNpc, out int makeNpc)) it.makeNPC = (short)Math.Clamp(makeNpc, 0, Math.Min(short.MaxValue, NPCID.Count - 1));
         if (int.TryParse(editorTileWand, out int tileWand)) it.tileWand = Math.Clamp(tileWand, -1, TileID.Count - 1);
         SyncInventorySlot(p, slot, it);
         if (Main.netMode == 0)
