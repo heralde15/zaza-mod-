@@ -863,6 +863,10 @@ internal static partial class HerosModPanel
             if (!multipliedProjectileIdentities.Add(source.whoAmI))
                 continue;
 
+            if (radialProjectileMode)
+                source.position = new Vector2(local.Center.X - source.width * 0.5f,
+                    local.Center.Y - source.height * 0.5f);
+
             for (int n = 1; n <= copies; n++)
             {
                 Vector2 spawnPosition = source.position;
@@ -3133,6 +3137,7 @@ internal static partial class HerosModPanel
                 : "Anti-efectos desactivado.");
         }
 
+        y += RowH + 8;
         string toggleText = antiLagEnabled ? "Limpieza de polvo: ACTIVADA" : "Limpieza de polvo: desactivada";
         Color toggleColor = antiLagEnabled ? new Color(35, 105, 70) : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), toggleText, mouse, toggleColor))
