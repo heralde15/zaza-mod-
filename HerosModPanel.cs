@@ -356,11 +356,12 @@ internal static partial class HerosModPanel
     private static string statusMessage = "HERO's Mod listo.";
     private static int statusTimer;
 
-    // Anti-Lag local opcional. No modifica el servidor ni puede impedir el spawn antes de que ocurra.
+    // Anti-Lag local adaptativo. No modifica el servidor y no puede impedir cada spawn antes de ocurrir.
     private static bool antiLagEnabled;
     private static int antiLagFrameCounter;
     private static long antiLagParticlesCleared;
-    private const int AntiLagProjectileLimit = 250;
+    private static long antiLagGoreCleared;
+    private static int antiLagProjectileLimit = 250;
     private static bool antiLagProjectilesEnabled;
     private static int antiLagProjectileFrameCounter;
     private static long antiLagProjectilesRemoved;
@@ -368,6 +369,10 @@ internal static partial class HerosModPanel
     private static int fpsStabilizerFrameCounter;
     private static int fpsStabilizerThreshold = 45;
     private static long fpsStabilizerInterventions;
+    private static long antiLagEmergencyInterventions;
+    private static int antiLagLastProjectileCount;
+    private static int antiLagLastDustCount;
+    private static int antiLagLastGoreCount;
 
     // ---- Navegador de items (pestana Items) ----
     private const int CellSize = 40;
@@ -395,28 +400,40 @@ internal static partial class HerosModPanel
         if (Main.dedServ || Main.gameMenu)
             return;
 
-        if (antiLagEnabled && ++antiLagFrameCounter >= 30)
+        // Contadores baratos y revisión frecuente: actúa antes de que la carga crezca demasiado.
+        if (antiLagEnabled && ++antiLagFrameCounter >= 20)
         {
             antiLagFrameCounter = 0;
-            ClearAntiLagDust();
+            antiLagLastDustCount = CountActiveDust();
+            antiLagLastGoreCount = CountActiveGore();
+            if (antiLagLastDustCount > 350 || (fpsStabilizerEnabled && Main.frameRate > 0 && Main.frameRate < fpsStabilizerThreshold))
+            {
+                ClearAntiLagDust();
+                ClearAntiLagGore();
+            }
         }
 
-        // Revisa la carga de proyectiles solo cada 15 actualizaciones para no añadir trabajo cada frame.
-        if (antiLagProjectilesEnabled && ++antiLagProjectileFrameCounter >= 15)
+        if ((antiLagProjectilesEnabled || fpsStabilizerEnabled) && ++antiLagProjectileFrameCounter >= 5)
         {
             antiLagProjectileFrameCounter = 0;
-            TrimProjectilesForPerformance(false);
-        }
-
-        // Modo adaptativo: comprueba cada segundo aproximadamente y actúa solo si cae el FPS.
-        if (fpsStabilizerEnabled && ++fpsStabilizerFrameCounter >= 60)
-        {
-            fpsStabilizerFrameCounter = 0;
-            if (Main.frameRate > 0 && Main.frameRate < fpsStabilizerThreshold)
+            antiLagLastProjectileCount = CountActiveProjectiles();
+            bool lowFps = Main.frameRate > 0 && Main.frameRate < fpsStabilizerThreshold;
+            bool emergency = (Main.frameRate > 0 && Main.frameRate < 20)
+                || antiLagLastProjectileCount >= antiLagProjectileLimit * 2;
+            if (antiLagProjectilesEnabled && antiLagLastProjectileCount > antiLagProjectileLimit)
+            {
+                int target = emergency ? Math.Max(40, antiLagProjectileLimit / 2) : antiLagProjectileLimit;
+                int removed = TrimProjectilesForPerformance(false, target);
+                if (emergency && removed > 0) antiLagEmergencyInterventions++;
+            }
+            if (fpsStabilizerEnabled && lowFps)
             {
                 int dustCleared = ClearAntiLagDust();
-                int projectilesRemoved = TrimProjectilesForPerformance(false);
-                if (dustCleared > 0 || projectilesRemoved > 0)
+                int goreCleared = ClearAntiLagGore();
+                int projectilesRemoved = antiLagProjectilesEnabled
+                    ? TrimProjectilesForPerformance(false, Math.Max(40, antiLagProjectileLimit / 2))
+                    : 0;
+                if (dustCleared > 0 || goreCleared > 0 || projectilesRemoved > 0)
                     fpsStabilizerInterventions++;
             }
         }
@@ -2873,11 +2890,46 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, $"Proyectiles retirados esta sesión: {antiLagProjectilesRemoved}",
             new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
         y += 23;
-        Utils.DrawBorderString(sb, $"Polvo limpiado esta sesión: {antiLagParticlesCleared}",
-            new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
+        Utils.DrawBorderString(sb, $"Polvo limpiado: {antiLagParticlesCleared} · Gore limpiado: {antiLagGoreCleared}",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
+        y += 22;
+        Utils.DrawBorderString(sb, $"Intervenciones de emergencia: {antiLagEmergencyInterventions}",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
         y += 24;
+
+        Utils.DrawBorderString(sb, "Límite de proyectiles:", new Vector2(panel.X + Pad, y), Color.White, 0.7f);
+        y += 20;
+        int[] limits = { 100, 150, 250, 400 };
+        int lw = (Width - Pad * 2 - 18) / 4;
+        for (int i = 0; i < limits.Length; i++)
+        {
+            int limit = limits[i];
+            Rectangle limitRect = new Rectangle(panel.X + Pad + i * (lw + 6), y, lw, 24);
+            if (DrawButton(sb, pixel, limitRect, limit.ToString(), mouse,
+                antiLagProjectileLimit == limit ? UiAccent : UiTabColor))
+            {
+                antiLagProjectileLimit = limit;
+                SetStatus($"Límite Anti-Lag ajustado a {limit} proyectiles.");
+            }
+        }
+        y += 31;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), "Limpiar polvo + gore", mouse, new Color(55, 75, 115)))
+        {
+            int dust = ClearAntiLagDust();
+            int gore = ClearAntiLagGore();
+            SetStatus($"Limpieza visual: {dust} partículas y {gore} efectos gore.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Modo emergencia", mouse, new Color(145, 50, 45)))
+        {
+            int dust = ClearAntiLagDust();
+            int gore = ClearAntiLagGore();
+            int removed = TrimProjectilesForPerformance(false, Math.Max(40, antiLagProjectileLimit / 2));
+            antiLagEmergencyInterventions++;
+            SetStatus($"Emergencia: retirados {removed} proyectiles, {dust} partículas y {gore} efectos.");
+        }
+        y += RowH + 8;
         Utils.DrawBorderString(sb,
-            "Solo cliente: el servidor puede volver a sincronizar proyectiles. No bloquea su creación antes del spawn ni garantiza evitar todo cierre.",
+            "Solo cliente: esto limita y limpia entidades ya creadas; no puede garantizar que un servidor/mod no vuelva a generarlas.",
             new Vector2(panel.X + Pad, y), new Color(235, 190, 120), 0.62f);
         y += 30;
     }
@@ -2938,7 +2990,9 @@ internal static partial class HerosModPanel
             : new Color(125, 225, 155);
         Utils.DrawBorderString(sb, $"FPS actuales: {Main.frameRate}", new Vector2(panel.X + Pad, y), fpsColor, 0.85f);
         y += 23;
-        Utils.DrawBorderString(sb, $"Proyectiles activos: {activeProjectiles}", new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
+        Utils.DrawBorderString(sb, $"Proyectiles activos: {activeProjectiles} / límite {antiLagProjectileLimit}", new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
+        y += 21;
+        Utils.DrawBorderString(sb, $"Polvo: {CountActiveDust()} · Gore: {CountActiveGore()}", new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
         y += 21;
         Utils.DrawBorderString(sb, $"Intervenciones adaptativas: {fpsStabilizerInterventions}", new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
         y += 25;
@@ -2963,6 +3017,30 @@ internal static partial class HerosModPanel
         y += 32;
     }
 
+    private static int CountActiveDust()
+    {
+        int count = 0;
+        for (int i = 0; i < Main.dust.Length; i++)
+            if (Main.dust[i].active) count++;
+        return count;
+    }
+
+    private static int CountActiveGore()
+    {
+        int count = 0;
+        for (int i = 0; i < Main.gore.Length; i++)
+            if (Main.gore[i].active) count++;
+        return count;
+    }
+
+    private static int CountActiveProjectiles()
+    {
+        int count = 0;
+        for (int i = 0; i < Main.projectile.Length; i++)
+            if (Main.projectile[i] != null && Main.projectile[i].active) count++;
+        return count;
+    }
+
     private static int ClearAntiLagDust()
     {
         int cleared = 0;
@@ -2978,16 +3056,30 @@ internal static partial class HerosModPanel
         return cleared;
     }
 
-    // force=true limpia todos los proyectiles locales. En automático se priorizan los hostiles,
-    // después los no amistosos y los de otros jugadores; si aún se supera el límite, elimina también
-    // los restantes para imponer el tope y reducir el riesgo de saturación.
-    private static int TrimProjectilesForPerformance(bool force)
+    private static int ClearAntiLagGore()
+    {
+        int cleared = 0;
+        for (int i = 0; i < Main.gore.Length; i++)
+        {
+            if (Main.gore[i].active)
+            {
+                Main.gore[i].active = false;
+                cleared++;
+            }
+        }
+        antiLagGoreCleared += cleared;
+        return cleared;
+    }
+
+    // Retira entidades locales hasta un objetivo; force=true elimina todos los proyectiles.
+    // Prioriza hostiles y no amistosos para preservar ataques amistosos cuando sea posible.
+    private static int TrimProjectilesForPerformance(bool force, int targetOverride = -1)
     {
         int active = 0;
         for (int i = 0; i < Main.projectile.Length; i++)
             if (Main.projectile[i] != null && Main.projectile[i].active) active++;
 
-        int target = force ? 0 : AntiLagProjectileLimit;
+        int target = force ? 0 : (targetOverride >= 0 ? targetOverride : antiLagProjectileLimit);
         if (active <= target) return 0;
 
         int removed = 0;
