@@ -78,6 +78,8 @@ internal static partial class HerosModPanel
     private static Vector2 dragOffset;
 
     private static bool godmodeEnabled;
+    // Modo fantasma visual local: oculta al jugador sin usar el estado de muerte/ghost de Terraria.
+    private static bool ghostModeEnabled;
     private static bool adventureUnrestrictedEnabled;
     private static bool noSpawnsEnabled;
     private static bool flyEnabled;
@@ -522,6 +524,10 @@ internal static partial class HerosModPanel
         {
             local.creativeGodMode = false;
         }
+
+        // El modo fantasma solo aplica invisibilidad visual local; no fuerza Player.ghost ni altera la vida.
+        if (local.active && ghostModeEnabled)
+            local.invis = true;
 
         if (adventureUnrestrictedEnabled && local.active)
         {
@@ -999,6 +1005,18 @@ internal static partial class HerosModPanel
         {
             multipliedProjectileIdentities.Clear();
             SetStatus("Registro de proyectiles reiniciado.");
+        }
+        y += RowH + 6;
+
+        string ghostText = ghostModeEnabled ? "Modo Fantasma: ACTIVADO" : "Modo Fantasma: desactivado";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), ghostText, mouse, ghostModeEnabled ? new Color(85, 95, 145) : UiTabColor))
+        {
+            ghostModeEnabled = !ghostModeEnabled;
+            if (!ghostModeEnabled && Main.LocalPlayer.active)
+                Main.LocalPlayer.invis = false;
+            SetStatus(ghostModeEnabled
+                ? "Modo Fantasma activado: invisibilidad visual local. No atraviesa bloques ni te hace inmortal; en multijugador el servidor puede ignorarlo."
+                : "Modo Fantasma desactivado.");
         }
         y += RowH + 6;
 
