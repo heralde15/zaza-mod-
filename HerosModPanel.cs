@@ -3084,13 +3084,15 @@ internal static partial class HerosModPanel
         }
     }
 
-    private static void GiveItemById(int id)
+    private static void GiveItemById(int id, int? forcedCount = null, int? forcedPrefix = null)
     {
         if (id <= 0 || id >= ItemID.Count)
             return;
 
-        int count = int.TryParse(itemAmount, out int parsedCount) && parsedCount > 0 ? Math.Min(parsedCount, 9999) : 1;
-        int prefixValue = int.TryParse(itemPrefix, out int parsedPrefix) ? parsedPrefix : -1;
+        int count = forcedCount.HasValue
+            ? Math.Clamp(forcedCount.Value, 1, 9999)
+            : (int.TryParse(itemAmount, out int parsedCount) && parsedCount > 0 ? Math.Min(parsedCount, 9999) : 1);
+        int prefixValue = forcedPrefix ?? (int.TryParse(itemPrefix, out int parsedPrefix) ? parsedPrefix : -1);
         Player player = Main.LocalPlayer;
 
         // Entrega directamente al inventario; no requiere escribir /item.
@@ -3163,10 +3165,41 @@ internal static partial class HerosModPanel
 
     private static void SpawnBoss(int npcId, string bossName, string tshockName)
     {
-        // Invocación directa desde el panel. No depende de TShock ni de /spawnboss.
-        // No se aplica cooldown ni contador de usos; se puede volver a pulsar cuando se quiera.
-        NPC.SpawnOnPlayer(Main.myPlayer, npcId);
-        SetStatus($"¡{bossName} ha sido invocado!");
+        // En un jugador, el juego puede crear el NPC directamente.
+        if (Main.netMode == 0)
+        {
+            NPC.SpawnOnPlayer(Main.myPlayer, npcId);
+            SetStatus($"¡{bossName} ha sido invocado!");
+            return;
+        }
+
+        // En multijugador, el servidor es la autoridad de los NPC. SpawnOnPlayer
+        // ejecutado por un cliente no crea un jefe en el mundo del servidor.
+        // Para jefes con invocador vanilla, entregar el objeto correcto es el único
+        // flujo cliente que puede seguir usando las reglas normales del servidor.
+        int summonItemId = npcId switch
+        {
+            50  => 560,  // Slime Crown
+            4   => 43,   // Suspicious Looking Eye
+            13  => 70,   // Worm Food
+            266 => 1331, // Bloody Spine
+            222 => 1133, // Abeemination
+            657 => 4988, // Gelatin Crystal
+            125 => 544,  // Mechanical Eye
+            134 => 556,  // Mechanical Worm
+            127 => 557,  // Mechanical Skull
+            398 => 3601, // Celestial Sigil
+            _ => 0
+        };
+
+        if (summonItemId > 0)
+        {
+            GiveItemById(summonItemId, 1, 0);
+            SetStatus($"Servidor multijugador: se entregó el invocador de {bossName}. Úsalo desde la barra rápida; el servidor decide si lo acepta según hora, bioma y progreso.");
+            return;
+        }
+
+        SetStatus($"No se puede crear {bossName} directamente desde un cliente en un servidor anárquico vanilla. Este jefe requiere una acción del mundo o un mod instalado en el servidor; no existe un paquete cliente legítimo que fuerce su aparición.");
     }
 
     private static void TeleportPlayer(int worldX, int worldY, string destination)
