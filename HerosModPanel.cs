@@ -104,6 +104,7 @@ internal static partial class HerosModPanel
     private static string editorUseAnimation = "";
     private static string editorShootSpeed = "";
     private static string editorProjectile = "0";
+    private static int editorProjectileMultiplier = 1;
     private static string editorRarity = "";
     private static string editorMana = "0";
     private static string editorUseStyle = "1";
@@ -1702,6 +1703,33 @@ internal static partial class HerosModPanel
             activeField = 0;
         }
         y += 30;
+
+        // Multiplicador real de disparos del objeto (propiedad nativa timesToShoot).
+        Utils.DrawBorderString(sb, "Proyectiles por uso:", new Vector2(panel.X + Pad, y), UiAccent, 0.68f);
+        y += 17;
+        int[] projectileMultipliers = { 1, 2, 3, 4, 8, 16, 32, 64, 128 };
+        int multiplierCols = 5;
+        int multiplierGap = 5;
+        int multiplierW = (Width - Pad * 2 - multiplierGap * (multiplierCols - 1)) / multiplierCols;
+        for (int i = 0; i < projectileMultipliers.Length; i++)
+        {
+            int multiplier = projectileMultipliers[i];
+            int row = i / multiplierCols;
+            int col = i % multiplierCols;
+            var multiplierRect = new Rectangle(
+                panel.X + Pad + col * (multiplierW + multiplierGap),
+                y + row * 25,
+                multiplierW,
+                22);
+            if (DrawButton(sb, pixel, multiplierRect, "×" + multiplier, mouse,
+                editorProjectileMultiplier == multiplier ? UiAccent : UiTabColor))
+            {
+                editorProjectileMultiplier = multiplier;
+                SetStatus($"Multiplicador seleccionado: ×{multiplier}. Pulsa Aplicar cambios para guardarlo en el objeto.");
+            }
+        }
+        y += 55;
+
         if (editorAdvancedPage)
         {
             DrawSectionHeader(sb, panel, ref y, "Propiedades adicionales del objeto (Zaza Mod)");
@@ -1910,6 +1938,7 @@ internal static partial class HerosModPanel
         editorUseAnimation = it.useAnimation.ToString();
         editorShootSpeed = it.shootSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
         editorProjectile = it.shoot.ToString();
+        editorProjectileMultiplier = Math.Clamp((int)it.timesToShoot, 1, 128);
         editorRarity = it.rare.ToString();
         editorMana = it.mana.ToString();
         editorUseStyle = it.useStyle.ToString();
@@ -1966,6 +1995,7 @@ internal static partial class HerosModPanel
         if (int.TryParse(editorUseAnimation, out int animation)) it.useAnimation = Math.Clamp(animation, 1, 10000);
         if (float.TryParse(editorShootSpeed, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float shootSpeed))
             it.shootSpeed = Math.Clamp(shootSpeed, 0f, 10000f);
+        it.timesToShoot = (ushort)Math.Clamp(editorProjectileMultiplier, 1, 128);
         if (int.TryParse(editorProjectile, out int projectileId))
         {
             if (projectileId >= 0 && projectileId < ProjectileID.Count)
