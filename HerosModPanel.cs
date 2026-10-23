@@ -3273,10 +3273,14 @@ internal static partial class HerosModPanel
     // no en el mundo/servidor. Se persisten solo opciones explícitas, nunca estados temporales de UI.
     private static readonly string[] PersistentBooleanSettings =
     {
-        nameof(godmodeEnabled), nameof(adventureUnrestrictedEnabled), nameof(noSpawnsEnabled),
+        nameof(uiHighContrast), nameof(godmodeEnabled), nameof(adventureUnrestrictedEnabled), nameof(noSpawnsEnabled),
         nameof(flyEnabled), nameof(infiniteMinionsEnabled), nameof(lifeLockEnabled),
         nameof(defenseOverrideEnabled), nameof(antiLagEnabled), nameof(antiLagProjectilesEnabled),
-        nameof(fpsStabilizerEnabled), nameof(muteGameSoundsEnabled)
+        nameof(fpsStabilizerEnabled), nameof(muteGameSoundsEnabled),
+        nameof(editorAutoReuse), nameof(editorConsumable), nameof(editorFavorite),
+        nameof(editorChannel), nameof(editorMelee), nameof(editorMagic), nameof(editorRanged),
+        nameof(editorSummon), nameof(editorNoWet), nameof(editorNotAmmo),
+        nameof(editorUseTurn), nameof(editorNoMelee), nameof(editorNoUseGraphic)
     };
 
     private static string SettingsFilePath => Path.Combine(Main.SavePath, "HerosModPanel.settings");
@@ -3300,6 +3304,14 @@ internal static partial class HerosModPanel
                         antiLagProjectileLimit = limit is 100 or 150 or 250 or 400 ? limit : 250;
                     else if (key == "fpsStabilizerThreshold" && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int threshold))
                         fpsStabilizerThreshold = threshold is 30 or 45 or 60 ? threshold : 45;
+                    else if (key == "editorProjectileMultiplier" && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int multiplier))
+                        editorProjectileMultiplier = Math.Clamp(multiplier, 1, 128);
+                    else if (key == "uiTheme" && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int theme))
+                        uiTheme = Math.Clamp(theme, 0, UiAccents.Length - 1);
+                    else if (key == "defenseOverride" && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int defense))
+                        defenseOverride = Math.Clamp(defense, 0, 9999);
+                    else if (key == "serverMode" && Enum.TryParse(value, true, out ServerMode loadedMode))
+                        serverMode = loadedMode;
                     else if (key == "soundVolumeBeforeMute" && float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float volume))
                         soundVolumeBeforeMute = Math.Clamp(volume, 0f, 1f);
                     else if (PersistentBooleanSettings.Contains(key))
@@ -3334,6 +3346,10 @@ internal static partial class HerosModPanel
         }
         lines.Add("antiLagProjectileLimit=" + antiLagProjectileLimit.ToString(CultureInfo.InvariantCulture));
         lines.Add("fpsStabilizerThreshold=" + fpsStabilizerThreshold.ToString(CultureInfo.InvariantCulture));
+        lines.Add("editorProjectileMultiplier=" + Math.Clamp(editorProjectileMultiplier, 1, 128).ToString(CultureInfo.InvariantCulture));
+        lines.Add("uiTheme=" + uiTheme.ToString(CultureInfo.InvariantCulture));
+        lines.Add("defenseOverride=" + defenseOverride.ToString(CultureInfo.InvariantCulture));
+        lines.Add("serverMode=" + serverMode.ToString());
         lines.Add("soundVolumeBeforeMute=" + soundVolumeBeforeMute.ToString(CultureInfo.InvariantCulture));
         return string.Join("\\n", lines);
     }
