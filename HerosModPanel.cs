@@ -852,7 +852,7 @@ internal static partial class HerosModPanel
 
         int totalShots = radialProjectileMode
             ? Math.Max(1, editorProjectileMultiplier)
-            : Math.Min(17, Math.Max(1, editorProjectileMultiplier));
+            : Math.Max(1, editorProjectileMultiplier);
         int copies = Math.Max(0, totalShots - 1);
         for (int i = 0; i < Main.maxProjectiles; i++)
         {
@@ -1955,7 +1955,7 @@ internal static partial class HerosModPanel
         // para modificar realmente los proyectiles generados.
         Utils.DrawBorderString(sb, "Multiplicador de disparo (experimental):", new Vector2(panel.X + Pad, y), UiAccent, 0.68f);
         y += 17;
-        int[] projectileMultipliers = { 1, 2, 3, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
+        int[] projectileMultipliers = { 1, 2, 3, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
         int multiplierCols = 5;
         int multiplierGap = 5;
         int multiplierW = (Width - Pad * 2 - multiplierGap * (multiplierCols - 1)) / multiplierCols;
