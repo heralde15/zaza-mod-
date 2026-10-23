@@ -3351,7 +3351,7 @@ internal static partial class HerosModPanel
         lines.Add("defenseOverride=" + defenseOverride.ToString(CultureInfo.InvariantCulture));
         lines.Add("serverMode=" + serverMode.ToString());
         lines.Add("soundVolumeBeforeMute=" + soundVolumeBeforeMute.ToString(CultureInfo.InvariantCulture));
-        return string.Join("\\n", lines);
+        return string.Join("\n", lines);
     }
 
     private static void SaveSettingsIfChanged(bool force = false)
