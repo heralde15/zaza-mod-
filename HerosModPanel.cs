@@ -26,7 +26,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static partial class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, AntiLag }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -69,6 +69,9 @@ internal static partial class HerosModPanel
     private static bool godmodeEnabled;
     private static bool noSpawnsEnabled;
     private static bool flyEnabled;
+    // Anti-lag visual local: limpia partículas y gore en intervalos, sin tocar el mundo ni el servidor.
+    private static bool antiLagEnabled;
+    private static int antiLagFrameCounter;
     private const float FlySpeed = 12f;
 
     private static int activeField;
@@ -375,6 +378,12 @@ internal static partial class HerosModPanel
             local.creativeGodMode = false;
         }
 
+        if (antiLagEnabled && ++antiLagFrameCounter >= 30)
+        {
+            antiLagFrameCounter = 0;
+            ClearVisualEffects();
+        }
+
         if (flyEnabled && local.active && activeField == 0 && !Main.drawingPlayerChat)
         {
             var ks = Main.keyState;
@@ -394,6 +403,28 @@ internal static partial class HerosModPanel
             else
             {
                 local.velocity *= 0.85f;
+            }
+        }
+    }
+
+    // Reduce efectos visuales locales. No cambia NPCs, proyectiles, tiles, drops ni datos del servidor.
+    private static void ClearVisualEffects()
+    {
+        if (Main.dust != null)
+        {
+            for (int i = 0; i < Main.dust.Length; i++)
+            {
+                if (Main.dust[i] != null && Main.dust[i].active)
+                    Main.dust[i].active = false;
+            }
+        }
+
+        if (Main.gore != null)
+        {
+            for (int i = 0; i < Main.gore.Length; i++)
+            {
+                if (Main.gore[i] != null && Main.gore[i].active)
+                    Main.gore[i].active = false;
             }
         }
     }
@@ -460,7 +491,7 @@ internal static partial class HerosModPanel
         }
 
         Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.EditorVida, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Perfiles, Tab.Personalizar];
+                       Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Perfiles, Tab.Personalizar, Tab.AntiLag];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
         for (int i = 0; i < tabs.Length; i++)
@@ -481,6 +512,7 @@ internal static partial class HerosModPanel
                 Tab.Teleport => "Teleport",
                 Tab.Perfiles => "Perfiles",
                 Tab.Personalizar => "Personalizar UI",
+                Tab.AntiLag => "Anti-Lag",
                 _ => tabs[i].ToString()
             };
             if (DrawButton(sb, pixel, tabRect, tabLabel, mouse, tabColor) && !selected)
@@ -490,7 +522,8 @@ internal static partial class HerosModPanel
             }
         }
 
-        int contentY = panelRect.Y + 121;
+        int tabRows = (tabs.Length + tabCols - 1) / tabCols;
+        int contentY = panelRect.Y + 121 + Math.Max(0, tabRows - 3) * 27;
         switch (currentTab)
         {
             case Tab.Jugador:
@@ -538,6 +571,9 @@ internal static partial class HerosModPanel
             case Tab.Personalizar:
                 DrawCustomizeTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
+            case Tab.AntiLag:
+                DrawAntiLagTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
         }
 
         if (statusTimer > 0)
@@ -559,6 +595,36 @@ internal static partial class HerosModPanel
     }
 
     // ------------------------------------------------------------------ Jugador
+
+    private static void DrawAntiLagTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        Utils.DrawBorderString(sb, "OPTIMIZACIÓN VISUAL LOCAL", new Vector2(panel.X + Pad, y), UiAccent, 0.78f);
+        y += 26;
+        Utils.DrawBorderString(sb, "Reduce partículas decorativas y gore en pantalla.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
+        y += 24;
+        Color toggleColor = antiLagEnabled ? new Color(45, 125, 70) : new Color(80, 85, 95);
+        string toggleText = antiLagEnabled ? "Anti-Lag: ACTIVADO" : "Anti-Lag: DESACTIVADO";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), toggleText, mouse, toggleColor))
+        {
+            antiLagEnabled = !antiLagEnabled;
+            antiLagFrameCounter = 0;
+            SetStatus(antiLagEnabled
+                ? "Anti-Lag activado: limpieza visual local cada 30 actualizaciones."
+                : "Anti-Lag desactivado.");
+        }
+        y += RowH + 8;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Limpiar partículas y gore ahora", mouse, new Color(55, 95, 135)))
+        {
+            ClearVisualEffects();
+            SetStatus("Efectos visuales locales limpiados.");
+        }
+        y += RowH + 12;
+        Utils.DrawBorderString(sb, "Seguro para el mundo: no elimina NPCs, proyectiles, objetos, bloques ni", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
+        y += 17;
+        Utils.DrawBorderString(sb, "entidades del servidor. Solo reduce efectos gráficos; puede quitar partículas", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
+        y += 17;
+        Utils.DrawBorderString(sb, "visuales de pociones, armas y explosiones mientras esté activado.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
+    }
 
     private static void DrawPlayerTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
