@@ -2890,7 +2890,7 @@ internal static partial class HerosModPanel
         if (active <= target) return 0;
 
         int removed = 0;
-        for (int pass = 0; pass < (force ? 1 : 3) && active > target; pass++)
+        for (int pass = 0; pass < (force ? 1 : 4) && active > target; pass++)
         {
             for (int i = 0; i < Main.projectile.Length && active > target; i++)
             {
@@ -2900,7 +2900,8 @@ internal static partial class HerosModPanel
                 bool eligible = force
                     || (pass == 0 && projectile.hostile)
                     || (pass == 1 && !projectile.friendly)
-                    || (pass == 2 && projectile.owner != Main.myPlayer && !projectile.friendly);
+                    || (pass == 2 && projectile.owner != Main.myPlayer)
+                    || pass == 3;
 
                 if (!eligible) continue;
                 projectile.active = false;
