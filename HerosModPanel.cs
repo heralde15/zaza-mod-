@@ -118,6 +118,18 @@ internal static partial class HerosModPanel
     private static bool editorFavorite;
     // Propiedades adicionales portadas del editor de Zaza, sin reemplazar las actuales.
     private static bool editorAdvancedPage;
+    private static bool editorExtraPage;
+    private static bool editorChannel;
+    private static bool editorMelee = true;
+    private static bool editorMagic;
+    private static bool editorRanged;
+    private static bool editorSummon;
+    private static bool editorNoWet;
+    private static bool editorNotAmmo;
+    private static string editorFishingPole = "0";
+    private static string editorBait = "0";
+    private static string editorMakeNpc = "0";
+    private static string editorTileWand = "-1";
     private static string editorPick = "0";
     private static string editorAxe = "0";
     private static string editorHealLife = "0";
@@ -1814,9 +1826,11 @@ internal static partial class HerosModPanel
         DrawInfoLine(sb, panel, ref y, "Objeto equipado actualmente", "Ranura " + (selectedSlot + 1) + ": " + heldName);
         int slotButtonW = (Width - Pad * 2 - 8) / 2;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, 24),
-            editorAdvancedPage ? "Editor Zaza: AVANZADO (clic para volver al básico)" : "Editor Zaza: abrir propiedades AVANZADAS", mouse, editorAdvancedPage ? UiAccent : UiTabColor))
+            editorExtraPage ? "Editor Zaza: PROPIEDADES EXTRA (clic para volver)" : (editorAdvancedPage ? "Editor Zaza: AVANZADO (clic para página extra)" : "Editor Zaza: abrir propiedades AVANZADAS"), mouse, editorAdvancedPage ? UiAccent : UiTabColor))
         {
-            editorAdvancedPage = !editorAdvancedPage;
+            if (!editorAdvancedPage && !editorExtraPage) editorAdvancedPage = true;
+            else if (editorAdvancedPage) { editorAdvancedPage = false; editorExtraPage = true; }
+            else { editorExtraPage = false; editorAdvancedPage = false; }
             activeField = 0;
         }
         y += 30;
@@ -1848,6 +1862,42 @@ internal static partial class HerosModPanel
             }
         }
         y += 55;
+
+        if (editorExtraPage)
+        {
+            DrawSectionHeader(sb, panel, ref y, "Propiedades extra de combate y utilidad");
+            int toggleWExtra = (Width - Pad * 2 - 12) / 3;
+            bool[] flags = { editorChannel, editorMelee, editorMagic, editorRanged, editorSummon, editorNoWet, editorNotAmmo };
+            string[] labels = { "Channel", "Melee", "Magic", "Ranged", "Summon", "NoWet", "NotAmmo" };
+            for (int k = 0; k < flags.Length; k++)
+            {
+                int col = k % 3, row = k / 3;
+                var rect = new Rectangle(panel.X + Pad + col * (toggleWExtra + 6), y + row * 29, toggleWExtra, 25);
+                if (DrawButton(sb, pixel, rect, labels[k] + ": " + (flags[k] ? "SÍ" : "NO"), mouse, flags[k] ? UiAccent : UiTabColor))
+                {
+                    switch (k) { case 0: editorChannel = !editorChannel; break; case 1: editorMelee = !editorMelee; break; case 2: editorMagic = !editorMagic; break; case 3: editorRanged = !editorRanged; break; case 4: editorSummon = !editorSummon; break; case 5: editorNoWet = !editorNoWet; break; case 6: editorNotAmmo = !editorNotAmmo; break; }
+                }
+            }
+            y += 68;
+            Utils.DrawBorderString(sb, "Poder de pesca", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Poder de cebo", new Vector2(panel.X + 195, y), Color.White, 0.68f);
+            y += 17;
+            DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 125, 24), 50, editorFishingPole, mouse, "fishingPole");
+            DrawTextField(sb, pixel, new Rectangle(panel.X + 195, y, 125, 24), 51, editorBait, mouse, "bait");
+            y += 30;
+            Utils.DrawBorderString(sb, "ID NPC al usar", new Vector2(panel.X + Pad, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "ID herramienta de tiles", new Vector2(panel.X + 230, y), Color.White, 0.68f);
+            y += 17;
+            DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 150, 24), 52, editorMakeNpc, mouse, "makeNPC");
+            DrawTextField(sb, pixel, new Rectangle(panel.X + 230, y, 150, 24), 53, editorTileWand, mouse, "tileWand (-1 ninguno)");
+            y += 34;
+            int extraButtonW = (Width - Pad * 2 - 8) / 2;
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, extraButtonW, RowH), "Cargar propiedades extra", mouse, new Color(45, 90, 130))) LoadItemEditorSlot();
+            if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + extraButtonW + 8, y, extraButtonW, RowH), "Aplicar propiedades extra", mouse, new Color(55, 115, 75))) ApplyItemEditorSlot();
+            y += RowH + 10;
+            Utils.DrawBorderString(sb, "Página adicional: categorías de daño, canalización, pesca y herramientas.", new Vector2(panel.X + Pad, y), Color.LightGray, 0.62f);
+            return;
+        }
 
         if (editorAdvancedPage)
         {
@@ -2084,6 +2134,17 @@ internal static partial class HerosModPanel
         editorUseTurn = it.useTurn;
         editorNoMelee = it.noMelee;
         editorNoUseGraphic = it.noUseGraphic;
+        editorChannel = it.channel;
+        editorMelee = it.melee;
+        editorMagic = it.magic;
+        editorRanged = it.ranged;
+        editorSummon = it.summon;
+        editorNoWet = it.noWet;
+        editorNotAmmo = it.notAmmo;
+        editorFishingPole = it.fishingPole.ToString();
+        editorBait = it.bait.ToString();
+        editorMakeNpc = it.makeNPC.ToString();
+        editorTileWand = it.tileWand.ToString();
         SetStatus($"Datos cargados: {it.Name}.");
     }
 
@@ -2155,6 +2216,17 @@ internal static partial class HerosModPanel
         it.useTurn = editorUseTurn;
         it.noMelee = editorNoMelee;
         it.noUseGraphic = editorNoUseGraphic;
+        it.channel = editorChannel;
+        it.melee = editorMelee;
+        it.magic = editorMagic;
+        it.ranged = editorRanged;
+        it.summon = editorSummon;
+        it.noWet = editorNoWet;
+        it.notAmmo = editorNotAmmo;
+        if (int.TryParse(editorFishingPole, out int fishingPole)) it.fishingPole = Math.Clamp(fishingPole, 0, 100000);
+        if (int.TryParse(editorBait, out int bait)) it.bait = Math.Clamp(bait, 0, 100000);
+        if (int.TryParse(editorMakeNpc, out int makeNpc)) it.makeNPC = Math.Clamp(makeNpc, 0, NPCID.Count - 1);
+        if (int.TryParse(editorTileWand, out int tileWand)) it.tileWand = Math.Clamp(tileWand, -1, TileID.Count - 1);
         SyncInventorySlot(p, slot, it);
         if (Main.netMode == 0)
             SetStatus($"Editado: {it.Name}. Propiedades aplicadas; el multiplicador ×{editorProjectileMultiplier} aún no afecta el disparo sin integración en Player.cs.");
@@ -3407,6 +3479,14 @@ internal static partial class HerosModPanel
             editorBuffType = Main.GetInputText(editorBuffType);
         else if (activeField == 49)
             editorBuffTime = Main.GetInputText(editorBuffTime);
+        else if (activeField == 50)
+            editorFishingPole = Main.GetInputText(editorFishingPole);
+        else if (activeField == 51)
+            editorBait = Main.GetInputText(editorBait);
+        else if (activeField == 52)
+            editorMakeNpc = Main.GetInputText(editorMakeNpc);
+        else if (activeField == 53)
+            editorTileWand = Main.GetInputText(editorTileWand);
         else if (activeField == 26)
             schematicFileName = Main.GetInputText(schematicFileName);
         else if (activeField == 26)
