@@ -2878,8 +2878,8 @@ internal static partial class HerosModPanel
     }
 
     // force=true limpia todos los proyectiles locales. En automático se priorizan los hostiles,
-    // después los no amistosos y los que pertenecen a otros jugadores; se preservan los propios
-    // amistosos para reducir el riesgo de borrar los disparos del jugador.
+    // después los no amistosos y los de otros jugadores; si aún se supera el límite, elimina también
+    // los restantes para imponer el tope y reducir el riesgo de saturación.
     private static int TrimProjectilesForPerformance(bool force)
     {
         int active = 0;
