@@ -26,7 +26,7 @@ namespace Terraria.Unified.Features;
 /// </summary>
 internal static partial class HerosModPanel
 {
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, AntiLag }
 
     private const int Width = 640;
     private const int Height = 540;
@@ -69,6 +69,10 @@ internal static partial class HerosModPanel
     private static bool godmodeEnabled;
     private static bool noSpawnsEnabled;
     private static bool flyEnabled;
+    // Anti-Lag visual opcional: solo oculta particulas Dust del cliente; no toca NPCs, proyectiles ni mundo.
+    private static bool antiLagEnabled;
+    private static int antiLagFrameCounter;
+    private static long antiLagParticlesCleared;
     private const float FlySpeed = 12f;
 
     private static int activeField;
@@ -343,6 +347,12 @@ internal static partial class HerosModPanel
         if (Main.dedServ || Main.gameMenu)
             return;
 
+        if (antiLagEnabled && ++antiLagFrameCounter >= 30)
+        {
+            antiLagFrameCounter = 0;
+            ClearAntiLagDust();
+        }
+
         var local = Main.LocalPlayer;
 
         // En servidor las funciones solo-cliente quedan apagadas (el servidor manda).
@@ -460,7 +470,7 @@ internal static partial class HerosModPanel
         }
 
         Tab[] tabs = [Tab.Jugador, Tab.Mundo, Tab.Items, Tab.EditorItems, Tab.EditorVida, Tab.WorldEdit, Tab.Jefes, Tab.Teleport,
-                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Perfiles, Tab.Personalizar];
+                      Tab.Jugadores, Tab.Herramientas, Tab.Info, Tab.Inventario, Tab.Guia, Tab.Perfiles, Tab.Personalizar, Tab.AntiLag];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 4)) / tabCols;
         for (int i = 0; i < tabs.Length; i++)
@@ -481,6 +491,7 @@ internal static partial class HerosModPanel
                 Tab.Teleport => "Teleport",
                 Tab.Perfiles => "Perfiles",
                 Tab.Personalizar => "Personalizar UI",
+                Tab.AntiLag => "Anti-Lag",
                 _ => tabs[i].ToString()
             };
             if (DrawButton(sb, pixel, tabRect, tabLabel, mouse, tabColor) && !selected)
@@ -537,6 +548,9 @@ internal static partial class HerosModPanel
                 break;
             case Tab.Personalizar:
                 DrawCustomizeTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.AntiLag:
+                DrawAntiLagTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
         }
 
@@ -2197,6 +2211,45 @@ internal static partial class HerosModPanel
     }
 
     // ------------------------------------------------------------------ dibujo comun
+
+    private static void DrawAntiLagTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "Anti-Lag visual (solo cliente)");
+        string toggleText = antiLagEnabled ? "Limpieza automatica: ACTIVADA" : "Limpieza automatica: desactivada";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), toggleText, mouse, antiLagEnabled ? UiAccent : UiTabColor))
+        {
+            antiLagEnabled = !antiLagEnabled;
+            antiLagFrameCounter = 0;
+            SetStatus(antiLagEnabled ? "Anti-Lag visual activado: limpia particulas cada 30 actualizaciones." : "Anti-Lag visual desactivado.");
+        }
+        y += RowH + 6;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Limpiar particulas ahora", mouse))
+        {
+            int removed = ClearAntiLagDust();
+            SetStatus($"Anti-Lag: se limpiaron {removed} particulas visuales.");
+        }
+        y += RowH + 8;
+        Utils.DrawBorderString(sb, "Solo afecta particulas Dust locales.", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        y += 20;
+        Utils.DrawBorderString(sb, "No elimina NPCs, proyectiles, tiles ni objetos.", new Vector2(panel.X + Pad, y), Color.LightGreen, 0.72f);
+        y += 20;
+        Utils.DrawBorderString(sb, $"Particulas limpiadas desde que se abrio el panel: {antiLagParticlesCleared}", new Vector2(panel.X + Pad, y), Color.LightGray, 0.68f);
+    }
+
+    private static int ClearAntiLagDust()
+    {
+        int removed = 0;
+        for (int i = 0; i < Main.dust.Length; i++)
+        {
+            if (Main.dust[i].active)
+            {
+                Main.dust[i].active = false;
+                removed++;
+            }
+        }
+        antiLagParticlesCleared += removed;
+        return removed;
+    }
 
     private static void DrawSectionHeader(SpriteBatch sb, Rectangle panel, ref int y, string title)
     {
