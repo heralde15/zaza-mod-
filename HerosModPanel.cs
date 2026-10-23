@@ -105,6 +105,9 @@ internal static partial class HerosModPanel
     private static string editorShootSpeed = "";
     private static string editorProjectile = "0";
     private static int editorProjectileMultiplier = 1;
+    private static readonly HashSet<int> multipliedProjectileIdentities = new();
+    private static bool infiniteMinionsEnabled;
+    private static bool lifeLockEnabled;
     private static string editorRarity = "";
     private static string editorMana = "0";
     private static string editorUseStyle = "1";
@@ -439,6 +442,16 @@ internal static partial class HerosModPanel
         }
 
         var local = Main.LocalPlayer;
+
+        // Multiplica proyectiles nuevos del arma equipada una sola vez por identidad.
+        ApplyProjectileMultiplier(local);
+        if (infiniteMinionsEnabled && local.active && !local.dead)
+            local.maxMinions = 9999;
+        if (lifeLockEnabled && local.active && !local.dead && !IsServer)
+        {
+            local.statLife = Math.Max(1, local.statLifeMax2);
+            local.statMana = Math.Max(0, local.statManaMax2);
+        }
 
         // En servidor las funciones solo-cliente quedan apagadas (el servidor manda).
         if (IsServer && flyEnabled)
@@ -782,6 +795,34 @@ internal static partial class HerosModPanel
         }
     }
 
+    private static void ApplyProjectileMultiplier(Player local)
+    {
+        if (local == null || !local.active || local.dead || editorProjectileMultiplier <= 1)
+            return;
+        Item held = local.HeldItem;
+        if (held == null || held.IsAir || held.shoot <= 0)
+            return;
+        if (multipliedProjectileIdentities.Count > 12000)
+            multipliedProjectileIdentities.Clear();
+        int copies = Math.Min(16, Math.Max(0, editorProjectileMultiplier - 1));
+        for (int i = 0; i < Main.maxProjectiles; i++)
+        {
+            Projectile source = Main.projectile[i];
+            if (source == null || !source.active || source.owner != local.whoAmI
+                || source.type != held.shoot || source.minion || source.sentry || source.aiStyle == 7)
+                continue;
+            if (!multipliedProjectileIdentities.Add(source.identity))
+                continue;
+            for (int n = 0; n < copies; n++)
+            {
+                int spawned = Projectile.NewProjectile(source.GetSource_FromThis(), source.position, source.velocity,
+                    source.type, source.damage, source.knockBack, source.owner, source.ai[0], source.ai[1], source.ai[2]);
+                if (spawned >= 0 && spawned < Main.maxProjectiles)
+                    multipliedProjectileIdentities.Add(Main.projectile[spawned].identity);
+            }
+        }
+    }
+
     private static void DrawPlayerTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         DrawSectionHeader(sb, panel, ref y, "Modificaciones del Jugador");
@@ -828,14 +869,28 @@ internal static partial class HerosModPanel
         }
         y += RowH + 6;
 
-        string adventureText = adventureUnrestrictedEnabled ? "Aventura sin restricciones: ACTIVADA" : "Aventura sin restricciones: desactivada";
+        int extraToggleW = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, extraToggleW, RowH), infiniteMinionsEnabled ? "Minions infinitos: ACTIVADO" : "Minions infinitos: desactivado", mouse, infiniteMinionsEnabled ? new Color(40, 115, 75) : UiTabColor))
+        {
+            infiniteMinionsEnabled = !infiniteMinionsEnabled;
+            if (infiniteMinionsEnabled) Main.LocalPlayer.maxMinions = 9999;
+            SetStatus(infiniteMinionsEnabled ? "Límite local de minions elevado; el servidor puede rechazarlo." : "Minions infinitos desactivados.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + extraToggleW + 8, y, extraToggleW, RowH), "Reiniciar registro de proyectiles", mouse))
+        {
+            multipliedProjectileIdentities.Clear();
+            SetStatus("Registro de proyectiles reiniciado.");
+        }
+        y += RowH + 6;
+
+        string adventureText = adventureUnrestrictedEnabled ? "Permisos creativos abiertos: ACTIVADOS" : "Permisos creativos abiertos: desactivados";
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), adventureText, mouse, adventureUnrestrictedEnabled ? new Color(40, 115, 75) : UiTabColor))
         {
             adventureUnrestrictedEnabled = !adventureUnrestrictedEnabled;
             bool applied = ApplyUnrestrictedAdventurePermissions(adventureUnrestrictedEnabled);
             SetStatus(applied
                 ? (adventureUnrestrictedEnabled
-                    ? "Permisos de poderes creativos puestos en nivel abierto, sin exigir modo Viaje. En multijugador el servidor debe aplicar también estos permisos."
+                    ? "Permisos creativos abiertos cuando la API lo permite. Esto NO convierte el personaje ni el mundo al modo Viaje/Aventura; el servidor también debe permitirlo."
                     : "Permisos de poderes creativos configurados de nuevo para el anfitrión.")
                 : "No se pudieron cambiar los permisos de poderes en esta versión; comprueba la API de CreativePowerManager.");
         }
@@ -1789,7 +1844,7 @@ internal static partial class HerosModPanel
                 editorProjectileMultiplier == multiplier ? UiAccent : UiTabColor))
             {
                 editorProjectileMultiplier = multiplier;
-                SetStatus($"Multiplicador seleccionado: ×{multiplier}. Preferencia de interfaz; aún requiere integración en Player.cs para afectar los disparos.");
+                SetStatus($"Multiplicador ×{multiplier} seleccionado. Se generan hasta 16 copias extra por proyectil para limitar el impacto en FPS.");
             }
         }
         y += 55;
@@ -2201,7 +2256,23 @@ internal static partial class HerosModPanel
     private static void DrawLifeEditorTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         var p = Main.LocalPlayer;
-        DrawSectionHeader(sb, panel, ref y, "Editor de vida y maná");
+        DrawSectionHeader(sb, panel, ref y, "Editor avanzado de vida y maná");
+        int lifeToggleW = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, lifeToggleW, 25), lifeLockEnabled ? "Vida/Maná infinitos: ACTIVADO" : "Vida/Maná infinitos: desactivado", mouse, lifeLockEnabled ? new Color(40, 115, 75) : UiTabColor))
+        {
+            if (IsServer) SetStatus("El servidor controla la vida en modo COMANDOS; usa DIRECTO solo donde esté permitido.");
+            else { lifeLockEnabled = !lifeLockEnabled; SetStatus(lifeLockEnabled ? "Vida y maná se restaurarán continuamente mientras estés vivo." : "Restauración continua desactivada."); }
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + lifeToggleW + 8, y, lifeToggleW, 25), "God Mode: alternar", mouse, godmodeEnabled ? UiAccent : UiTabColor))
+        {
+            godmodeEnabled = !godmodeEnabled;
+            Main.LocalPlayer.creativeGodMode = godmodeEnabled;
+            Main.LocalPlayer.immune = godmodeEnabled;
+            Main.LocalPlayer.immuneTime = godmodeEnabled ? Math.Max(Main.LocalPlayer.immuneTime, 2) : 0;
+            SyncSelf();
+            SetStatus(godmodeEnabled ? "God Mode local activado." : "God Mode local desactivado.");
+        }
+        y += 31;
         if (DrawButton(sb, pixel, new Rectangle(panel.Right - Pad - 155, y - 22, 155, 22), "Leer valores actuales", mouse, UiAccent))
         {
             lifeCurrent = p.statLife.ToString();
