@@ -835,6 +835,54 @@ internal static partial class HerosModPanel
         }
     }
 
+    private static bool UnlockAllJourneyResearch(Player player)
+    {
+        if (player == null) return false;
+        try
+        {
+            var visited = new HashSet<object>();
+            var pending = new Stack<object>();
+            pending.Push(player);
+            while (pending.Count > 0)
+            {
+                object current = pending.Pop();
+                if (current == null || !visited.Add(current)) continue;
+                Type type = current.GetType();
+                if (type.Name.Contains("ItemSacrificesTracker", StringComparison.OrdinalIgnoreCase))
+                {
+                    MethodInfo setter = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                        .FirstOrDefault(m => m.Name == "SetSacrificeCount" && m.GetParameters().Length == 2
+                            && m.GetParameters().All(p => p.ParameterType == typeof(int)));
+                    if (setter != null)
+                    {
+                        int unlocked = 0;
+                        for (int id = 1; id < ItemID.Count; id++)
+                        {
+                            try { setter.Invoke(current, new object[] { id, 999999 }); unlocked++; }
+                            catch { }
+                        }
+                        return unlocked > 0;
+                    }
+                }
+                foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                {
+                    if (field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(string)) continue;
+                    try { object value = field.GetValue(current); if (value != null && value != current) pending.Push(value); }
+                    catch { }
+                }
+                foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                {
+                    if (!property.CanRead || property.GetIndexParameters().Length != 0 || property.PropertyType.IsPrimitive
+                        || property.PropertyType.IsEnum || property.PropertyType == typeof(string)) continue;
+                    try { object value = property.GetValue(current); if (value != null && value != current) pending.Push(value); }
+                    catch { }
+                }
+            }
+        }
+        catch { }
+        return false;
+    }
+
     private static void DrawPlayerTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         DrawSectionHeader(sb, panel, ref y, "Modificaciones del Jugador");
@@ -905,6 +953,14 @@ internal static partial class HerosModPanel
                     ? "Permisos creativos abiertos cuando la API lo permite. Esto NO convierte el personaje ni el mundo al modo Viaje/Aventura; el servidor también debe permitirlo."
                     : "Permisos de poderes creativos configurados de nuevo para el anfitrión.")
                 : "No se pudieron cambiar los permisos de poderes en esta versión; comprueba la API de CreativePowerManager.");
+        }
+        y += RowH + 6;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Desbloquear investigación de TODOS los objetos (modo Viaje)", mouse, new Color(75, 85, 135)))
+        {
+            bool unlocked = UnlockAllJourneyResearch(Main.LocalPlayer);
+            SetStatus(unlocked
+                ? "Se intentó completar la investigación de todos los objetos mediante la API de Viaje. Esto no convierte un personaje clásico ni cambia el mundo a Viaje."
+                : "No se encontró la API de investigación de Viaje en esta versión. El botón no convierte personajes ni mundos a modo Viaje.");
         }
         y += RowH + 6;
 
