@@ -35,7 +35,7 @@ internal static partial class HerosModPanel
         public string Context => "HerosModPanel";
     }
 
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, NPCs, Proyectiles, AntiLag }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, NPCs, Proyectiles, AntiLag, FPSBoost }
 
     // Dimensiones ampliadas para que los controles respiren y sean más fáciles de leer.
     private const int Width = 820;
@@ -364,6 +364,10 @@ internal static partial class HerosModPanel
     private static bool antiLagProjectilesEnabled;
     private static int antiLagProjectileFrameCounter;
     private static long antiLagProjectilesRemoved;
+    private static bool fpsStabilizerEnabled;
+    private static int fpsStabilizerFrameCounter;
+    private static int fpsStabilizerThreshold = 45;
+    private static long fpsStabilizerInterventions;
 
     // ---- Navegador de items (pestana Items) ----
     private const int CellSize = 40;
@@ -402,6 +406,19 @@ internal static partial class HerosModPanel
         {
             antiLagProjectileFrameCounter = 0;
             TrimProjectilesForPerformance(false);
+        }
+
+        // Modo adaptativo: comprueba cada segundo aproximadamente y actúa solo si cae el FPS.
+        if (fpsStabilizerEnabled && ++fpsStabilizerFrameCounter >= 60)
+        {
+            fpsStabilizerFrameCounter = 0;
+            if (Main.frameRate > 0 && Main.frameRate < fpsStabilizerThreshold)
+            {
+                int dustCleared = ClearAntiLagDust();
+                int projectilesRemoved = TrimProjectilesForPerformance(false);
+                if (dustCleared > 0 || projectilesRemoved > 0)
+                    fpsStabilizerInterventions++;
+            }
         }
 
         var local = Main.LocalPlayer;
@@ -541,7 +558,7 @@ internal static partial class HerosModPanel
             [Tab.Jugador, Tab.EditorVida, Tab.Inventario, Tab.Items, Tab.EditorItems],
             [Tab.Mundo, Tab.WorldEdit, Tab.Teleport, Tab.Perfiles, Tab.Guia],
             [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar],
-            [Tab.NPCs, Tab.Proyectiles, Tab.AntiLag]
+            [Tab.NPCs, Tab.Proyectiles, Tab.AntiLag, Tab.FPSBoost]
         ];
         string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES", "NPC  /  PROYECTILES  /  RENDIMIENTO"];
         string[] tabLabels =
@@ -549,7 +566,7 @@ internal static partial class HerosModPanel
             "Jugador", "Editor vida", "Inventario", "Items", "Editor items",
             "Mundo", "WorldEdit", "Teleport", "Perfiles", "Guía",
             "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar",
-            "NPCs", "Proyectiles", "Anti-Lag"
+            "NPCs", "Proyectiles", "Anti-Lag", "FPS Boost"
         ];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
@@ -614,6 +631,9 @@ internal static partial class HerosModPanel
                 break;
             case Tab.AntiLag:
                 DrawAntiLagTab(sb, pixel, panelRect, ref contentY, mouse);
+                break;
+            case Tab.FPSBoost:
+                DrawFPSBoostTab(sb, pixel, panelRect, ref contentY, mouse);
                 break;
             case Tab.Info:
                 DrawInfoTab(sb, pixel, panelRect, ref contentY);
@@ -2860,6 +2880,87 @@ internal static partial class HerosModPanel
             "Solo cliente: el servidor puede volver a sincronizar proyectiles. No bloquea su creación antes del spawn ni garantiza evitar todo cierre.",
             new Vector2(panel.X + Pad, y), new Color(235, 190, 120), 0.62f);
         y += 30;
+    }
+
+    private static void DrawFPSBoostTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
+    {
+        DrawSectionHeader(sb, panel, ref y, "FPS Boost · estabilizador adaptativo");
+        Utils.DrawBorderString(sb,
+            "Actúa cuando detecta una caída de FPS; no cambia archivos ni ajustes gráficos permanentes.",
+            new Vector2(panel.X + Pad, y), Color.LightGray, 0.64f);
+        y += 28;
+
+        int bw = (Width - Pad * 2 - 8) / 2;
+        string state = fpsStabilizerEnabled ? "Estabilizador automático: ACTIVADO" : "Estabilizador automático: desactivado";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), state, mouse,
+            fpsStabilizerEnabled ? new Color(35, 105, 70) : UiTabColor))
+        {
+            fpsStabilizerEnabled = !fpsStabilizerEnabled;
+            fpsStabilizerFrameCounter = 0;
+            SetStatus(fpsStabilizerEnabled
+                ? $"Estabilizador activado: actuará si los FPS bajan de {fpsStabilizerThreshold}."
+                : "Estabilizador automático desactivado.");
+        }
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + bw + 8, y, bw, RowH), "Aplicar perfil equilibrado", mouse, new Color(45, 85, 135)))
+        {
+            fpsStabilizerEnabled = true;
+            antiLagEnabled = false; // El estabilizador solo limpia cuando detecta una caída.
+            antiLagProjectilesEnabled = true;
+            fpsStabilizerFrameCounter = 0;
+            SetStatus("Perfil equilibrado activado: limpieza adaptativa de efectos y control de proyectiles.");
+        }
+        y += RowH + 10;
+
+        Utils.DrawBorderString(sb, "Umbral de intervención:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
+        y += 20;
+        int[] thresholds = { 30, 45, 60 };
+        for (int i = 0; i < thresholds.Length; i++)
+        {
+            int threshold = thresholds[i];
+            int tw = (Width - Pad * 2 - 12) / 3;
+            var rect = new Rectangle(panel.X + Pad + i * (tw + 6), y, tw, 25);
+            if (DrawButton(sb, pixel, rect, threshold + " FPS", mouse,
+                fpsStabilizerThreshold == threshold ? UiAccent : UiTabColor))
+            {
+                fpsStabilizerThreshold = threshold;
+                SetStatus($"Umbral del estabilizador: {threshold} FPS.");
+            }
+        }
+        y += 34;
+
+        int activeProjectiles = 0;
+        foreach (Projectile projectile in Main.projectile)
+            if (projectile != null && projectile.active) activeProjectiles++;
+
+        Color fpsColor = Main.frameRate < fpsStabilizerThreshold
+            ? new Color(255, 145, 90)
+            : new Color(125, 225, 155);
+        Utils.DrawBorderString(sb, $"FPS actuales: {Main.frameRate}", new Vector2(panel.X + Pad, y), fpsColor, 0.85f);
+        y += 23;
+        Utils.DrawBorderString(sb, $"Proyectiles activos: {activeProjectiles}", new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
+        y += 21;
+        Utils.DrawBorderString(sb, $"Intervenciones adaptativas: {fpsStabilizerInterventions}", new Vector2(panel.X + Pad, y), Color.LightGray, 0.72f);
+        y += 25;
+
+        int half = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, half, RowH), "Limpiar efectos ahora", mouse, new Color(55, 75, 115)))
+        {
+            int cleared = ClearAntiLagDust();
+            SetStatus($"Se limpiaron {cleared} partículas de polvo locales.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + half + 8, y, half, RowH), "Control proyectiles: " + (antiLagProjectilesEnabled ? "ON" : "OFF"), mouse,
+            antiLagProjectilesEnabled ? new Color(145, 75, 40) : UiTabColor))
+        {
+            antiLagProjectilesEnabled = !antiLagProjectilesEnabled;
+            antiLagProjectileFrameCounter = 0;
+            SetStatus(antiLagProjectilesEnabled ? "Control automático de proyectiles activado." : "Control automático de proyectiles desactivado.");
+        }
+        y += RowH + 9;
+        Utils.DrawBorderString(sb,
+            "Aviso: si los FPS caen, puede eliminar polvo y proyectiles locales; esto puede borrar ataques visibles. En multijugador el servidor puede volver a enviarlos.",
+            new Vector2(panel.X + Pad, y), new Color(235, 190, 120), 0.62f);
+        y += 32;
     }
 
     private static int ClearAntiLagDust()
