@@ -106,6 +106,7 @@ internal static partial class HerosModPanel
     private static string editorShootSpeed = "";
     private static string editorProjectile = "0";
     private static int editorProjectileMultiplier = 1;
+    private static bool radialProjectileMode;
     private static readonly HashSet<int> multipliedProjectileIdentities = new();
     private static bool infiniteMinionsEnabled;
     private static bool lifeLockEnabled;
@@ -374,6 +375,8 @@ internal static partial class HerosModPanel
 
     // Anti-Lag local adaptativo. No modifica el servidor y no puede impedir cada spawn antes de ocurrir.
     private static bool antiLagEnabled;
+    private static bool antiEffectsEnabled;
+    private static int antiEffectsFrameCounter;
     private static int antiLagFrameCounter;
     private static long antiLagParticlesCleared;
     private static long antiLagGoreCleared;
@@ -427,6 +430,14 @@ internal static partial class HerosModPanel
         {
             settingsSaveCounter = 0;
             SaveSettingsIfChanged();
+        }
+
+        // Anti-efectos visuales local: limpia polvo y gore periódicamente sin tocar el servidor.
+        if (antiEffectsEnabled && ++antiEffectsFrameCounter >= 10)
+        {
+            antiEffectsFrameCounter = 0;
+            ClearAntiLagDust();
+            ClearAntiLagGore();
         }
 
         // Contadores baratos y revisión frecuente: actúa antes de que la carga crezca demasiado.
@@ -839,7 +850,10 @@ internal static partial class HerosModPanel
                 multipliedProjectileIdentities.Remove(tracked);
         }
 
-        int copies = Math.Min(16, Math.Max(0, editorProjectileMultiplier - 1));
+        int totalShots = radialProjectileMode
+            ? Math.Min(17, Math.Max(1, editorProjectileMultiplier))
+            : Math.Min(17, Math.Max(1, editorProjectileMultiplier));
+        int copies = Math.Max(0, totalShots - 1);
         for (int i = 0; i < Main.maxProjectiles; i++)
         {
             Projectile source = Main.projectile[i];
@@ -849,9 +863,26 @@ internal static partial class HerosModPanel
             if (!multipliedProjectileIdentities.Add(source.whoAmI))
                 continue;
 
-            for (int n = 0; n < copies; n++)
+            for (int n = 1; n <= copies; n++)
             {
-                int spawned = Projectile.NewProjectile(new PanelEntitySource(), source.position, source.velocity,
+                Vector2 spawnPosition = source.position;
+                Vector2 spawnVelocity = source.velocity;
+
+                if (radialProjectileMode)
+                {
+                    // Coloca los disparos alrededor del jugador y distribuye sus direcciones en círculo.
+                    spawnPosition = new Vector2(
+                        local.Center.X - source.width * 0.5f,
+                        local.Center.Y - source.height * 0.5f);
+                    double angle = (Math.PI * 2.0 * n) / totalShots;
+                    float cos = (float)Math.Cos(angle);
+                    float sin = (float)Math.Sin(angle);
+                    spawnVelocity = new Vector2(
+                        source.velocity.X * cos - source.velocity.Y * sin,
+                        source.velocity.X * sin + source.velocity.Y * cos);
+                }
+
+                int spawned = Projectile.NewProjectile(new PanelEntitySource(), spawnPosition, spawnVelocity,
                     source.type, source.damage, source.knockBack, source.owner, source.ai[0], source.ai[1], source.ai[2]);
                 if (spawned >= 0 && spawned < Main.maxProjectiles)
                     multipliedProjectileIdentities.Add(Main.projectile[spawned].whoAmI);
@@ -1942,6 +1973,18 @@ internal static partial class HerosModPanel
             }
         }
         y += 55;
+
+        string radialText = radialProjectileMode ? "Disparo circular: ACTIVADO" : "Disparo normal: ACTIVADO";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), radialText, mouse,
+            radialProjectileMode ? new Color(35, 105, 70) : UiTabColor))
+        {
+            radialProjectileMode = !radialProjectileMode;
+            multipliedProjectileIdentities.Clear();
+            SetStatus(radialProjectileMode
+                ? "Patrón circular activado: ×2, ×3 y ×4 salen distribuidos alrededor del jugador."
+                : "Patrón circular desactivado; se conserva el patrón normal del arma.");
+        }
+        y += RowH + 8;
 
         if (editorExtraPage)
         {
@@ -3079,6 +3122,17 @@ internal static partial class HerosModPanel
         y += 30;
 
         int bw = (Width - (Pad * 2) - 8) / 2;
+        string effectsText = antiEffectsEnabled ? "Anti-efectos: ACTIVADO" : "Anti-efectos: desactivado";
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), effectsText, mouse,
+            antiEffectsEnabled ? new Color(35, 105, 70) : UiTabColor))
+        {
+            antiEffectsEnabled = !antiEffectsEnabled;
+            antiEffectsFrameCounter = 0;
+            SetStatus(antiEffectsEnabled
+                ? "Anti-efectos activado: limpia polvo y gore local cada 10 actualizaciones."
+                : "Anti-efectos desactivado.");
+        }
+
         string toggleText = antiLagEnabled ? "Limpieza de polvo: ACTIVADA" : "Limpieza de polvo: desactivada";
         Color toggleColor = antiLagEnabled ? new Color(35, 105, 70) : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, bw, RowH), toggleText, mouse, toggleColor))
