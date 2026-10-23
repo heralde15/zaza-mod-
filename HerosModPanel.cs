@@ -3178,8 +3178,31 @@ internal static partial class HerosModPanel
         // que conserva la autoridad de NPC y sincroniza la entidad a los clientes.
         if (IsServer)
         {
-            SendCmd($"/spawnmob {npcId} 1");
-            SetStatus($"Solicitud enviada a TShock para invocar {bossName}. Si no aparece, revisa los permisos del comando /spawnmob.");
+            // Preferir /spawnboss para los jefes que TShock reconoce por alias;
+            // para jefes/eventos no cubiertos, intentar /spawnmob con el ID vanilla.
+            string bossAlias = npcId switch
+            {
+                50 => "king",
+                4 => "eye",
+                13 => "eater",
+                266 => "brain",
+                35 => "skeletron",
+                222 => "queen",
+                113 => "wall",
+                125 => "twins",
+                134 => "destroyer",
+                127 => "prime",
+                262 => "plantera",
+                245 => "golem",
+                370 => "fishron",
+                _ => ""
+            };
+
+            string command = !string.IsNullOrEmpty(bossAlias)
+                ? $"/spawnboss {bossAlias} 1"
+                : $"/spawnmob {npcId} 1";
+            SendCmd(command);
+            SetStatus($"Solicitud enviada al servidor: {command}. Si no aparece, comprueba el permiso tshock.npc.spawnboss o tshock.npc.spawnmob.");
             return;
         }
 
