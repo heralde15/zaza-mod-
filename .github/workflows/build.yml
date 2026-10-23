@@ -29,7 +29,7 @@ jobs:
         run: dotnet restore .\Terraria-ZazaMod.csproj
 
       - name: Build Release
-        run: dotnet build .\Terraria-zMod.csproj -c Release --no-restore -v:minimal
+        run: dotnet build .\Terraria-ZazaMod.csproj -c Release --no-restore -v:minimal
 
       - name: Upload build output
         if: success()
