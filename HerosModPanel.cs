@@ -851,7 +851,7 @@ internal static partial class HerosModPanel
         }
 
         int totalShots = radialProjectileMode
-            ? Math.Min(17, Math.Max(1, editorProjectileMultiplier))
+            ? Math.Max(1, editorProjectileMultiplier)
             : Math.Min(17, Math.Max(1, editorProjectileMultiplier));
         int copies = Math.Max(0, totalShots - 1);
         for (int i = 0; i < Main.maxProjectiles; i++)
@@ -1955,7 +1955,7 @@ internal static partial class HerosModPanel
         // para modificar realmente los proyectiles generados.
         Utils.DrawBorderString(sb, "Multiplicador de disparo (experimental):", new Vector2(panel.X + Pad, y), UiAccent, 0.68f);
         y += 17;
-        int[] projectileMultipliers = { 1, 2, 3, 4, 8, 16, 32, 64, 128 };
+        int[] projectileMultipliers = { 1, 2, 3, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
         int multiplierCols = 5;
         int multiplierGap = 5;
         int multiplierW = (Width - Pad * 2 - multiplierGap * (multiplierCols - 1)) / multiplierCols;
@@ -1973,7 +1973,7 @@ internal static partial class HerosModPanel
                 editorProjectileMultiplier == multiplier ? UiAccent : UiTabColor))
             {
                 editorProjectileMultiplier = multiplier;
-                SetStatus($"Multiplicador ×{multiplier} seleccionado. Se generan hasta 16 copias extra por proyectil para limitar el impacto en FPS.");
+                SetStatus($"Multiplicador ×{multiplier} seleccionado. Sin límite fijo de copias; valores altos pueden provocar lag o alcanzar el límite interno de Terraria.");
             }
         }
         y += 55;
