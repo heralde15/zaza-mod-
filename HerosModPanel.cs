@@ -4,6 +4,7 @@ using System.Linq;
 using System.IO;
 using System.Collections;
 using System.Reflection;
+using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -385,6 +386,11 @@ internal static partial class HerosModPanel
     private static int fpsStabilizerThreshold = 45;
     private static long fpsStabilizerInterventions;
     private static long antiLagEmergencyInterventions;
+    private static bool muteGameSoundsEnabled;
+    private static float soundVolumeBeforeMute = 1f;
+    private static bool settingsLoaded;
+    private static int settingsSaveCounter;
+    private static string lastSavedSettingsSnapshot;
     private static int antiLagLastProjectileCount;
     private static int antiLagLastDustCount;
     private static int antiLagLastGoreCount;
@@ -414,6 +420,14 @@ internal static partial class HerosModPanel
     {
         if (Main.dedServ || Main.gameMenu)
             return;
+
+        EnsureSettingsLoaded();
+        ApplySoundMuteSetting();
+        if (++settingsSaveCounter >= 30)
+        {
+            settingsSaveCounter = 0;
+            SaveSettingsIfChanged();
+        }
 
         // Contadores baratos y revisión frecuente: actúa antes de que la carga crezca demasiado.
         if (antiLagEnabled && ++antiLagFrameCounter >= 20)
@@ -3154,10 +3168,31 @@ internal static partial class HerosModPanel
     private static void DrawFPSBoostTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
         DrawSectionHeader(sb, panel, ref y, "FPS Boost · estabilizador adaptativo");
+        DrawSectionHeader(sb, panel, ref y, "FPS Boost · estabilizador adaptativo");
         Utils.DrawBorderString(sb,
             "Actúa cuando detecta una caída de FPS; no cambia archivos ni ajustes gráficos permanentes.",
             new Vector2(panel.X + Pad, y), Color.LightGray, 0.64f);
         y += 28;
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH),
+            "Anti-sonidos del juego: " + (muteGameSoundsEnabled ? "ACTIVADO" : "desactivado"), mouse,
+            muteGameSoundsEnabled ? new Color(145, 75, 40) : UiTabColor))
+        {
+            if (!muteGameSoundsEnabled)
+            {
+                soundVolumeBeforeMute = Math.Clamp(Main.soundVolume, 0f, 1f);
+                muteGameSoundsEnabled = true;
+                Main.soundVolume = 0f;
+            }
+            else
+            {
+                muteGameSoundsEnabled = false;
+                Main.soundVolume = Math.Clamp(soundVolumeBeforeMute, 0f, 1f);
+            }
+            SaveSettingsIfChanged(force: true);
+            SetStatus(muteGameSoundsEnabled ? "Sonidos del juego silenciados; la música puede tener control separado." : "Sonido del juego restaurado al volumen guardado.");
+        }
+        y += RowH + 8;
 
         int bw = (Width - Pad * 2 - 8) / 2;
         string state = fpsStabilizerEnabled ? "Estabilizador automático: ACTIVADO" : "Estabilizador automático: desactivado";
@@ -3232,6 +3267,94 @@ internal static partial class HerosModPanel
             "Aviso: si los FPS caen, puede eliminar polvo y proyectiles locales; esto puede borrar ataques visibles. En multijugador el servidor puede volver a enviarlos.",
             new Vector2(panel.X + Pad, y), new Color(235, 190, 120), 0.62f);
         y += 32;
+    }
+
+    // Ajustes locales persistentes: se guardan en un archivo de configuración del usuario,
+    // no en el mundo/servidor. Se persisten solo opciones explícitas, nunca estados temporales de UI.
+    private static readonly string[] PersistentBooleanSettings =
+    {
+        nameof(godmodeEnabled), nameof(adventureUnrestrictedEnabled), nameof(noSpawnsEnabled),
+        nameof(flyEnabled), nameof(infiniteMinionsEnabled), nameof(lifeLockEnabled),
+        nameof(defenseOverrideEnabled), nameof(antiLagEnabled), nameof(antiLagProjectilesEnabled),
+        nameof(fpsStabilizerEnabled), nameof(muteGameSoundsEnabled)
+    };
+
+    private static string SettingsFilePath => Path.Combine(Main.SavePath, "HerosModPanel.settings");
+
+    private static void EnsureSettingsLoaded()
+    {
+        if (settingsLoaded) return;
+        settingsLoaded = true;
+        try
+        {
+            string path = SettingsFilePath;
+            if (File.Exists(path))
+            {
+                foreach (string rawLine in File.ReadAllLines(path))
+                {
+                    int split = rawLine.IndexOf('=');
+                    if (split <= 0) continue;
+                    string key = rawLine.Substring(0, split).Trim();
+                    string value = rawLine.Substring(split + 1).Trim();
+                    if (key == "antiLagProjectileLimit" && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int limit))
+                        antiLagProjectileLimit = limit is 100 or 150 or 250 or 400 ? limit : 250;
+                    else if (key == "fpsStabilizerThreshold" && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int threshold))
+                        fpsStabilizerThreshold = threshold is 30 or 45 or 60 ? threshold : 45;
+                    else if (key == "soundVolumeBeforeMute" && float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float volume))
+                        soundVolumeBeforeMute = Math.Clamp(volume, 0f, 1f);
+                    else if (PersistentBooleanSettings.Contains(key))
+                    {
+                        FieldInfo field = typeof(HerosModPanel).GetField(key, BindingFlags.Static | BindingFlags.NonPublic);
+                        if (field != null && field.FieldType == typeof(bool) && bool.TryParse(value, out bool enabled))
+                            field.SetValue(null, enabled);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = "No se pudieron cargar los ajustes: " + ex.Message;
+        }
+        lastSavedSettingsSnapshot = BuildSettingsSnapshot();
+    }
+
+    private static void ApplySoundMuteSetting()
+    {
+        if (muteGameSoundsEnabled && Main.soundVolume != 0f)
+            Main.soundVolume = 0f;
+    }
+
+    private static string BuildSettingsSnapshot()
+    {
+        var lines = new List<string>();
+        foreach (string name in PersistentBooleanSettings)
+        {
+            FieldInfo field = typeof(HerosModPanel).GetField(name, BindingFlags.Static | BindingFlags.NonPublic);
+            if (field != null) lines.Add(name + "=" + (bool)field.GetValue(null));
+        }
+        lines.Add("antiLagProjectileLimit=" + antiLagProjectileLimit.ToString(CultureInfo.InvariantCulture));
+        lines.Add("fpsStabilizerThreshold=" + fpsStabilizerThreshold.ToString(CultureInfo.InvariantCulture));
+        lines.Add("soundVolumeBeforeMute=" + soundVolumeBeforeMute.ToString(CultureInfo.InvariantCulture));
+        return string.Join("\\n", lines);
+    }
+
+    private static void SaveSettingsIfChanged(bool force = false)
+    {
+        if (!settingsLoaded) return;
+        string snapshot = BuildSettingsSnapshot();
+        if (!force && string.Equals(snapshot, lastSavedSettingsSnapshot, StringComparison.Ordinal)) return;
+        try
+        {
+            string path = SettingsFilePath;
+            string directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            File.WriteAllText(path, snapshot + Environment.NewLine);
+            lastSavedSettingsSnapshot = snapshot;
+        }
+        catch (Exception ex)
+        {
+            statusMessage = "No se pudieron guardar los ajustes: " + ex.Message;
+        }
     }
 
     private static int CountActiveDust()
