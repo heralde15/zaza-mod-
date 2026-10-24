@@ -427,6 +427,7 @@ internal static partial class HerosModPanel
             return;
 
         EnsureSettingsLoaded();
+        ProcessJourneyResearchUnlock();
         ApplySoundMuteSetting();
         if (++settingsSaveCounter >= 30)
         {
@@ -997,10 +998,17 @@ internal static partial class HerosModPanel
         }
     }
 
-    private static bool UnlockAllJourneyResearch(Player player)
+    private static object journeyResearchTracker;
+    private static MethodInfo journeyResearchSetter;
+    private static int journeyResearchNextItem;
+    private static int journeyResearchTotal;
+    private static int journeyResearchCompleted;
+    private static int journeyResearchFrameDelay;
+    private static bool journeyResearchRunning;
+
+    // Solo localiza el tracker y prepara el trabajo; no procesa todos los objetos en un clic.
+    private static bool StartJourneyResearchUnlock(Player player)
     {
-        // Recorrido limitado y solo por campos: evita ejecutar getters arbitrarios o
-        // recorrer accidentalmente todo el grafo de objetos del juego desde el botón.
         if (player == null) return false;
         try
         {
@@ -1015,8 +1023,8 @@ internal static partial class HerosModPanel
                 object current = pending.Pop();
                 if (current == null || !visited.Add(current)) continue;
                 visitedCount++;
-
                 Type type = current.GetType();
+
                 if (type.Name.IndexOf("ItemSacrificesTracker", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     MethodInfo setter = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
@@ -1024,24 +1032,17 @@ internal static partial class HerosModPanel
                             && m.GetParameters().All(p => p.ParameterType == typeof(int)));
                     if (setter == null) return false;
 
-                    int succeeded = 0;
-                    int upperBound = Math.Max(1, ItemID.Count);
-                    for (int id = 1; id < upperBound; id++)
-                    {
-                        try
-                        {
-                            setter.Invoke(current, new object[] { id, 999999 });
-                            succeeded++;
-                        }
-                        catch
-                        {
-                            // Algunos IDs no son investigables en esta versión; continuar.
-                        }
-                    }
-                    return succeeded > 0;
+                    journeyResearchTracker = current;
+                    journeyResearchSetter = setter;
+                    journeyResearchNextItem = 1;
+                    journeyResearchTotal = Math.Max(1, ItemID.Count - 1);
+                    journeyResearchCompleted = 0;
+                    journeyResearchFrameDelay = 0;
+                    journeyResearchRunning = true;
+                    SetStatus("Investigación iniciada: 0/" + journeyResearchTotal + " objetos; faltan " + journeyResearchTotal + ".");
+                    return true;
                 }
 
-                // No entrar en strings, tipos primitivos, tipos del runtime ni colecciones.
                 if (type == typeof(string) || type.IsPrimitive || type.IsEnum ||
                     type.Namespace == null || type.Namespace.StartsWith("System", StringComparison.Ordinal))
                     continue;
@@ -1058,19 +1059,58 @@ internal static partial class HerosModPanel
                         if (value != null && !ReferenceEquals(value, current) && !visited.Contains(value))
                             pending.Push(value);
                     }
-                    catch
-                    {
-                        // Ignorar campos inaccesibles; el panel no debe cerrar el juego.
-                    }
+                    catch { }
                     if (pending.Count >= maxVisitedObjects) break;
                 }
             }
         }
-        catch
-        {
-            // Fallo de reflexión: devolver estado en lugar de propagar la excepción al juego.
-        }
+        catch { }
         return false;
+    }
+
+    // Procesa pocos IDs por tanda para evitar congelar el juego en un solo frame.
+    private static void ProcessJourneyResearchUnlock()
+    {
+        if (!journeyResearchRunning) return;
+        if (journeyResearchTracker == null || journeyResearchSetter == null)
+        {
+            journeyResearchRunning = false;
+            SetStatus("Investigación detenida: no se encontró el registro de objetos.");
+            return;
+        }
+
+        if (++journeyResearchFrameDelay < 6) return;
+        journeyResearchFrameDelay = 0;
+
+        int batchSize = 5;
+        int batchEnd = Math.Min(journeyResearchTotal + 1, journeyResearchNextItem + batchSize);
+        for (; journeyResearchNextItem < batchEnd; journeyResearchNextItem++)
+        {
+            try
+            {
+                journeyResearchSetter.Invoke(journeyResearchTracker, new object[] { journeyResearchNextItem, 999999 });
+                journeyResearchCompleted++;
+            }
+            catch
+            {
+                // Algunos IDs no admiten investigación; se omiten y se continúa.
+            }
+        }
+
+        int remaining = Math.Max(0, journeyResearchTotal - journeyResearchNextItem + 1);
+        if (journeyResearchNextItem > journeyResearchTotal)
+        {
+            journeyResearchRunning = false;
+            SetStatus("Investigación terminada: " + journeyResearchCompleted + "/" + journeyResearchTotal +
+                " objetos procesados; faltan 0 por revisar.");
+            journeyResearchTracker = null;
+            journeyResearchSetter = null;
+        }
+        else
+        {
+            SetStatus("Desbloqueando objetos: " + Math.Min(journeyResearchNextItem - 1, journeyResearchTotal) +
+                "/" + journeyResearchTotal + "; faltan " + remaining + " por revisar.");
+        }
     }
 
     private static void DrawPlayerTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
@@ -1148,25 +1188,24 @@ internal static partial class HerosModPanel
         }
         y += RowH + 6;
 
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Activar Journey Mode + desbloquear todos los objetos", mouse, new Color(40, 115, 75)))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Activar Journey Mode + desbloquear objetos poco a poco", mouse, new Color(40, 115, 75)))
         {
             bool applied = TryEnableJourneyMode();
-            bool researched = UnlockAllJourneyResearch(Main.LocalPlayer);
-            SetStatus(applied && researched
-                ? "Se intentó activar Journey Mode y completar la investigación de todos los objetos."
-                : applied
-                    ? "Se intentó activar Journey Mode, pero no se pudo completar la investigación de todos los objetos con la API disponible."
-                    : researched
-                        ? "Se completó la investigación de objetos disponible, pero Terraria no confirmó el cambio a Journey Mode."
-                        : "Terraria no confirmó el cambio a Journey Mode ni permitió completar la investigación. Puede requerir personaje y mundo creados en Modo Viaje.");
+            bool started = journeyResearchRunning || StartJourneyResearchUnlock(Main.LocalPlayer);
+            SetStatus(started
+                ? "Journey Mode: " + (applied ? "cambio intentado. " : "cambio no confirmado. ") +
+                    "Investigación progresiva: " + Math.Min(journeyResearchNextItem - 1, journeyResearchTotal) +
+                    "/" + journeyResearchTotal + "; faltan " + Math.Max(0, journeyResearchTotal - journeyResearchNextItem + 1) + "."
+                : "No se encontró el registro de investigación. Terraria puede requerir personaje y mundo creados en Modo Viaje.");
         }
         y += RowH + 6;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Desbloquear investigación de TODOS los objetos (modo Viaje)", mouse, new Color(75, 85, 135)))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Desbloquear investigación de TODOS los objetos (progresivo)", mouse, new Color(75, 85, 135)))
         {
-            bool unlocked = UnlockAllJourneyResearch(Main.LocalPlayer);
-            SetStatus(unlocked
-                ? "Se intentó completar la investigación de todos los objetos mediante la API de Viaje. Esto no convierte un personaje clásico ni cambia el mundo a Viaje."
-                : "No se encontró la API de investigación de Viaje en esta versión. El botón no convierte personajes ni mundos a modo Viaje.");
+            bool started = journeyResearchRunning || StartJourneyResearchUnlock(Main.LocalPlayer);
+            SetStatus(started
+                ? "Investigación progresiva: " + Math.Min(journeyResearchNextItem - 1, journeyResearchTotal) +
+                    "/" + journeyResearchTotal + "; faltan " + Math.Max(0, journeyResearchTotal - journeyResearchNextItem + 1) + " por revisar."
+                : "No se encontró el registro de investigación de Viaje en esta versión.");
         }
         y += RowH + 6;
 
