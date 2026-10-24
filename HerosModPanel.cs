@@ -1952,7 +1952,8 @@ internal static partial class HerosModPanel
             if (target == null || !target.active)
                 continue;
 
-            if (y > panel.Bottom - RowH - 40)
+            // Cada jugador ocupa dos líneas para que los botones no se salgan del panel.
+            if (y > panel.Bottom - (RowH * 2) - 48)
                 break;
 
             bool isSelf = i == Main.myPlayer;
@@ -2014,7 +2015,25 @@ internal static partial class HerosModPanel
                 }
             }
 
-            y += RowH + 6;
+            y += RowH + 3;
+            if (!isSelf)
+            {
+                int giveButtonW = (Width - Pad * 2 - 6) / 2;
+                var giveRect = new Rectangle(panel.X + Pad, y, giveButtonW, RowH);
+                var spamRect = new Rectangle(panel.X + Pad + giveButtonW + 6, y, giveButtonW, RowH);
+
+                if (DrawButton(sb, pixel, giveRect, "Dar ítem seleccionado", mouse, new Color(35, 115, 75)))
+                    GiveItemToRemotePlayer(target, false);
+
+                if (DrawButton(sb, pixel, spamRect, "Lote de ítem x10", mouse, new Color(135, 85, 35)))
+                    GiveItemToRemotePlayer(target, true);
+            }
+            else
+            {
+                Utils.DrawBorderString(sb, "Usa la pestaña Ítems para darte objetos.", new Vector2(panel.X + Pad, y + 5), Color.Gray, 0.62f);
+            }
+
+            y += RowH + 7;
             shown++;
         }
 
@@ -2033,6 +2052,39 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, note, new Vector2(panel.X + Pad, panel.Bottom - 46), new Color(200, 180, 100), 0.65f);
     }
 
+
+    private static void GiveItemToRemotePlayer(Player target, bool tenfoldBatch)
+    {
+        if (target == null || !target.active)
+        {
+            SetStatus("El jugador seleccionado ya no está conectado.");
+            return;
+        }
+
+        if (!IsServer || !InMultiplayer)
+        {
+            SetStatus("Dar objetos a otro jugador requiere multijugador con TShock y permisos de /give.");
+            return;
+        }
+
+        string query = (itemQuery ?? "").Trim();
+        int itemId = ResolveItemId(query);
+        if (itemId <= 0 || itemId >= ItemID.Count)
+        {
+            SetStatus("Primero ve a Ítems y escribe un nombre o ID válido; después vuelve aquí.");
+            return;
+        }
+
+        int requested = int.TryParse(itemAmount, out int parsedAmount) && parsedAmount > 0
+            ? Math.Clamp(parsedAmount, 1, 9999)
+            : 1;
+        int amount = tenfoldBatch ? (int)Math.Min(9999L, (long)requested * 10L) : requested;
+
+        // Un solo comando por clic: el servidor valida permisos y entrega el objeto.
+        // El lote x10 está limitado para evitar inundar el chat de comandos.
+        SendCmd($"/give {Quote(target.name)} {itemId} {amount}");
+        SetStatus($"Solicitud enviada: {amount} × {Lang.GetItemNameValue(itemId)} para {target.name}. Requiere TShock y permiso /give.");
+    }
 
     // ------------------------------------------------------------------ Informacion del mundo y jugador
 
