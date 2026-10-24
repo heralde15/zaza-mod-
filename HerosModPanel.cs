@@ -748,14 +748,28 @@ internal static partial class HerosModPanel
     // Reflection evita acoplar el panel a una firma concreta entre revisiones de Unified.
     private static bool ApplyUnrestrictedAdventurePermissions(bool enable)
     {
+        // Busca la API en el mismo ensamblado cargado de Terraria; Type.GetType con nombre de
+        // ensamblado fijo falla en algunas compilaciones de Terraria Unified.
         try
         {
-            Type managerType = Type.GetType("Terraria.GameContent.Creative.CreativePowerManager, Terraria");
+            Type managerType = typeof(Player).Assembly.GetType("Terraria.GameContent.Creative.CreativePowerManager")
+                ?? Type.GetType("Terraria.GameContent.Creative.CreativePowerManager, Terraria")
+                ?? AppDomain.CurrentDomain.GetAssemblies()
+                    .Select(a => a.GetType("Terraria.GameContent.Creative.CreativePowerManager", false))
+                    .FirstOrDefault(t => t != null);
             if (managerType == null)
                 return false;
 
-            PropertyInfo instanceProperty = managerType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
-            object manager = instanceProperty?.GetValue(null);
+            object manager = null;
+            PropertyInfo instanceProperty = managerType.GetProperty("Instance", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (instanceProperty != null)
+                manager = instanceProperty.GetValue(null);
+            if (manager == null)
+            {
+                FieldInfo instanceField = managerType.GetField("Instance", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (instanceField != null)
+                    manager = instanceField.GetValue(null);
+            }
             if (manager == null)
                 return false;
 
@@ -767,38 +781,54 @@ internal static partial class HerosModPanel
             while (pending.Count > 0)
             {
                 object current = pending.Pop();
-                if (current == null || !visited.Add(current))
+                if (current == null || current is string || current.GetType().IsPrimitive || current.GetType().IsEnum)
+                    continue;
+                if (!current.GetType().IsValueType && !visited.Add(current))
                     continue;
 
                 Type type = current.GetType();
-                if (type.IsEnum || type.IsPrimitive || current is string)
-                    continue;
-
-                if (type.Name.Contains("CreativePower") || type.GetInterfaces().Any(i => i.Name == "ICreativePower"))
+                bool isCreativePower = type.Name.IndexOf("CreativePower", StringComparison.OrdinalIgnoreCase) >= 0
+                    || type.GetInterfaces().Any(i => i.Name == "ICreativePower");
+                if (isCreativePower)
                 {
                     Type permissionType = type.GetProperty("CurrentPermissionLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.PropertyType
                         ?? type.GetMethod("SetPermissionLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetParameters().FirstOrDefault()?.ParameterType;
                     if (permissionType != null && permissionType.IsEnum)
                     {
+                        string[] names = Enum.GetNames(permissionType);
                         string wanted = enable
-                            ? (Enum.GetNames(permissionType).FirstOrDefault(n => n.Contains("Everyone") && !n.Contains("Locked")) ?? Enum.GetNames(permissionType).FirstOrDefault(n => n.Contains("CanBeChangedByEveryone")))
-                            : Enum.GetNames(permissionType).FirstOrDefault(n => n.Contains("CanBeChangedByHostAlone"));
+                            ? names.FirstOrDefault(n => n.IndexOf("Everyone", StringComparison.OrdinalIgnoreCase) >= 0
+                                && n.IndexOf("Locked", StringComparison.OrdinalIgnoreCase) < 0)
+                                ?? names.FirstOrDefault(n => n.IndexOf("CanBeChangedByEveryone", StringComparison.OrdinalIgnoreCase) >= 0)
+                            : names.FirstOrDefault(n => n.IndexOf("CanBeChangedByHostAlone", StringComparison.OrdinalIgnoreCase) >= 0)
+                                ?? names.FirstOrDefault(n => n.IndexOf("Host", StringComparison.OrdinalIgnoreCase) >= 0
+                                    && n.IndexOf("Locked", StringComparison.OrdinalIgnoreCase) < 0);
                         if (wanted != null)
                         {
                             object value = Enum.Parse(permissionType, wanted);
-                            PropertyInfo permissionProperty = type.GetProperty("CurrentPermissionLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                            if (permissionProperty?.CanWrite == true)
+                            try
                             {
-                                permissionProperty.SetValue(current, value);
-                                changed = true;
+                                PropertyInfo permissionProperty = type.GetProperty("CurrentPermissionLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                                if (permissionProperty?.CanWrite == true)
+                                {
+                                    permissionProperty.SetValue(current, value);
+                                    changed = true;
+                                }
                             }
-                            MethodInfo setter = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                                .FirstOrDefault(m => m.Name == "SetPermissionLevel" && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == permissionType);
-                            if (setter != null)
+                            catch { }
+
+                            try
                             {
-                                setter.Invoke(current, new[] { value });
-                                changed = true;
+                                MethodInfo setter = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                                    .FirstOrDefault(m => m.Name == "SetPermissionLevel" && m.GetParameters().Length == 1
+                                        && m.GetParameters()[0].ParameterType == permissionType);
+                                if (setter != null)
+                                {
+                                    setter.Invoke(current, new[] { value });
+                                    changed = true;
+                                }
                             }
+                            catch { }
                         }
                     }
                 }
@@ -814,18 +844,36 @@ internal static partial class HerosModPanel
                         if (entry != null) pending.Push(entry);
                 }
 
-                foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                const BindingFlags instanceFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+                foreach (FieldInfo field in type.GetFields(instanceFlags))
                 {
                     if (field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(string))
                         continue;
                     try
                     {
                         object value = field.GetValue(current);
-                        if (value != null && value != current) pending.Push(value);
+                        if (value != null && !ReferenceEquals(value, current))
+                            pending.Push(value);
+                    }
+                    catch { }
+                }
+
+                foreach (PropertyInfo property in type.GetProperties(instanceFlags))
+                {
+                    if (!property.CanRead || property.GetIndexParameters().Length != 0
+                        || property.PropertyType.IsPrimitive || property.PropertyType.IsEnum
+                        || property.PropertyType == typeof(string))
+                        continue;
+                    try
+                    {
+                        object value = property.GetValue(current);
+                        if (value != null && !ReferenceEquals(value, current))
+                            pending.Push(value);
                     }
                     catch { }
                 }
             }
+
             return changed;
         }
         catch
