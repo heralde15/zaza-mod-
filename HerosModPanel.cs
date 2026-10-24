@@ -437,6 +437,62 @@ internal static partial class HerosModPanel
 
     private static bool Clicked => Main.mouseLeft && Main.mouseLeftRelease;
 
+    private static void DisableAllActiveFeatures()
+    {
+        // Apaga funciones activas sin borrar datos, selecciones, clips ni ajustes guardados.
+        godmodeEnabled = false;
+        npcShopFreeEnabled = false;
+        luckBoostEnabled = false;
+        ghostModeEnabled = false;
+        adventureUnrestrictedEnabled = false;
+        noSpawnsEnabled = false;
+        flyEnabled = false;
+        radialProjectileMode = false;
+        infiniteMinionsEnabled = false;
+        lifeLockEnabled = false;
+        defenseOverrideEnabled = false;
+        antiLagEnabled = false;
+        antiEffectsEnabled = false;
+        antiLagProjectilesEnabled = false;
+        fpsStabilizerEnabled = false;
+        editorAutoReuse = false;
+        editorConsumable = false;
+        editorFavorite = false;
+        editorChannel = false;
+        editorMelee = false;
+        editorMagic = false;
+        editorRanged = false;
+        editorSummon = false;
+        editorNoWet = false;
+        editorNotAmmo = false;
+        editorUseTurn = false;
+        editorNoMelee = false;
+        editorNoUseGraphic = false;
+
+        // Restaurar los valores que estas funciones modifican temporalmente.
+        try
+        {
+            if (muteGameSoundsEnabled)
+                Main.soundVolume = Math.Clamp(soundVolumeBeforeMute, 0f, 1f);
+        }
+        catch { }
+        muteGameSoundsEnabled = false;
+        try { RestoreShopPrices(); } catch { }
+        try { RestoreLuckValue(); } catch { }
+        try
+        {
+            if (!IsServer && Main.LocalPlayer != null && Main.LocalPlayer.active)
+                Main.LocalPlayer.creativeGodMode = false;
+        }
+        catch { }
+
+        journeyResearchRunning = false;
+        journeyResearchTracker = null;
+        journeyResearchSetter = null;
+        SetStatus("Todas las funciones activas se desactivaron. No se borraron selecciones, clips ni ajustes guardados.");
+        SaveSettingsIfChanged(true);
+    }
+
     public static void UpdateLogic()
     {
         if (Main.dedServ || Main.gameMenu)
@@ -637,6 +693,11 @@ internal static partial class HerosModPanel
         if (DrawButton(sb, pixel, new Rectangle(panelRect.Right - 218, panelRect.Y + 8, 180, 24), modeText, mouse, modeColor))
         {
             ToggleServerMode();
+        }
+
+        if (DrawButton(sb, pixel, new Rectangle(panelRect.Right - 335, panelRect.Y + 8, 108, 24), "Desactivar todo", mouse, new Color(145, 55, 55)))
+        {
+            DisableAllActiveFeatures();
         }
 
         var closeRect = new Rectangle(panelRect.Right - 30, panelRect.Y + 8, 22, 24);
