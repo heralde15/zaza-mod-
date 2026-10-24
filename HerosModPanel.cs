@@ -80,6 +80,16 @@ internal static partial class HerosModPanel
     private static Vector2 dragOffset;
 
     private static bool godmodeEnabled;
+    // Opciones de NPC/tiendas aplicadas de forma reversible mediante reflexión para mantener compatibilidad.
+    private static bool npcShopFreeEnabled;
+    private static bool luckBoostEnabled;
+    private static bool luckOriginalCaptured;
+    private static float luckOriginalValue;
+    private static object luckPlayerRef;
+    private static object shoppingSettingsRef;
+    private static object shoppingAdjustmentOriginal;
+    private static bool shoppingAdjustmentCaptured;
+    private static readonly Dictionary<object, object> shopPriceOriginals = new();
     // Modo fantasma visual local: oculta al jugador sin usar el estado de muerte/ghost de Terraria.
     private static bool ghostModeEnabled;
     private static bool adventureUnrestrictedEnabled;
@@ -435,6 +445,8 @@ internal static partial class HerosModPanel
         EnsureSettingsLoaded();
         ProcessJourneyResearchUnlock();
         ApplySoundMuteSetting();
+        ApplyNpcShopFreeSetting();
+        ApplyLuckBoostSetting();
         if (++settingsSaveCounter >= 30)
         {
             settingsSaveCounter = 0;
@@ -3550,7 +3562,47 @@ internal static partial class HerosModPanel
     // En servidores remotos, el servidor conserva la autoridad sobre las entidades.
     private static void DrawNPCsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Administrador de NPC");
+        DrawSectionHeader(sb, panel, ref y, "Administrador de NPC · Tiendas y suerte");
+        int optionGap = 6;
+        int optionW = (panel.Width - Pad * 2 - optionGap) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, optionW, RowH),
+            "Tienda gratis: " + (npcShopFreeEnabled ? "ACTIVA" : "OFF"), mouse,
+            npcShopFreeEnabled ? new Color(35, 125, 75) : new Color(55, 65, 85)))
+        {
+            npcShopFreeEnabled = !npcShopFreeEnabled;
+            if (!npcShopFreeEnabled) RestoreShopPrices();
+            SetStatus(npcShopFreeEnabled
+                ? "Tienda gratis activada. Abre una tienda NPC; el resultado depende de la versión y de la autoridad del servidor."
+                : "Tienda gratis desactivada; se restauraron los precios que el panel pudo guardar.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + optionW + optionGap, y, optionW, RowH),
+            "Suerte máxima: " + (luckBoostEnabled ? "ACTIVA" : "OFF"), mouse,
+            luckBoostEnabled ? new Color(35, 125, 75) : new Color(55, 65, 85)))
+        {
+            if (!luckBoostEnabled)
+            {
+                luckOriginalCaptured = false;
+                luckPlayerRef = null;
+            }
+            luckBoostEnabled = !luckBoostEnabled;
+            SetStatus(luckBoostEnabled
+                ? "Suerte aumentada activada; se aplicará localmente mientras el panel esté activo."
+                : "Suerte aumentada desactivada; se intentará restaurar el valor anterior.");
+        }
+        y += RowH + 5;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, optionW, RowH), "Restaurar suerte base", mouse, new Color(75, 85, 115)))
+        {
+            luckBoostEnabled = false;
+            RestoreLuckValue();
+            SetStatus("Se desactivó la suerte aumentada y se restauró el valor guardado cuando fue posible.");
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + optionW + optionGap, y, optionW, RowH), "Restaurar precios guardados", mouse, new Color(85, 75, 100)))
+        {
+            npcShopFreeEnabled = false;
+            RestoreShopPrices();
+            SetStatus("Se desactivó tienda gratis y se restauraron los precios guardados por el panel.");
+        }
+        y += RowH + 9;
         Utils.DrawBorderString(sb, "Invocación rápida cerca de tu personaje:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
         y += 24;
         int gap = 8;
@@ -3586,6 +3638,169 @@ internal static partial class HerosModPanel
             Utils.DrawBorderString(sb, "No hay NPC activos.", new Vector2(panel.X + Pad, y), Color.Gray, 0.7f);
         Utils.DrawBorderString(sb, "En multijugador, los cambios locales pueden ser rechazados por el servidor.",
             new Vector2(panel.X + Pad, panel.Bottom - 36), new Color(230, 190, 100), 0.58f);
+    }
+
+    // Aplica la opción de tienda sin depender de nombres de API concretos entre versiones.
+    // Los precios originales se guardan y restauran al apagar la opción.
+    private static object GetReflectedMember(object target, string name)
+    {
+        if (target == null) return null;
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        Type type = target.GetType();
+        try
+        {
+            FieldInfo field = type.GetField(name, flags);
+            if (field != null) return field.GetValue(target);
+        }
+        catch { }
+        try
+        {
+            PropertyInfo property = type.GetProperty(name, flags);
+            if (property != null && property.CanRead && property.GetIndexParameters().Length == 0)
+                return property.GetValue(target);
+        }
+        catch { }
+        return null;
+    }
+
+    private static bool SetReflectedMember(object target, string name, object value)
+    {
+        if (target == null) return false;
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        Type type = target.GetType();
+        try
+        {
+            FieldInfo field = type.GetField(name, flags);
+            if (field != null && !field.IsInitOnly)
+            {
+                Type targetType = Nullable.GetUnderlyingType(field.FieldType) ?? field.FieldType;
+                object converted = value == null ? null : Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+                field.SetValue(target, converted);
+                return true;
+            }
+        }
+        catch { }
+        try
+        {
+            PropertyInfo property = type.GetProperty(name, flags);
+            if (property != null && property.CanWrite && property.GetIndexParameters().Length == 0)
+            {
+                Type targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                object converted = value == null ? null : Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+                property.SetValue(target, converted);
+                return true;
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    private static void ApplyNpcShopFreeSetting()
+    {
+        if (!npcShopFreeEnabled) return;
+        try
+        {
+            // Main.instance.shop[Main.npcShop].item[] es la tienda abierta en Terraria vanilla.
+            object mainInstance = Main.instance;
+            object shopCollection = GetReflectedMember(mainInstance, "shop");
+            object shopIndexValue = GetReflectedMember(typeof(Main), "npcShop");
+            int shopIndex = shopIndexValue is int index ? index : -1;
+            if (shopCollection is Array shops && shopIndex >= 0 && shopIndex < shops.Length)
+            {
+                object shop = shops.GetValue(shopIndex);
+                object itemsObject = GetReflectedMember(shop, "item");
+                if (itemsObject is Array items)
+                {
+                    foreach (object item in items)
+                    {
+                        if (item == null || GetReflectedMember(item, "IsAir") is bool isAir && isAir) continue;
+                        object original = GetReflectedMember(item, "shopCustomPrice");
+                        if (!shopPriceOriginals.ContainsKey(item))
+                            shopPriceOriginals[item] = original ?? DBNull.Value;
+                        // 0 indica precio gratuito en las versiones que exponen shopCustomPrice.
+                        SetReflectedMember(item, "shopCustomPrice", 0);
+                    }
+                }
+            }
+
+            // Fallback para versiones donde la tienda usa PriceAdjustment.
+            Player player = Main.LocalPlayer;
+            object settings = GetReflectedMember(player, "currentShoppingSettings");
+            if (settings != null)
+            {
+                if (!ReferenceEquals(settings, shoppingSettingsRef))
+                {
+                    shoppingSettingsRef = settings;
+                    shoppingAdjustmentOriginal = GetReflectedMember(settings, "PriceAdjustment");
+                    shoppingAdjustmentCaptured = shoppingAdjustmentOriginal != null;
+                }
+                SetReflectedMember(settings, "PriceAdjustment", 0f);
+            }
+        }
+        catch
+        {
+            // No propagar fallos de reflexión al hilo de dibujo/juego.
+        }
+    }
+
+    private static void RestoreShopPrices()
+    {
+        foreach (KeyValuePair<object, object> entry in shopPriceOriginals)
+        {
+            try
+            {
+                if (entry.Value == DBNull.Value)
+                    SetReflectedMember(entry.Key, "shopCustomPrice", null);
+                else
+                    SetReflectedMember(entry.Key, "shopCustomPrice", entry.Value);
+            }
+            catch { }
+        }
+        shopPriceOriginals.Clear();
+        if (shoppingAdjustmentCaptured && shoppingSettingsRef != null && shoppingAdjustmentOriginal != null)
+            SetReflectedMember(shoppingSettingsRef, "PriceAdjustment", shoppingAdjustmentOriginal);
+        shoppingSettingsRef = null;
+        shoppingAdjustmentOriginal = null;
+        shoppingAdjustmentCaptured = false;
+    }
+
+    private static void ApplyLuckBoostSetting()
+    {
+        if (!luckBoostEnabled)
+        {
+            RestoreLuckValue();
+            return;
+        }
+
+        try
+        {
+            Player player = Main.LocalPlayer;
+            if (player == null || !player.active) return;
+            object current = GetReflectedMember(player, "luck");
+            if (current == null) return;
+            if (!luckOriginalCaptured || !ReferenceEquals(luckPlayerRef, player))
+            {
+                if (float.TryParse(Convert.ToString(current, CultureInfo.InvariantCulture), NumberStyles.Float,
+                    CultureInfo.InvariantCulture, out float original))
+                {
+                    luckOriginalValue = original;
+                    luckOriginalCaptured = true;
+                    luckPlayerRef = player;
+                }
+            }
+            // Terraria normalmente limita la suerte a un rango aproximado de -1 a +1.
+            SetReflectedMember(player, "luck", 1f);
+        }
+        catch { }
+    }
+
+    private static void RestoreLuckValue()
+    {
+        if (!luckOriginalCaptured || luckPlayerRef == null) return;
+        try { SetReflectedMember(luckPlayerRef, "luck", luckOriginalValue); }
+        catch { }
+        luckOriginalCaptured = false;
+        luckPlayerRef = null;
     }
 
     private static void SpawnPanelNpc(int id)
