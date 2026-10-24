@@ -3063,7 +3063,7 @@ internal static partial class HerosModPanel
                 Tile source = worldEditClipboard[xx, yy];
                 if (current == null || source == null) continue;
                 worldEditUndo.Add((worldX, worldY, (Tile)current.Clone()));
-                Main.tile[worldX, worldY] = (Tile)source.Clone();
+                current.CopyFrom(source);
                 changed++;
             }
 
