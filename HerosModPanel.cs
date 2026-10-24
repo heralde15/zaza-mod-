@@ -1118,6 +1118,47 @@ internal static partial class HerosModPanel
         DrawSectionHeader(sb, panel, ref y, "Modificaciones del Jugador");
         int btnW = (Width - (Pad * 2) - 8) / 2;
 
+        int clientUtilityW = (Width - Pad * 2 - 8) / 2;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, clientUtilityW, RowH), "Cliente: limpiar efectos negativos", mouse, new Color(75, 95, 125)))
+        {
+            if (IsServer)
+            {
+                SetStatus("Esta herramienta es solo para el cliente; úsala desde un jugador conectado.");
+            }
+            else
+            {
+                Player localPlayer = Main.LocalPlayer;
+                int removedDebuffs = 0;
+                for (int buffIndex = 0; buffIndex < localPlayer.buffType.Length; buffIndex++)
+                {
+                    int buffType = localPlayer.buffType[buffIndex];
+                    if (buffType > 0 && localPlayer.buffTime[buffIndex] > 0 && Main.debuff[buffType])
+                    {
+                        localPlayer.DelBuff(buffIndex);
+                        removedDebuffs++;
+                        buffIndex--;
+                    }
+                }
+                SetStatus($"Limpieza local completada: {removedDebuffs} efectos negativos eliminados. En multijugador el servidor puede restaurarlos.");
+            }
+        }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + clientUtilityW + 8, y, clientUtilityW, RowH), "Cliente: restaurar vida/maná", mouse, new Color(45, 105, 85)))
+        {
+            if (IsServer)
+            {
+                SetStatus("La restauración local no se puede ejecutar desde el servidor dedicado.");
+            }
+            else
+            {
+                Player localPlayer = Main.LocalPlayer;
+                localPlayer.statLife = localPlayer.statLifeMax2;
+                localPlayer.statMana = localPlayer.statManaMax2;
+                SyncSelf();
+                SetStatus("Vida y maná restaurados localmente; en multijugador el servidor decide el estado final.");
+            }
+        }
+        y += RowH + 6;
+
         string godText = godmodeEnabled ? "God Mode Zaza: ACTIVADO" : "God Mode Zaza: desactivado";
         Color godColor = godmodeEnabled ? UiAccent : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), godText, mouse, godColor))
@@ -1635,7 +1676,9 @@ internal static partial class HerosModPanel
     {
         DrawSectionHeader(sb, panel, ref y, "Invocador de jefes — sin cooldown ni límite de uso");
         int gap = 5;
-        int columns = 3;
+        int columns = 4;
+        int bossButtonHeight = Math.Max(22, RowH - 5);
+        int bossRowGap = 3;
         int btnW = (Width - Pad * 2 - gap * (columns - 1)) / columns;
         int row = 0;
 
@@ -1668,12 +1711,23 @@ internal static partial class HerosModPanel
         {
             int col = row % columns;
             int line = row / columns;
-            var rect = new Rectangle(panel.X + Pad + col * (btnW + gap), y + line * (RowH + 4), btnW, RowH);
+            var rect = new Rectangle(panel.X + Pad + col * (btnW + gap), y + line * (bossButtonHeight + bossRowGap), btnW, bossButtonHeight);
             if (DrawButton(sb, pixel, rect, boss.name, mouse))
                 SpawnBoss(boss.id, boss.name, "");
             row++;
         }
-        y += ((row + columns - 1) / columns) * (RowH + 4) + 6;
+        int bossRows = (row + columns - 1) / columns;
+        y += bossRows * (bossButtonHeight + bossRowGap) + 7;
+
+        int activeBosses = 0;
+        foreach (NPC npc in Main.npc)
+        {
+            if (npc != null && npc.active && npc.boss)
+                activeBosses++;
+        }
+        Utils.DrawBorderString(sb, $"Jefes activos: {activeBosses}  ·  Botones directos en un jugador; multijugador depende del servidor.",
+            new Vector2(panel.X + Pad, y), activeBosses > 0 ? new Color(255, 190, 105) : Color.LightGray, 0.62f);
+        y += 20;
 
         DrawSectionHeader(sb, panel, ref y, "Progreso de jefes del mundo");
         DrawBossState(sb, panel, ref y, "Rey Slime", NPC.downedSlimeKing);
@@ -4155,11 +4209,25 @@ internal static partial class HerosModPanel
 
     private static void SpawnBoss(int npcId, string bossName, string tshockName)
     {
-        // En un jugador, la invocación directa funciona localmente.
+        // Validación defensiva: una invocación inválida no debe tumbar el cliente.
+        if (npcId <= 0 || npcId >= Main.npc.Length)
+        {
+            SetStatus($"No se puede invocar {bossName}: ID de NPC fuera de rango en esta versión.");
+            return;
+        }
+
+        // En un jugador, usar la API vanilla con protección ante IDs no disponibles.
         if (Main.netMode == 0)
         {
-            NPC.SpawnOnPlayer(Main.myPlayer, npcId);
-            SetStatus($"¡{bossName} ha sido invocado!");
+            try
+            {
+                NPC.SpawnOnPlayer(Main.myPlayer, npcId);
+                SetStatus($"Solicitud de invocación enviada: {bossName}. Si no aparece, revisa la versión/mods.");
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"No se pudo invocar {bossName}: {ex.GetType().Name}. El juego continúa.");
+            }
             return;
         }
 
@@ -4172,19 +4240,22 @@ internal static partial class HerosModPanel
             // para jefes/eventos no cubiertos, intentar /spawnmob con el ID vanilla.
             string bossAlias = npcId switch
             {
-                50 => "king",
-                4 => "eye",
-                13 => "eater",
-                266 => "brain",
+                50 => "king slime",
+                4 => "eye of cthulhu",
+                13 => "eater of worlds",
+                266 => "brain of cthulhu",
                 35 => "skeletron",
-                222 => "queen",
-                113 => "wall",
-                125 => "twins",
-                134 => "destroyer",
-                127 => "prime",
+                222 => "queen bee",
+                113 => "wall of flesh",
+                657 => "queen slime",
+                125 => "the twins",
+                134 => "the destroyer",
+                127 => "skeletron prime",
                 262 => "plantera",
                 245 => "golem",
-                370 => "fishron",
+                370 => "duke fishron",
+                439 => "lunatic cultist",
+                398 => "moon lord",
                 _ => ""
             };
 
