@@ -2862,132 +2862,144 @@ internal static partial class HerosModPanel
 
     // ------------------------------------------------------------------ WorldEdit basico local
 
+    private static int worldEditUiPage;
+
     private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "WorldEdit · selección, archivos y edición");
+        DrawSectionHeader(sb, panel, ref y, "WorldEdit · editor organizado por páginas");
         int bx = panel.X + Pad;
         int bw = (Width - Pad * 2 - 8) / 2;
-        string p1 = worldPos1.HasValue ? $"{worldPos1.Value.X}, {worldPos1.Value.Y}" : "Sin seleccionar";
-        string p2 = worldPos2.HasValue ? $"{worldPos2.Value.X}, {worldPos2.Value.Y}" : "Sin seleccionar";
-        DrawInfoLine(sb, panel, ref y, "POS1", p1);
-        DrawInfoLine(sb, panel, ref y, "POS2", p2);
-        if (worldPos1.HasValue && worldPos2.HasValue)
+        int navGap = 4;
+        int navW = (Width - Pad * 2 - navGap * 3) / 4;
+        string[] pageNames = { "Selección", "Bloques", "Copiar/Líquidos", "Archivos" };
+        for (int page = 0; page < pageNames.Length; page++)
         {
-            int areaWidth = Math.Abs(worldPos1.Value.X - worldPos2.Value.X) + 1;
-            int areaHeight = Math.Abs(worldPos1.Value.Y - worldPos2.Value.Y) + 1;
-            long areaTiles = (long)areaWidth * areaHeight;
-            DrawInfoLine(sb, panel, ref y, "Área seleccionada", $"{areaWidth} × {areaHeight} tiles ({areaTiles:N0} tiles)");
+            var navRect = new Rectangle(bx + page * (navW + navGap), y, navW, 25);
+            if (DrawButton(sb, pixel, navRect, pageNames[page], mouse,
+                worldEditUiPage == page ? UiAccent : new Color(45, 50, 68)))
+                worldEditUiPage = page;
+        }
+        y += 32;
+
+        if (worldEditUiPage == 0)
+        {
+            string p1 = worldPos1.HasValue ? $"{worldPos1.Value.X}, {worldPos1.Value.Y}" : "Sin seleccionar";
+            string p2 = worldPos2.HasValue ? $"{worldPos2.Value.X}, {worldPos2.Value.Y}" : "Sin seleccionar";
+            DrawInfoLine(sb, panel, ref y, "POS1", p1);
+            DrawInfoLine(sb, panel, ref y, "POS2", p2);
+            if (worldPos1.HasValue && worldPos2.HasValue)
+            {
+                int areaWidth = Math.Abs(worldPos1.Value.X - worldPos2.Value.X) + 1;
+                int areaHeight = Math.Abs(worldPos1.Value.Y - worldPos2.Value.Y) + 1;
+                long areaTiles = (long)areaWidth * areaHeight;
+                DrawInfoLine(sb, panel, ref y, "Área seleccionada", $"{areaWidth} × {areaHeight} tiles ({areaTiles:N0})");
+            }
+            else DrawInfoLine(sb, panel, ref y, "Área seleccionada", "Marca POS1 y POS2 para calcularla");
+
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Marcar POS1 aquí", mouse, UiAccent))
+            {
+                Player p = Main.LocalPlayer;
+                worldPos1 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
+                SetStatus($"POS1: {worldPos1.Value.X}, {worldPos1.Value.Y}");
+            }
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Marcar POS2 aquí", mouse, UiAccent))
+            {
+                Player p = Main.LocalPlayer;
+                worldPos2 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
+                SetStatus($"POS2: {worldPos2.Value.X}, {worldPos2.Value.Y}");
+            }
+            y += RowH + 7;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Ampliar selección ×2", mouse, new Color(65, 90, 125)))
+                ScaleWorldEditSelection(2);
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Ampliar selección ×3", mouse, new Color(65, 90, 125)))
+                ScaleWorldEditSelection(3);
+            y += RowH + 6;
+            Utils.DrawBorderString(sb, "Minimapa ampliado · clic alterna POS1/POS2", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
+            y += 19;
+            int availableMapHeight = Math.Max(70, Math.Min(250, panel.Bottom - y - 48));
+            DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, availableMapHeight), mouse, true);
+            y += availableMapHeight + 7;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, RowH), "Borrar selección POS1/POS2", mouse, new Color(100, 65, 70)))
+            {
+                worldPos1 = null;
+                worldPos2 = null;
+                SetStatus("Selección borrada. Marca POS1 y POS2 otra vez.");
+            }
+        }
+        else if (worldEditUiPage == 1)
+        {
+            Utils.DrawBorderString(sb, "Tile ID (0 = aire/borrar):", new Vector2(bx, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Reemplazar tile ID:", new Vector2(bx + 250, y), Color.White, 0.68f);
+            y += 18;
+            DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 12, worldTileType, mouse, "1");
+            DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 13, worldReplaceType, mouse, "0");
+            y += 32;
+            Utils.DrawBorderString(sb, "Wall ID:", new Vector2(bx, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Reemplazar wall ID:", new Vector2(bx + 250, y), Color.White, 0.68f);
+            y += 18;
+            DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 27, worldWallType, mouse, "1");
+            DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 28, worldReplaceWallType, mouse, "0");
+            y += 32;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar selección", mouse, new Color(50, 105, 70))) ApplyWorldEdit("fill");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar tiles", mouse, new Color(135, 65, 60))) ApplyWorldEdit("clear");
+            y += RowH + 5;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar tile ID → ID", mouse, new Color(80, 75, 130))) ApplyWorldEdit("replace");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Contorno de tiles", mouse, new Color(65, 105, 135))) ApplyWorldEdit("outline");
+            y += RowH + 5;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar paredes", mouse, new Color(50, 105, 70))) ApplyWorldEdit("wallfill");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Borrar paredes", mouse, new Color(135, 65, 60))) ApplyWorldEdit("wallclear");
+            y += RowH + 5;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar wall ID", mouse, new Color(80, 75, 130))) ApplyWorldEdit("wallreplace");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse)) UndoWorldEdit();
+            y += RowH + 5;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar solo aire", mouse, new Color(45, 115, 85))) ApplyWorldEdit("airfill");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar interior", mouse, new Color(120, 75, 65))) ApplyWorldEdit("hollow");
+            y += RowH + 5;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Borrar tiles + paredes", mouse, new Color(145, 55, 55))) ApplyWorldEdit("clearall");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Limpiar selección", mouse))
+            {
+                worldPos1 = null;
+                worldPos2 = null;
+                SetStatus("Selección borrada.");
+            }
+        }
+        else if (worldEditUiPage == 2)
+        {
+            DrawSectionHeader(sb, panel, ref y, "Copiar y pegar · portapapeles");
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Copiar POS1 → POS2", mouse, new Color(65, 95, 145))) CopyWorldEditSelection();
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Pegar en POS1", mouse, new Color(55, 115, 80))) PasteWorldEditClipboard();
+            y += RowH + 5;
+            string clipboardInfo = worldEditClipboard == null
+                ? "Portapapeles vacío · copia una selección primero"
+                : $"Portapapeles: {worldEditClipboardWidth} × {worldEditClipboardHeight} tiles";
+            Utils.DrawBorderString(sb, clipboardInfo, new Vector2(bx, y), new Color(185, 220, 255), 0.62f);
+            y += 23;
+            DrawSectionHeader(sb, panel, ref y, "Líquidos · rellenar selección");
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar agua", mouse, new Color(45, 105, 175))) ApplyWorldEdit("liquidwater");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar líquidos", mouse, new Color(85, 95, 110))) ApplyWorldEdit("liquidclear");
+            y += RowH + 6;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar lava", mouse, new Color(170, 70, 45))) ApplyWorldEdit("liquidlava");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Rellenar miel", mouse, new Color(180, 135, 45))) ApplyWorldEdit("liquidhoney");
+            y += RowH + 6;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar shimmer", mouse, new Color(135, 85, 185))) ApplyWorldEdit("liquidshimmer");
+            y += RowH + 8;
+            Utils.DrawBorderString(sb, "Usa POS1 y POS2 para definir el área de los líquidos.", new Vector2(bx, y), new Color(190, 205, 225), 0.62f);
         }
         else
         {
-            DrawInfoLine(sb, panel, ref y, "Área seleccionada", "Marca POS1 y POS2 para calcular el área");
+            Utils.DrawBorderString(sb, "Archivo de construcción (.hws)", new Vector2(bx, y), UiAccent, 0.72f);
+            y += 22;
+            DrawTextField(sb, pixel, new Rectangle(bx, y, 220, 25), 26, schematicFileName, mouse, "nombre del archivo");
+            int fileButtonW = (Width - Pad * 2 - 240 - 8) / 2;
+            if (DrawButton(sb, pixel, new Rectangle(bx + 228, y, fileButtonW, 25), "Exportar", mouse, UiAccent)) ExportWorldSchematic();
+            if (DrawButton(sb, pixel, new Rectangle(bx + 228 + fileButtonW + 8, y, fileButtonW, 25), "Importar en POS1", mouse)) ImportWorldSchematic();
+            y += 34;
+            Utils.DrawBorderString(sb, worldSchematicStatus, new Vector2(bx, y), new Color(190, 220, 255), 0.62f);
+            y += 22;
+            Utils.DrawBorderString(sb, "Exporta la selección actual e importa la construcción desde POS1.", new Vector2(bx, y), Color.LightGray, 0.62f);
+            y += 22;
+            Utils.DrawBorderString(sb, "En multijugador el servidor puede revertir cambios locales.", new Vector2(bx, y), new Color(235, 195, 120), 0.62f);
         }
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Marcar POS1 aquí", mouse, UiAccent))
-        {
-            var p = Main.LocalPlayer;
-            worldPos1 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
-            SetStatus($"POS1: {worldPos1.Value.X}, {worldPos1.Value.Y}");
-        }
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Marcar POS2 aquí", mouse, UiAccent))
-        {
-            var p = Main.LocalPlayer;
-            worldPos2 = new Point((int)(p.Center.X / 16f), (int)(p.Center.Y / 16f));
-            SetStatus($"POS2: {worldPos2.Value.X}, {worldPos2.Value.Y}");
-        }
-        y += RowH + 8;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Ampliar selección ×2", mouse, new Color(65, 90, 125)))
-            ScaleWorldEditSelection(2);
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Ampliar selección ×3", mouse, new Color(65, 90, 125)))
-            ScaleWorldEditSelection(3);
-        y += RowH + 5;
-        Utils.DrawBorderString(sb, "MINIMAPA AMPLIADO · clic alterna POS1 y POS2 · detalle cercano", new Vector2(bx, y), new Color(145, 200, 240), 0.7f);
-        y += 19;
-        DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, 190), mouse, true);
-        y += 198;
-        Utils.DrawBorderString(sb, "Tile ID (0 = aire/borrar):", new Vector2(bx, y), Color.White, 0.7f);
-        Utils.DrawBorderString(sb, "Reemplazar tile ID:", new Vector2(bx + 250, y), Color.White, 0.7f);
-        y += 18;
-        DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 12, worldTileType, mouse, "1");
-        DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 13, worldReplaceType, mouse, "0");
-        y += 33;
-        Utils.DrawBorderString(sb, "Wall ID:", new Vector2(bx, y), Color.White, 0.7f);
-        Utils.DrawBorderString(sb, "Reemplazar wall ID:", new Vector2(bx + 250, y), Color.White, 0.7f);
-        y += 18;
-        DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 27, worldWallType, mouse, "1");
-        DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 28, worldReplaceWallType, mouse, "0");
-        y += 33;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Fill selección", mouse, new Color(50, 105, 70)))
-            ApplyWorldEdit("fill");
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Clear selección", mouse, new Color(135, 65, 60)))
-            ApplyWorldEdit("clear");
-        y += RowH + 7;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Replace tile ID → ID", mouse, new Color(80, 75, 130)))
-            ApplyWorldEdit("replace");
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Contorno de tiles", mouse, new Color(65, 105, 135)))
-            ApplyWorldEdit("outline");
-        y += RowH + 7;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar paredes", mouse, new Color(50, 105, 70)))
-            ApplyWorldEdit("wallfill");
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Borrar paredes", mouse, new Color(135, 65, 60)))
-            ApplyWorldEdit("wallclear");
-        y += RowH + 7;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar wall ID", mouse, new Color(80, 75, 130)))
-            ApplyWorldEdit("wallreplace");
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse))
-            UndoWorldEdit();
-        y += RowH + 7;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar solo aire", mouse, new Color(45, 115, 85)))
-            ApplyWorldEdit("airfill");
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar interior", mouse, new Color(120, 75, 65)))
-            ApplyWorldEdit("hollow");
-        y += RowH + 7;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Borrar tiles + paredes", mouse, new Color(145, 55, 55)))
-            ApplyWorldEdit("clearall");
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Rehacer selección POS1/POS2", mouse, new Color(65, 85, 125)))
-        {
-            worldPos1 = null;
-            worldPos2 = null;
-            SetStatus("Selección borrada. Marca POS1 y POS2 otra vez.");
-        }
-        y += RowH + 7;
-        DrawSectionHeader(sb, panel, ref y, "Copiar y pegar · portapapeles de tiles");
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Copiar POS1 → POS2", mouse, new Color(65, 95, 145)))
-            CopyWorldEditSelection();
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Pegar en POS1", mouse, new Color(55, 115, 80)))
-            PasteWorldEditClipboard();
-        y += RowH + 5;
-        string clipboardInfo = worldEditClipboard == null
-            ? "Portapapeles vacío · copia una selección primero"
-            : $"Portapapeles: {worldEditClipboardWidth} × {worldEditClipboardHeight} tiles";
-        Utils.DrawBorderString(sb, clipboardInfo, new Vector2(bx, y), new Color(185, 220, 255), 0.62f);
-        y += 19;
-        DrawSectionHeader(sb, panel, ref y, "Líquidos · rellenar selección");
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar agua", mouse, new Color(45, 105, 175)))
-            ApplyWorldEdit("liquidwater");
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar líquidos", mouse, new Color(85, 95, 110)))
-            ApplyWorldEdit("liquidclear");
-        y += RowH + 6;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar lava", mouse, new Color(170, 70, 45)))
-            ApplyWorldEdit("liquidlava");
-        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Rellenar miel", mouse, new Color(180, 135, 45)))
-            ApplyWorldEdit("liquidhoney");
-        y += RowH + 6;
-        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar shimmer", mouse, new Color(135, 85, 185)))
-            ApplyWorldEdit("liquidshimmer");
-        y += RowH + 7;
-        Utils.DrawBorderString(sb, "Archivo de construcción (.hws):", new Vector2(bx, y), UiAccent, 0.68f);
-        y += 17;
-        DrawTextField(sb, pixel, new Rectangle(bx, y, 220, 25), 26, schematicFileName, mouse, "nombre del archivo");
-        int fileButtonW = (Width - Pad * 2 - 240 - 8) / 2;
-        if (DrawButton(sb, pixel, new Rectangle(bx + 228, y, fileButtonW, 25), "Exportar", mouse, UiAccent))
-            ExportWorldSchematic();
-        if (DrawButton(sb, pixel, new Rectangle(bx + 228 + fileButtonW + 8, y, fileButtonW, 25), "Importar en POS1", mouse))
-            ImportWorldSchematic();
-        y += 30;
-        Utils.DrawBorderString(sb, worldSchematicStatus, new Vector2(bx, y), new Color(190, 220, 255), 0.62f);
-        y += 17;
-        Utils.DrawBorderString(sb, "Los .hws guardan tiles; en multijugador el servidor puede revertir cambios.",
-            new Vector2(bx, panel.Bottom - 22), new Color(235, 195, 120), 0.62f);
     }
 
     private static void CopyWorldEditSelection()
