@@ -652,10 +652,11 @@ internal static partial class HerosModPanel
         ];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
+        // Separadores finos y etiquetas de sección para una navegación más parecida a Terraria/Calamity.
         for (int row = 0; row < tabGroups.Length; row++)
         {
             int labelY = panelRect.Y + 44 + row * 34;
-            Utils.DrawBorderString(sb, groupLabels[row], new Vector2(panelRect.X + Pad + 2, labelY), new Color(155, 166, 190), 0.52f);
+            Utils.DrawBorderString(sb, groupLabels[row], new Vector2(panelRect.X + Pad + 2, labelY), new Color(190, 175, 220), 0.52f);
             for (int col = 0; col < tabGroups[row].Length; col++)
             {
                 Tab tab = tabGroups[row][col];
@@ -2968,9 +2969,12 @@ internal static partial class HerosModPanel
             y += RowH + 6;
             Utils.DrawBorderString(sb, "Minimapa ampliado · clic alterna POS1/POS2", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
             y += 19;
-            int availableMapHeight = Math.Max(70, Math.Min(250, panel.Bottom - y - 48));
+            // Reservar espacio para el botón inferior y el mensaje de estado; el minimapa
+            // se adapta a pantallas bajas en lugar de dibujarse fuera del panel.
+            int mapSpace = Math.Max(42, panel.Bottom - y - RowH - 62);
+            int availableMapHeight = Math.Clamp(mapSpace, 42, 190);
             DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, availableMapHeight), mouse, true);
-            y += availableMapHeight + 7;
+            y += availableMapHeight + 5;
             if (DrawButton(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, RowH), "Borrar selección POS1/POS2", mouse, new Color(100, 65, 70)))
             {
                 worldPos1 = null;
@@ -4136,7 +4140,9 @@ internal static partial class HerosModPanel
         while (fittedTitle.Length > 1 && font.MeasureString(fittedTitle).X * 0.82f > maxWidth)
             fittedTitle = fittedTitle.Substring(0, fittedTitle.Length - 2) + "…";
         Utils.DrawBorderString(sb, fittedTitle, new Vector2(panel.X + Pad, y), UiAccent, 0.82f);
-        y += 22;
+        int ruleY = y + 19;
+        sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(panel.X + Pad, ruleY, Math.Max(1, panel.Width - Pad * 2), 1), UiAccent * 0.38f);
+        y += 23;
     }
 
     private static Color UiAccent => UiAccents[Math.Clamp(uiTheme, 0, UiAccents.Length - 1)];
@@ -4147,8 +4153,17 @@ internal static partial class HerosModPanel
     private static bool DrawButton(SpriteBatch sb, Texture2D pixel, Rectangle rect, string text, Point mouse, Color? customBg = null)
     {
         bool hover = rect.Contains(mouse);
-        Color bg = hover ? Color.Lerp(UiAccent, Color.White, 0.18f) : (customBg ?? new Color(50, 55, 68));
-        sb.Draw(pixel, rect, bg);
+        Color baseColor = customBg ?? UiTabColor;
+        Color bg = hover ? Color.Lerp(baseColor, UiAccent, 0.48f) : baseColor;
+        // Marco doble inspirado en los paneles de Terraria/Calamity: borde oscuro y filo de acento.
+        sb.Draw(pixel, rect, new Color(7, 8, 14, 235));
+        if (rect.Width > 2 && rect.Height > 2)
+            sb.Draw(pixel, new Rectangle(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2), bg);
+        if (rect.Width > 4 && rect.Height > 3)
+        {
+            sb.Draw(pixel, new Rectangle(rect.X + 2, rect.Y + 2, rect.Width - 4, 1), hover ? Color.White * 0.8f : UiAccent * 0.8f);
+            sb.Draw(pixel, new Rectangle(rect.X + 2, rect.Bottom - 2, rect.Width - 4, 1), new Color(0, 0, 0, 150));
+        }
 
         var font = FontAssets.MouseText.Value;
         string fittedText = text ?? "";
