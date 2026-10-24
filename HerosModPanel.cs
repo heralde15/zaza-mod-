@@ -166,6 +166,10 @@ internal static partial class HerosModPanel
     private static string worldSchematicStatus = "Marca POS1 y POS2 para exportar.";
     private static int worldEditUndoType = -1;
     private static readonly List<(int x, int y, Tile tile)> worldEditUndo = new();
+    // Portapapeles de WorldEdit en memoria: conserva tiles, paredes y líquidos.
+    private static Tile[,] worldEditClipboard;
+    private static int worldEditClipboardWidth;
+    private static int worldEditClipboardHeight;
 
     private static readonly (string label, string command)[] extraTools = new (string, string)[]
     {
@@ -2931,6 +2935,17 @@ internal static partial class HerosModPanel
             SetStatus("Selección borrada. Marca POS1 y POS2 otra vez.");
         }
         y += RowH + 7;
+        DrawSectionHeader(sb, panel, ref y, "Copiar y pegar · portapapeles de tiles");
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Copiar POS1 → POS2", mouse, new Color(65, 95, 145)))
+            CopyWorldEditSelection();
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Pegar en POS1", mouse, new Color(55, 115, 80)))
+            PasteWorldEditClipboard();
+        y += RowH + 5;
+        string clipboardInfo = worldEditClipboard == null
+            ? "Portapapeles vacío · copia una selección primero"
+            : $"Portapapeles: {worldEditClipboardWidth} × {worldEditClipboardHeight} tiles";
+        Utils.DrawBorderString(sb, clipboardInfo, new Vector2(bx, y), new Color(185, 220, 255), 0.62f);
+        y += 19;
         DrawSectionHeader(sb, panel, ref y, "Líquidos · rellenar selección");
         if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar agua", mouse, new Color(45, 105, 175)))
             ApplyWorldEdit("liquidwater");
@@ -2961,6 +2976,104 @@ internal static partial class HerosModPanel
         DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(32, panel.Bottom - y - 45)), mouse, true);
         Utils.DrawBorderString(sb, "Los .hws guardan tiles; en multijugador el servidor puede revertir cambios.",
             new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+    }
+
+    private static void CopyWorldEditSelection()
+    {
+        if (!worldPos1.HasValue || !worldPos2.HasValue)
+        {
+            SetStatus("Marca POS1 y POS2 antes de copiar.");
+            return;
+        }
+
+        int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        int width = x2 - x1 + 1;
+        int height = y2 - y1 + 1;
+        long area = (long)width * height;
+        if (area > 100000)
+        {
+            SetStatus("Copia demasiado grande: máximo 100 000 tiles.");
+            return;
+        }
+
+        try
+        {
+            var buffer = new Tile[width, height];
+            for (int yy = 0; yy < height; yy++)
+            for (int xx = 0; xx < width; xx++)
+            {
+                Tile source = Main.tile[x1 + xx, y1 + yy];
+                buffer[xx, yy] = source == null ? new Tile() : (Tile)source.Clone();
+            }
+
+            worldEditClipboard = buffer;
+            worldEditClipboardWidth = width;
+            worldEditClipboardHeight = height;
+            worldSchematicStatus = $"Copiado a memoria: {width} × {height} ({area:N0} tiles).";
+            SetStatus(worldSchematicStatus + " Pega colocando POS1 en la esquina destino.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus("No se pudo copiar la selección: " + ex.GetType().Name);
+        }
+    }
+
+    private static void PasteWorldEditClipboard()
+    {
+        if (worldEditClipboard == null || worldEditClipboardWidth < 1 || worldEditClipboardHeight < 1)
+        {
+            SetStatus("El portapapeles está vacío. Marca POS1/POS2 y pulsa Copiar.");
+            return;
+        }
+        if (!worldPos1.HasValue)
+        {
+            SetStatus("Marca POS1 donde quieres pegar la construcción.");
+            return;
+        }
+
+        int startX = worldPos1.Value.X;
+        int startY = worldPos1.Value.Y;
+        if (startX < 1 || startY < 1 || startX + worldEditClipboardWidth >= Main.maxTilesX - 1 ||
+            startY + worldEditClipboardHeight >= Main.maxTilesY - 1)
+        {
+            SetStatus("La construcción copiada no cabe en el mundo desde POS1.");
+            return;
+        }
+
+        long area = (long)worldEditClipboardWidth * worldEditClipboardHeight;
+        if (area > 100000)
+        {
+            SetStatus("Pegado demasiado grande: máximo 100 000 tiles.");
+            return;
+        }
+
+        try
+        {
+            worldEditUndo.Clear();
+            int changed = 0;
+            for (int yy = 0; yy < worldEditClipboardHeight; yy++)
+            for (int xx = 0; xx < worldEditClipboardWidth; xx++)
+            {
+                int worldX = startX + xx;
+                int worldY = startY + yy;
+                Tile current = Main.tile[worldX, worldY];
+                Tile source = worldEditClipboard[xx, yy];
+                if (current == null || source == null) continue;
+                worldEditUndo.Add((worldX, worldY, (Tile)current.Clone()));
+                Main.tile[worldX, worldY] = (Tile)source.Clone();
+                changed++;
+            }
+
+            worldSchematicStatus = $"Pegado en POS1: {worldEditClipboardWidth} × {worldEditClipboardHeight}.";
+            SetStatus($"Pegado completado: {changed:N0} tiles. En multijugador el servidor puede revertir cambios.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus("Error al pegar: " + ex.GetType().Name + ". Usa Undo si la acción llegó a comenzar.");
+        }
     }
 
     private static string GetSchematicPath()
