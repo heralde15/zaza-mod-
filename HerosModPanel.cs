@@ -1192,8 +1192,8 @@ internal static partial class HerosModPanel
         }
         y += RowH + 6;
 
-        string godText = godmodeEnabled ? "God Mode Zaza: ACTIVADO" : "God Mode Zaza: desactivado";
-        Color godColor = godmodeEnabled ? UiAccent : UiTabColor;
+        string godText = godmodeEnabled ? "God Mode: ACTIVADO" : "God Mode: desactivado";
+        Color godColor = godmodeEnabled ? new Color(45, 130, 80) : UiTabColor;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), godText, mouse, godColor))
         {
             godmodeEnabled = !godmodeEnabled;
@@ -1208,18 +1208,30 @@ internal static partial class HerosModPanel
             }
             else
             {
+                p.creativeGodMode = false;
                 p.immune = false;
                 p.immuneTime = 0;
             }
             SyncSelf();
             SetStatus(godmodeEnabled
-                ? "God Mode Zaza activado sin bloqueo por modo de panel. Para imponerlo en multijugador, el servidor debe ejecutar también el mod."
-                : "God Mode Zaza desactivado.");
+                ? "God Mode activado. En multijugador, el servidor puede limitar la invulnerabilidad."
+                : "God Mode desactivado.");
         }
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + btnW + 8, y, btnW, RowH), "DESACTIVAR GOD MODE", mouse, new Color(135, 55, 60)))
+        {
+            godmodeEnabled = false;
+            Player p = Main.LocalPlayer;
+            p.creativeGodMode = false;
+            p.immune = false;
+            p.immuneTime = 0;
+            SyncSelf();
+            SetStatus("God Mode desactivado manualmente.");
+        }
+        y += RowH + 6;
 
         string flyText = flyEnabled ? "Vuelo Libre: [ON]" : "Vuelo Libre: [OFF]";
         Color flyColor = flyEnabled ? new Color(40, 100, 160) : new Color(50, 55, 70);
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + btnW + 8, y, btnW, RowH), flyText, mouse, flyColor))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), flyText, mouse, flyColor))
         {
             if (IsServer)
             {
@@ -1231,24 +1243,22 @@ internal static partial class HerosModPanel
                 SetStatus(flyEnabled ? "Vuelo: WASD + Espacio (subir) + Shift (bajar)." : "Vuelo desactivado.");
             }
         }
-        y += RowH + 6;
-
         int extraToggleW = (Width - Pad * 2 - 8) / 2;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, extraToggleW, RowH), infiniteMinionsEnabled ? "Minions infinitos: ACTIVADO" : "Minions infinitos: desactivado", mouse, infiniteMinionsEnabled ? new Color(40, 115, 75) : UiTabColor))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + extraToggleW + 8, y, extraToggleW, RowH), infiniteMinionsEnabled ? "Minions infinitos: ACTIVADO" : "Minions infinitos: desactivado", mouse, infiniteMinionsEnabled ? new Color(40, 115, 75) : UiTabColor))
         {
             infiniteMinionsEnabled = !infiniteMinionsEnabled;
             if (infiniteMinionsEnabled) Main.LocalPlayer.maxMinions = 9999;
             SetStatus(infiniteMinionsEnabled ? "Límite local de minions elevado; el servidor puede rechazarlo." : "Minions infinitos desactivados.");
         }
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + extraToggleW + 8, y, extraToggleW, RowH), "Reiniciar registro de proyectiles", mouse))
+        y += RowH + 6;
+
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, btnW, RowH), "Reiniciar registro de proyectiles", mouse))
         {
             multipliedProjectileIdentities.Clear();
             SetStatus("Registro de proyectiles reiniciado.");
         }
-        y += RowH + 6;
-
         string ghostText = ghostModeEnabled ? "Modo Fantasma: ACTIVADO" : "Modo Fantasma: desactivado";
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), ghostText, mouse, ghostModeEnabled ? new Color(85, 95, 145) : UiTabColor))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + btnW + 8, y, btnW, RowH), ghostText, mouse, ghostModeEnabled ? new Color(85, 95, 145) : UiTabColor))
         {
             ghostModeEnabled = !ghostModeEnabled;
             if (Main.LocalPlayer.active)
