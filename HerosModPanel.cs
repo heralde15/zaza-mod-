@@ -1120,12 +1120,17 @@ internal static partial class HerosModPanel
         }
         y += RowH + 6;
 
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Activar Journey Mode (Modo Viaje)", mouse, new Color(40, 115, 75)))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Activar Journey Mode + desbloquear todos los objetos", mouse, new Color(40, 115, 75)))
         {
             bool applied = TryEnableJourneyMode();
-            SetStatus(applied
-                ? "Se intentó activar Journey Mode en mundo/personaje. Puede requerir reinicio o mundo/personaje creados en Viaje; en multijugador manda el servidor."
-                : "No se pudo cambiar Journey Mode con la API disponible. Terraria puede exigir crear un mundo y personaje en Modo Viaje.");
+            bool researched = UnlockAllJourneyResearch(Main.LocalPlayer);
+            SetStatus(applied && researched
+                ? "Se intentó activar Journey Mode y completar la investigación de todos los objetos."
+                : applied
+                    ? "Se intentó activar Journey Mode, pero no se pudo completar la investigación de todos los objetos con la API disponible."
+                    : researched
+                        ? "Se completó la investigación de objetos disponible, pero Terraria no confirmó el cambio a Journey Mode."
+                        : "Terraria no confirmó el cambio a Journey Mode ni permitió completar la investigación. Puede requerir personaje y mundo creados en Modo Viaje.");
         }
         y += RowH + 6;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Desbloquear investigación de TODOS los objetos (modo Viaje)", mouse, new Color(75, 85, 135)))
