@@ -577,11 +577,11 @@ internal static partial class HerosModPanel
         hoverTip = null;
         var mouse = new Point(Main.mouseX, Main.mouseY);
         int safePanelHeight = VisiblePanelHeight;
-        int safePanelWidth = Math.Min(Width, Math.Max(320, Main.screenWidth - 12));
+        // El diseño interno usa Width como referencia; mantener el ancho fijo evita desalinear controles.
         var panelRect = new Rectangle(
-            Math.Clamp((int)position.X, 0, Math.Max(0, Main.screenWidth - safePanelWidth)),
+            Math.Clamp((int)position.X, 0, Math.Max(0, Main.screenWidth - Width)),
             Math.Clamp((int)position.Y, 0, Math.Max(0, Main.screenHeight - safePanelHeight)),
-            safePanelWidth, safePanelHeight);
+            Width, safePanelHeight);
         position = new Vector2(panelRect.X, panelRect.Y);
 
         if (panelRect.Contains(mouse))
