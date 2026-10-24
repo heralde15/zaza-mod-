@@ -1759,8 +1759,9 @@ internal static partial class HerosModPanel
     // Mini mapa del panel: muestrea tiles alrededor del jugador y permite elegir coordenadas.
     private static void DrawWorldMiniMap(SpriteBatch sb, Texture2D pixel, Rectangle area, Point mouse, bool worldEdit)
     {
-        sb.Draw(pixel, area, new Color(15, 18, 24));
-        int cell = 7, span = 4;
+        sb.Draw(pixel, area, new Color(10, 13, 22));
+        // Celdas más grandes y muestreo más cercano: mapa más legible y detallado.
+        int cell = 10, span = 2;
         int cols = Math.Max(1, area.Width / cell), rows = Math.Max(1, area.Height / cell);
         int cx = (int)(Main.LocalPlayer.Center.X / 16f), cy = (int)(Main.LocalPlayer.Center.Y / 16f);
         int left = cx - cols * span / 2, top = cy - rows * span / 2;
@@ -2888,7 +2889,11 @@ internal static partial class HerosModPanel
             ScaleWorldEditSelection(2);
         if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Ampliar selección ×3", mouse, new Color(65, 90, 125)))
             ScaleWorldEditSelection(3);
-        y += RowH + 7;
+        y += RowH + 5;
+        Utils.DrawBorderString(sb, "MINIMAPA AMPLIADO · clic alterna POS1 y POS2 · detalle cercano", new Vector2(bx, y), new Color(145, 200, 240), 0.7f);
+        y += 19;
+        DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, 190), mouse, true);
+        y += 198;
         Utils.DrawBorderString(sb, "Tile ID (0 = aire/borrar):", new Vector2(bx, y), Color.White, 0.7f);
         Utils.DrawBorderString(sb, "Reemplazar tile ID:", new Vector2(bx + 250, y), Color.White, 0.7f);
         y += 18;
@@ -2971,11 +2976,8 @@ internal static partial class HerosModPanel
         y += 30;
         Utils.DrawBorderString(sb, worldSchematicStatus, new Vector2(bx, y), new Color(190, 220, 255), 0.62f);
         y += 17;
-        Utils.DrawBorderString(sb, "Mini mapa: clic alterna POS1 y POS2.", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
-        y += 18;
-        DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, Math.Max(32, panel.Bottom - y - 45)), mouse, true);
         Utils.DrawBorderString(sb, "Los .hws guardan tiles; en multijugador el servidor puede revertir cambios.",
-            new Vector2(bx, panel.Bottom - 45), new Color(235, 195, 120), 0.62f);
+            new Vector2(bx, panel.Bottom - 22), new Color(235, 195, 120), 0.62f);
     }
 
     private static void CopyWorldEditSelection()
