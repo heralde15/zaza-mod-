@@ -3695,6 +3695,26 @@ internal static partial class HerosModPanel
         return false;
     }
 
+    private static object GetStaticReflectedMember(Type type, string name)
+    {
+        if (type == null) return null;
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+        try
+        {
+            FieldInfo field = type.GetField(name, flags);
+            if (field != null) return field.GetValue(null);
+        }
+        catch { }
+        try
+        {
+            PropertyInfo property = type.GetProperty(name, flags);
+            if (property != null && property.CanRead && property.GetIndexParameters().Length == 0)
+                return property.GetValue(null);
+        }
+        catch { }
+        return null;
+    }
+
     private static void ApplyNpcShopFreeSetting()
     {
         if (!npcShopFreeEnabled) return;
@@ -3703,7 +3723,7 @@ internal static partial class HerosModPanel
             // Main.instance.shop[Main.npcShop].item[] es la tienda abierta en Terraria vanilla.
             object mainInstance = Main.instance;
             object shopCollection = GetReflectedMember(mainInstance, "shop");
-            object shopIndexValue = GetReflectedMember(typeof(Main), "npcShop");
+            object shopIndexValue = GetStaticReflectedMember(typeof(Main), "npcShop");
             int shopIndex = shopIndexValue is int index ? index : -1;
             if (shopCollection is Array shops && shopIndex >= 0 && shopIndex < shops.Length)
             {
