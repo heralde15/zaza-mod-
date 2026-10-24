@@ -41,6 +41,8 @@ internal static partial class HerosModPanel
     // Dimensiones ampliadas para que los controles respiren y sean más fáciles de leer.
     private const int Width = 820;
     private const int Height = 850;
+    // Ajusta la altura a la pantalla disponible para que el panel nunca quede fuera del monitor.
+    private static int VisiblePanelHeight => Math.Max(220, Math.Min(Height, Main.screenHeight - 12));
     private const int Pad = 12;
     private const int RowH = 28;
 
@@ -574,7 +576,13 @@ internal static partial class HerosModPanel
 
         hoverTip = null;
         var mouse = new Point(Main.mouseX, Main.mouseY);
-        var panelRect = new Rectangle((int)position.X, (int)position.Y, Width, Height);
+        int safePanelHeight = VisiblePanelHeight;
+        int safePanelWidth = Math.Min(Width, Math.Max(320, Main.screenWidth - 12));
+        var panelRect = new Rectangle(
+            Math.Clamp((int)position.X, 0, Math.Max(0, Main.screenWidth - safePanelWidth)),
+            Math.Clamp((int)position.Y, 0, Math.Max(0, Main.screenHeight - safePanelHeight)),
+            safePanelWidth, safePanelHeight);
+        position = new Vector2(panelRect.X, panelRect.Y);
 
         if (panelRect.Contains(mouse))
             Main.LocalPlayer.mouseInterface = true;
@@ -585,8 +593,8 @@ internal static partial class HerosModPanel
             if (Main.mouseLeft)
             {
                 position = new Vector2(mouse.X, mouse.Y) - dragOffset;
-                position.X = Math.Clamp(position.X, 0f, Math.Max(0f, Main.screenWidth - Width));
-                position.Y = Math.Clamp(position.Y, 0f, Math.Max(0f, Main.screenHeight - Height));
+                position.X = Math.Clamp(position.X, 0f, Math.Max(0f, Main.screenWidth - panelRect.Width));
+                position.Y = Math.Clamp(position.Y, 0f, Math.Max(0f, Main.screenHeight - panelRect.Height));
             }
             else
             {
@@ -665,7 +673,9 @@ internal static partial class HerosModPanel
         }
 
         int contentY = panelRect.Y + 185;
-        var contentRect = new Rectangle(panelRect.X + 5, contentY - 3, panelRect.Width - 10, panelRect.Bottom - contentY - 8);
+        // En pantallas muy bajas, reservar un área de contenido no negativa.
+        contentY = Math.Min(contentY, panelRect.Bottom - 28);
+        var contentRect = new Rectangle(panelRect.X + 5, contentY - 3, panelRect.Width - 10, Math.Max(1, panelRect.Bottom - contentY - 8));
         sb.Draw(pixel, contentRect, new Color(13, 15, 24, 210));
         sb.Draw(pixel, new Rectangle(contentRect.X, contentRect.Y, 2, contentRect.Height), UiAccent * 0.65f);
         switch (currentTab)
@@ -4056,7 +4066,12 @@ internal static partial class HerosModPanel
 
     private static void DrawSectionHeader(SpriteBatch sb, Rectangle panel, ref int y, string title)
     {
-        Utils.DrawBorderString(sb, title, new Vector2(panel.X + Pad, y), UiAccent, 0.82f);
+        string fittedTitle = title ?? "";
+        var font = FontAssets.MouseText.Value;
+        float maxWidth = Math.Max(20, panel.Width - Pad * 2);
+        while (fittedTitle.Length > 1 && font.MeasureString(fittedTitle).X * 0.82f > maxWidth)
+            fittedTitle = fittedTitle.Substring(0, fittedTitle.Length - 2) + "…";
+        Utils.DrawBorderString(sb, fittedTitle, new Vector2(panel.X + Pad, y), UiAccent, 0.82f);
         y += 22;
     }
 
@@ -4072,10 +4087,20 @@ internal static partial class HerosModPanel
         sb.Draw(pixel, rect, bg);
 
         var font = FontAssets.MouseText.Value;
+        string fittedText = text ?? "";
         float scale = 0.7f;
-        var size = font.MeasureString(text) * scale;
+        float maxTextWidth = Math.Max(8, rect.Width - 10);
+        while (fittedText.Length > 1 && font.MeasureString(fittedText).X * scale > maxTextWidth && scale > 0.46f)
+            scale -= 0.04f;
+        if (font.MeasureString(fittedText).X * scale > maxTextWidth)
+        {
+            while (fittedText.Length > 1 && font.MeasureString(fittedText + "…").X * scale > maxTextWidth)
+                fittedText = fittedText.Substring(0, fittedText.Length - 1);
+            fittedText += "…";
+        }
+        var size = font.MeasureString(fittedText) * scale;
         Vector2 textPos = new Vector2(rect.X + (rect.Width - size.X) / 2f, rect.Y + (rect.Height - size.Y) / 2f + 2f);
-        Utils.DrawBorderString(sb, text, textPos, Color.White, scale);
+        Utils.DrawBorderString(sb, fittedText, textPos, Color.White, scale);
 
         if (hover && Clicked)
         {
