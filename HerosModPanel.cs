@@ -3602,7 +3602,14 @@ internal static partial class HerosModPanel
             RestoreShopPrices();
             SetStatus("Se desactivó tienda gratis y se restauraron los precios guardados por el panel.");
         }
-        y += RowH + 9;
+        y += RowH + 7;
+        // Contador en vivo: muestra el valor que Terraria expone para el jugador local.
+        var luckCounterRect = new Rectangle(panel.X + Pad, y, panel.Width - Pad * 2, 25);
+        sb.Draw(pixel, luckCounterRect, new Color(22, 29, 43, 230));
+        sb.Draw(pixel, new Rectangle(luckCounterRect.X, luckCounterRect.Y, 3, luckCounterRect.Height), new Color(105, 210, 150));
+        Utils.DrawBorderString(sb, GetLuckCounterText(), new Vector2(luckCounterRect.X + 9, luckCounterRect.Y + 4),
+            luckBoostEnabled ? new Color(130, 255, 170) : new Color(205, 220, 240), 0.64f);
+        y += 31;
         Utils.DrawBorderString(sb, "Invocación rápida cerca de tu personaje:", new Vector2(panel.X + Pad, y), Color.White, 0.72f);
         y += 24;
         int gap = 8;
@@ -3821,6 +3828,24 @@ internal static partial class HerosModPanel
         catch { }
         luckOriginalCaptured = false;
         luckPlayerRef = null;
+    }
+
+    private static string GetLuckCounterText()
+    {
+        try
+        {
+            Player player = Main.LocalPlayer;
+            if (player == null || !player.active) return "Suerte actual: no disponible";
+            object value = GetReflectedMember(player, "luck");
+            if (value == null) return "Suerte actual: API no disponible";
+            float luck = Convert.ToSingle(value, CultureInfo.InvariantCulture);
+            string mode = luckBoostEnabled ? "MAX ACTIVADA" : "normal";
+            return $"SUERTE ACTUAL: {luck:+0.000;-0.000;0.000}  |  Modo: {mode}";
+        }
+        catch
+        {
+            return "Suerte actual: no disponible en esta versión";
+        }
     }
 
     private static void SpawnPanelNpc(int id)
