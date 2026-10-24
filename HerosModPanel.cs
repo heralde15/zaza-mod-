@@ -525,9 +525,9 @@ internal static partial class HerosModPanel
             local.creativeGodMode = false;
         }
 
-        // El modo fantasma solo aplica invisibilidad visual local; no fuerza Player.ghost ni altera la vida.
-        if (local.active && ghostModeEnabled)
-            local.invis = true;
+        // Modo fantasma real: activa el estado ghost de Terraria para el jugador local.
+        if (local.active)
+            local.ghost = ghostModeEnabled;
 
         if (adventureUnrestrictedEnabled && local.active)
         {
@@ -1012,10 +1012,10 @@ internal static partial class HerosModPanel
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), ghostText, mouse, ghostModeEnabled ? new Color(85, 95, 145) : UiTabColor))
         {
             ghostModeEnabled = !ghostModeEnabled;
-            if (!ghostModeEnabled && Main.LocalPlayer.active)
-                Main.LocalPlayer.invis = false;
+            if (Main.LocalPlayer.active)
+                Main.LocalPlayer.ghost = ghostModeEnabled;
             SetStatus(ghostModeEnabled
-                ? "Modo Fantasma activado: invisibilidad visual local. No atraviesa bloques ni te hace inmortal; en multijugador el servidor puede ignorarlo."
+                ? "Modo Fantasma de Terraria activado para el jugador local. El comportamiento puede depender del estado del personaje y del servidor."
                 : "Modo Fantasma desactivado.");
         }
         y += RowH + 6;
