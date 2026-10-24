@@ -999,49 +999,77 @@ internal static partial class HerosModPanel
 
     private static bool UnlockAllJourneyResearch(Player player)
     {
+        // Recorrido limitado y solo por campos: evita ejecutar getters arbitrarios o
+        // recorrer accidentalmente todo el grafo de objetos del juego desde el botón.
         if (player == null) return false;
         try
         {
             var visited = new HashSet<object>();
             var pending = new Stack<object>();
             pending.Push(player);
-            while (pending.Count > 0)
+            const int maxVisitedObjects = 2048;
+            int visitedCount = 0;
+
+            while (pending.Count > 0 && visitedCount < maxVisitedObjects)
             {
                 object current = pending.Pop();
                 if (current == null || !visited.Add(current)) continue;
+                visitedCount++;
+
                 Type type = current.GetType();
-                if (type.Name.Contains("ItemSacrificesTracker", StringComparison.OrdinalIgnoreCase))
+                if (type.Name.IndexOf("ItemSacrificesTracker", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     MethodInfo setter = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                         .FirstOrDefault(m => m.Name == "SetSacrificeCount" && m.GetParameters().Length == 2
                             && m.GetParameters().All(p => p.ParameterType == typeof(int)));
-                    if (setter != null)
+                    if (setter == null) return false;
+
+                    int succeeded = 0;
+                    int upperBound = Math.Max(1, ItemID.Count);
+                    for (int id = 1; id < upperBound; id++)
                     {
-                        int unlocked = 0;
-                        for (int id = 1; id < ItemID.Count; id++)
+                        try
                         {
-                            try { setter.Invoke(current, new object[] { id, 999999 }); unlocked++; }
-                            catch { }
+                            setter.Invoke(current, new object[] { id, 999999 });
+                            succeeded++;
                         }
-                        return unlocked > 0;
+                        catch
+                        {
+                            // Algunos IDs no son investigables en esta versión; continuar.
+                        }
                     }
+                    return succeeded > 0;
                 }
+
+                // No entrar en strings, tipos primitivos, tipos del runtime ni colecciones.
+                if (type == typeof(string) || type.IsPrimitive || type.IsEnum ||
+                    type.Namespace == null || type.Namespace.StartsWith("System", StringComparison.Ordinal))
+                    continue;
+
                 foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                 {
-                    if (field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(string)) continue;
-                    try { object value = field.GetValue(current); if (value != null && value != current) pending.Push(value); }
-                    catch { }
-                }
-                foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                {
-                    if (!property.CanRead || property.GetIndexParameters().Length != 0 || property.PropertyType.IsPrimitive
-                        || property.PropertyType.IsEnum || property.PropertyType == typeof(string)) continue;
-                    try { object value = property.GetValue(current); if (value != null && value != current) pending.Push(value); }
-                    catch { }
+                    Type fieldType = field.FieldType;
+                    if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType == typeof(string) ||
+                        fieldType.Namespace != null && fieldType.Namespace.StartsWith("System", StringComparison.Ordinal))
+                        continue;
+                    try
+                    {
+                        object value = field.GetValue(current);
+                        if (value != null && !ReferenceEquals(value, current) && !visited.Contains(value))
+                            pending.Push(value);
+                    }
+                    catch
+                    {
+                        // Ignorar campos inaccesibles; el panel no debe cerrar el juego.
+                    }
+                    if (pending.Count >= maxVisitedObjects) break;
                 }
             }
         }
-        catch { }
+        catch
+        {
+            // Fallo de reflexión: devolver estado en lugar de propagar la excepción al juego.
+        }
         return false;
     }
 
