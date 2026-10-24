@@ -2880,6 +2880,11 @@ internal static partial class HerosModPanel
             SetStatus($"POS2: {worldPos2.Value.X}, {worldPos2.Value.Y}");
         }
         y += RowH + 8;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Ampliar selección ×2", mouse, new Color(65, 90, 125)))
+            ScaleWorldEditSelection(2);
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Ampliar selección ×3", mouse, new Color(65, 90, 125)))
+            ScaleWorldEditSelection(3);
+        y += RowH + 7;
         Utils.DrawBorderString(sb, "Tile ID (0 = aire/borrar):", new Vector2(bx, y), Color.White, 0.7f);
         Utils.DrawBorderString(sb, "Reemplazar tile ID:", new Vector2(bx + 250, y), Color.White, 0.7f);
         y += 18;
@@ -2925,6 +2930,20 @@ internal static partial class HerosModPanel
             worldPos2 = null;
             SetStatus("Selección borrada. Marca POS1 y POS2 otra vez.");
         }
+        y += RowH + 7;
+        DrawSectionHeader(sb, panel, ref y, "Líquidos · rellenar selección");
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar agua", mouse, new Color(45, 105, 175)))
+            ApplyWorldEdit("liquidwater");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar líquidos", mouse, new Color(85, 95, 110)))
+            ApplyWorldEdit("liquidclear");
+        y += RowH + 6;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar lava", mouse, new Color(170, 70, 45)))
+            ApplyWorldEdit("liquidlava");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Rellenar miel", mouse, new Color(180, 135, 45)))
+            ApplyWorldEdit("liquidhoney");
+        y += RowH + 6;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar shimmer", mouse, new Color(135, 85, 185)))
+            ApplyWorldEdit("liquidshimmer");
         y += RowH + 7;
         Utils.DrawBorderString(sb, "Archivo de construcción (.hws):", new Vector2(bx, y), UiAccent, 0.68f);
         y += 17;
@@ -3041,6 +3060,40 @@ internal static partial class HerosModPanel
         catch (Exception ex) { worldSchematicStatus = "Error al importar: " + ex.Message; SetStatus("No se pudo importar el archivo."); }
     }
 
+    private static void ScaleWorldEditSelection(int multiplier)
+    {
+        if (!worldPos1.HasValue || !worldPos2.HasValue)
+        {
+            SetStatus("Marca POS1 y POS2 antes de ampliar la selección.");
+            return;
+        }
+
+        multiplier = Math.Clamp(multiplier, 2, 3);
+        Point first = worldPos1.Value;
+        Point second = worldPos2.Value;
+        int width = Math.Abs(second.X - first.X) + 1;
+        int height = Math.Abs(second.Y - first.Y) + 1;
+        int signX = second.X >= first.X ? 1 : -1;
+        int signY = second.Y >= first.Y ? 1 : -1;
+        long scaledArea = (long)width * multiplier * height * multiplier;
+        if (scaledArea > 100000)
+        {
+            SetStatus("La selección ampliada superaría 100 000 tiles. Reduce POS1/POS2 primero.");
+            return;
+        }
+
+        int newX = first.X + signX * (width * multiplier - 1);
+        int newY = first.Y + signY * (height * multiplier - 1);
+        if (newX < 1 || newX >= Main.maxTilesX - 1 || newY < 1 || newY >= Main.maxTilesY - 1)
+        {
+            SetStatus("No se puede ampliar ×" + multiplier + ": el área saldría de los límites del mundo.");
+            return;
+        }
+
+        worldPos2 = new Point(newX, newY);
+        SetStatus($"Selección ampliada ×{multiplier}: {width * multiplier} × {height * multiplier}. Pulsa Fill para colocar el bloque seleccionado.");
+    }
+
     private static void ApplyWorldEdit(string operation)
     {
         if (!worldPos1.HasValue || !worldPos2.HasValue)
@@ -3068,6 +3121,7 @@ internal static partial class HerosModPanel
             operation == "clear" || operation == "airfill" || operation == "hollow" || operation == "clearall";
         bool wallOperation = operation == "wallfill" || operation == "wallclear" ||
             operation == "wallreplace" || operation == "clearall";
+        bool liquidOperation = operation.StartsWith("liquid", StringComparison.Ordinal);
 
         if (tileOperation && (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count))
         {
@@ -3111,6 +3165,25 @@ internal static partial class HerosModPanel
                 worldEditUndo.Add((x, yy, (Tile)tile.Clone()));
                 switch (operation)
                 {
+                    case "liquidwater":
+                        tile.LiquidType = LiquidID.Water;
+                        tile.LiquidAmount = 255;
+                        break;
+                    case "liquidlava":
+                        tile.LiquidType = LiquidID.Lava;
+                        tile.LiquidAmount = 255;
+                        break;
+                    case "liquidhoney":
+                        tile.LiquidType = LiquidID.Honey;
+                        tile.LiquidAmount = 255;
+                        break;
+                    case "liquidshimmer":
+                        tile.LiquidType = LiquidID.Shimmer;
+                        tile.LiquidAmount = 255;
+                        break;
+                    case "liquidclear":
+                        tile.LiquidAmount = 0;
+                        break;
                     case "clear":
                     case "hollow":
                     case "clearall":
@@ -3159,7 +3232,9 @@ internal static partial class HerosModPanel
             SetStatus("No hubo cambios en la selección.");
             return;
         }
-        SetStatus($"WorldEdit {operation}: {changed:N0} celdas modificadas. Undo disponible para la última operación.");
+        SetStatus(liquidOperation
+            ? $"WorldEdit líquidos {operation}: {changed:N0} celdas procesadas. Undo disponible para la última operación."
+            : $"WorldEdit {operation}: {changed:N0} celdas modificadas. Undo disponible para la última operación.");
     }
 
     private static void UndoWorldEdit()
