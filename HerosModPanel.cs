@@ -525,10 +525,6 @@ internal static partial class HerosModPanel
             local.creativeGodMode = false;
         }
 
-        // Modo fantasma real: activa el estado ghost de Terraria para el jugador local.
-        if (local.active)
-            local.ghost = ghostModeEnabled;
-
         if (adventureUnrestrictedEnabled && local.active)
         {
             ApplyUnrestrictedAdventurePermissions(true);
@@ -1013,10 +1009,13 @@ internal static partial class HerosModPanel
         {
             ghostModeEnabled = !ghostModeEnabled;
             if (Main.LocalPlayer.active)
+            {
+                // Cambia el estado ghost real de Terraria solo al pulsar el botón; no lo fuerza cada tick.
                 Main.LocalPlayer.ghost = ghostModeEnabled;
+            }
             SetStatus(ghostModeEnabled
-                ? "Modo Fantasma de Terraria activado para el jugador local. El comportamiento puede depender del estado del personaje y del servidor."
-                : "Modo Fantasma desactivado.");
+                ? "Estado Ghost de Terraria activado localmente. En multijugador el servidor puede rechazarlo o sobrescribirlo."
+                : "Estado Ghost desactivado localmente.");
         }
         y += RowH + 6;
 
