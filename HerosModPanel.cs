@@ -63,7 +63,7 @@ internal static partial class HerosModPanel
 
     private static Tab currentTab = Tab.Jugador;
     // Apariencia del panel; solo cambia el dibujo, no altera las funciones del mod.
-    private static int uiTheme = 5;
+    private static int uiTheme = 6;
     private static bool uiHighContrast;
     private static readonly Color[] UiAccents =
     {
@@ -653,16 +653,22 @@ internal static partial class HerosModPanel
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
         // Separadores finos y etiquetas de sección para una navegación más parecida a Terraria/Calamity.
+        // Navegación compacta en pantallas bajas para reservar espacio al contenido.
+        bool compactNavigation = Main.screenHeight < 760;
+        int navRowStep = compactNavigation ? 25 : 34;
+        int navButtonTop = compactNavigation ? 48 : 55;
+        int navButtonHeight = compactNavigation ? 19 : 22;
         for (int row = 0; row < tabGroups.Length; row++)
         {
-            int labelY = panelRect.Y + 44 + row * 34;
-            Utils.DrawBorderString(sb, groupLabels[row], new Vector2(panelRect.X + Pad + 2, labelY), new Color(190, 175, 220), 0.52f);
+            int labelY = panelRect.Y + 44 + row * navRowStep;
+            if (!compactNavigation)
+                Utils.DrawBorderString(sb, groupLabels[row], new Vector2(panelRect.X + Pad + 2, labelY), new Color(190, 175, 220), 0.52f);
             for (int col = 0; col < tabGroups[row].Length; col++)
             {
                 Tab tab = tabGroups[row][col];
                 int labelIndex = row * tabCols + col;
                 var tabRect = new Rectangle(panelRect.X + Pad + col * (tabWidth + 6),
-                    panelRect.Y + 55 + row * 34, tabWidth, 22);
+                    panelRect.Y + navButtonTop + row * navRowStep, tabWidth, navButtonHeight);
                 bool selected = currentTab == tab;
                 Color tabColor = selected ? UiAccent : UiTabColor;
                 if (DrawButton(sb, pixel, tabRect, tabLabels[labelIndex], mouse, tabColor) && !selected)
@@ -673,7 +679,7 @@ internal static partial class HerosModPanel
             }
         }
 
-        int contentY = panelRect.Y + 185;
+        int contentY = panelRect.Y + (compactNavigation ? 151 : 185);
         // En pantallas muy bajas, reservar un área de contenido no negativa.
         contentY = Math.Min(contentY, panelRect.Bottom - 28);
         var contentRect = new Rectangle(panelRect.X + 5, contentY - 3, panelRect.Width - 10, Math.Max(1, panelRect.Bottom - contentY - 8));
@@ -1770,9 +1776,10 @@ internal static partial class HerosModPanel
     // Mini mapa del panel: muestrea tiles alrededor del jugador y permite elegir coordenadas.
     private static void DrawWorldMiniMap(SpriteBatch sb, Texture2D pixel, Rectangle area, Point mouse, bool worldEdit)
     {
-        sb.Draw(pixel, area, new Color(10, 13, 22));
-        // Celdas más grandes y muestreo más cercano: mapa más legible y detallado.
-        int cell = 10, span = 2;
+        if (area.Width <= 0 || area.Height <= 0) return;
+        sb.Draw(pixel, area, new Color(8, 12, 22));
+        // Celdas adaptables al alto disponible para mejorar la legibilidad del minimapa.
+        int cell = area.Height >= 150 ? 10 : 8, span = 2;
         int cols = Math.Max(1, area.Width / cell), rows = Math.Max(1, area.Height / cell);
         int cx = (int)(Main.LocalPlayer.Center.X / 16f), cy = (int)(Main.LocalPlayer.Center.Y / 16f);
         int left = cx - cols * span / 2, top = cy - rows * span / 2;
@@ -2969,13 +2976,24 @@ internal static partial class HerosModPanel
             y += RowH + 6;
             Utils.DrawBorderString(sb, "Minimapa ampliado · clic alterna POS1/POS2", new Vector2(bx, y), new Color(145, 200, 240), 0.68f);
             y += 19;
-            // Reservar espacio para el botón inferior y el mensaje de estado; el minimapa
-            // se adapta a pantallas bajas en lugar de dibujarse fuera del panel.
-            int mapSpace = Math.Max(42, panel.Bottom - y - RowH - 62);
-            int availableMapHeight = Math.Clamp(mapSpace, 42, 190);
-            DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, availableMapHeight), mouse, true);
-            y += availableMapHeight + 5;
-            if (DrawButton(sb, pixel, new Rectangle(bx, y, Width - Pad * 2, RowH), "Borrar selección POS1/POS2", mouse, new Color(100, 65, 70)))
+            // El mapa crece en pantallas grandes y se oculta en pantallas muy bajas si no
+            // cabe completo. Así ningún control de WorldEdit se dibuja fuera del panel.
+            int mapSpace = panel.Bottom - y - RowH - 38;
+            if (mapSpace >= 64)
+            {
+                int availableMapHeight = Math.Clamp(mapSpace, 64, 230);
+                DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Math.Max(1, panel.Width - Pad * 2), availableMapHeight), mouse, true);
+                y += availableMapHeight + 5;
+            }
+            else
+            {
+                Utils.DrawBorderString(sb, "Pantalla baja: minimapa oculto para evitar que la UI se salga. Usa POS1/POS2 aquí arriba.",
+                    new Vector2(bx, y), new Color(145, 200, 240), 0.56f);
+                y += 16;
+            }
+
+            if (y + RowH <= panel.Bottom - 28 &&
+                DrawButton(sb, pixel, new Rectangle(bx, y, Math.Max(1, panel.Width - Pad * 2), RowH), "Borrar selección POS1/POS2", mouse, new Color(100, 65, 70)))
             {
                 worldPos1 = null;
                 worldPos2 = null;
@@ -4146,9 +4164,10 @@ internal static partial class HerosModPanel
     }
 
     private static Color UiAccent => UiAccents[Math.Clamp(uiTheme, 0, UiAccents.Length - 1)];
-    private static Color UiPanelColor => uiHighContrast ? new Color(14, 10, 24) : new Color(25, 20, 39);
-    private static Color UiTitleColor => uiHighContrast ? new Color(45, 18, 54) : new Color(66, 31, 75);
-    private static Color UiTabColor => uiHighContrast ? new Color(26, 18, 39) : new Color(43, 31, 58);
+    // Paleta inspirada en Terraria/Calamity: obsidiana, violeta profundo y cian arcano.
+    private static Color UiPanelColor => uiHighContrast ? new Color(8, 15, 25) : new Color(17, 20, 34);
+    private static Color UiTitleColor => uiHighContrast ? new Color(12, 42, 58) : new Color(26, 42, 62);
+    private static Color UiTabColor => uiHighContrast ? new Color(12, 24, 38) : new Color(28, 31, 48);
 
     private static bool DrawButton(SpriteBatch sb, Texture2D pixel, Rectangle rect, string text, Point mouse, Color? customBg = null)
     {
