@@ -2912,6 +2912,20 @@ internal static partial class HerosModPanel
         if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse))
             UndoWorldEdit();
         y += RowH + 7;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar solo aire", mouse, new Color(45, 115, 85)))
+            ApplyWorldEdit("airfill");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar interior", mouse, new Color(120, 75, 65)))
+            ApplyWorldEdit("hollow");
+        y += RowH + 7;
+        if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Borrar tiles + paredes", mouse, new Color(145, 55, 55)))
+            ApplyWorldEdit("clearall");
+        if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Rehacer selección POS1/POS2", mouse, new Color(65, 85, 125)))
+        {
+            worldPos1 = null;
+            worldPos2 = null;
+            SetStatus("Selección borrada. Marca POS1 y POS2 otra vez.");
+        }
+        y += RowH + 7;
         Utils.DrawBorderString(sb, "Archivo de construcción (.hws):", new Vector2(bx, y), UiAccent, 0.68f);
         y += 17;
         DrawTextField(sb, pixel, new Rectangle(bx, y, 220, 25), 26, schematicFileName, mouse, "nombre del archivo");
@@ -3050,8 +3064,10 @@ internal static partial class HerosModPanel
         int replaceId = int.TryParse(worldReplaceType, out int parsedReplace) ? parsedReplace : 0;
         int wallId = int.TryParse(worldWallType, out int parsedWall) ? parsedWall : 1;
         int replaceWallId = int.TryParse(worldReplaceWallType, out int parsedReplaceWall) ? parsedReplaceWall : 0;
-        bool tileOperation = operation == "fill" || operation == "replace" || operation == "outline" || operation == "clear";
-        bool wallOperation = operation == "wallfill" || operation == "wallclear" || operation == "wallreplace";
+        bool tileOperation = operation == "fill" || operation == "replace" || operation == "outline" ||
+            operation == "clear" || operation == "airfill" || operation == "hollow" || operation == "clearall";
+        bool wallOperation = operation == "wallfill" || operation == "wallclear" ||
+            operation == "wallreplace" || operation == "clearall";
 
         if (tileOperation && (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count))
         {
@@ -3081,6 +3097,14 @@ internal static partial class HerosModPanel
                     continue;
                 if (operation == "clear" && !tile.HasTile)
                     continue;
+                if (operation == "clearall" && !tile.HasTile && tile.WallType == 0)
+                    continue;
+                if (operation == "airfill" && tile.HasTile)
+                    continue;
+                if (operation == "hollow" && (x == x1 || x == x2 || yy == y1 || yy == y2))
+                    continue;
+                if (operation == "hollow" && !tile.HasTile)
+                    continue;
                 if (operation == "outline" && x != x1 && x != x2 && yy != y1 && yy != y2)
                     continue;
 
@@ -3088,12 +3112,21 @@ internal static partial class HerosModPanel
                 switch (operation)
                 {
                     case "clear":
-                        WorldGen.KillTile(x, yy, false, false, true);
+                    case "hollow":
+                    case "clearall":
+                        if (tile.HasTile)
+                            WorldGen.KillTile(x, yy, false, false, true);
+                        if (operation == "clearall")
+                            tile.WallType = 0;
                         break;
                     case "fill":
                         if (tileId == 0)
                             WorldGen.KillTile(x, yy, false, false, true);
                         else
+                            WorldGen.PlaceTile(x, yy, tileId, true, true);
+                        break;
+                    case "airfill":
+                        if (tileId > 0 && !tile.HasTile)
                             WorldGen.PlaceTile(x, yy, tileId, true, true);
                         break;
                     case "replace":
