@@ -4210,9 +4210,9 @@ internal static partial class HerosModPanel
     private static void SpawnBoss(int npcId, string bossName, string tshockName)
     {
         // Validación defensiva: una invocación inválida no debe tumbar el cliente.
-        if (npcId <= 0 || npcId >= Main.npc.Length)
+        if (npcId <= 0)
         {
-            SetStatus($"No se puede invocar {bossName}: ID de NPC fuera de rango en esta versión.");
+            SetStatus($"No se puede invocar {bossName}: ID de NPC inválido.");
             return;
         }
 
