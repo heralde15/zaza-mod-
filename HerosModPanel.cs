@@ -882,6 +882,59 @@ internal static partial class HerosModPanel
         }
     }
 
+    // Intenta activar Journey Mode tanto en el mundo como en el personaje.
+    // Terraria puede exigir un mundo/personaje creado en Viaje y el servidor puede rechazar el cambio.
+    private static bool TryEnableJourneyMode()
+    {
+        bool changed = false;
+        try
+        {
+            const BindingFlags staticFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            FieldInfo worldModeField = typeof(Main).GetField("GameMode", staticFlags);
+            if (worldModeField != null && worldModeField.FieldType == typeof(int))
+            {
+                worldModeField.SetValue(null, 3);
+                changed = true;
+            }
+            else
+            {
+                PropertyInfo worldModeProperty = typeof(Main).GetProperty("GameMode", staticFlags);
+                if (worldModeProperty?.CanWrite == true && worldModeProperty.PropertyType == typeof(int))
+                {
+                    worldModeProperty.SetValue(null, 3);
+                    changed = true;
+                }
+            }
+        }
+        catch { }
+
+        try
+        {
+            Player player = Main.LocalPlayer;
+            if (player != null && player.active)
+            {
+                const BindingFlags instanceFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+                FieldInfo difficultyField = typeof(Player).GetField("difficulty", instanceFlags);
+                if (difficultyField != null)
+                {
+                    difficultyField.SetValue(player, Convert.ChangeType(3, difficultyField.FieldType, CultureInfo.InvariantCulture));
+                    changed = true;
+                }
+                else
+                {
+                    PropertyInfo difficultyProperty = typeof(Player).GetProperty("difficulty", instanceFlags);
+                    if (difficultyProperty?.CanWrite == true)
+                    {
+                        difficultyProperty.SetValue(player, Convert.ChangeType(3, difficultyProperty.PropertyType, CultureInfo.InvariantCulture));
+                        changed = true;
+                    }
+                }
+            }
+        }
+        catch { }
+        return changed;
+    }
+
     private static void ApplyProjectileMultiplier(Player local)
     {
         if (local == null || !local.active || local.dead || editorProjectileMultiplier <= 1)
@@ -1067,16 +1120,12 @@ internal static partial class HerosModPanel
         }
         y += RowH + 6;
 
-        string adventureText = adventureUnrestrictedEnabled ? "Permisos creativos abiertos: ACTIVADOS" : "Permisos creativos abiertos: desactivados";
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), adventureText, mouse, adventureUnrestrictedEnabled ? new Color(40, 115, 75) : UiTabColor))
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Activar Journey Mode (Modo Viaje)", mouse, new Color(40, 115, 75)))
         {
-            adventureUnrestrictedEnabled = !adventureUnrestrictedEnabled;
-            bool applied = ApplyUnrestrictedAdventurePermissions(adventureUnrestrictedEnabled);
+            bool applied = TryEnableJourneyMode();
             SetStatus(applied
-                ? (adventureUnrestrictedEnabled
-                    ? "Permisos creativos abiertos cuando la API lo permite. Esto NO convierte el personaje ni el mundo al modo Viaje/Aventura; el servidor también debe permitirlo."
-                    : "Permisos de poderes creativos configurados de nuevo para el anfitrión.")
-                : "No se pudieron cambiar los permisos de poderes en esta versión; comprueba la API de CreativePowerManager.");
+                ? "Se intentó activar Journey Mode en mundo/personaje. Puede requerir reinicio o mundo/personaje creados en Viaje; en multijugador manda el servidor."
+                : "No se pudo cambiar Journey Mode con la API disponible. Terraria puede exigir crear un mundo y personaje en Modo Viaje.");
         }
         y += RowH + 6;
         if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, Width - Pad * 2, RowH), "Desbloquear investigación de TODOS los objetos (modo Viaje)", mouse, new Color(75, 85, 135)))
