@@ -54,6 +54,15 @@ internal static partial class HerosModPanel
     private static bool serverHudEnabled = true;
     // Posición del HUD: 0 arriba-izquierda, 1 arriba-derecha, 2 abajo-izquierda, 3 abajo-derecha, 4 centro-arriba, 5 centro-abajo.
     private static int serverHudPosition = 0;
+    // Categorías configurables del HUD; las cuatro originales siguen activadas por defecto.
+    private static bool hudShowConnection = true;
+    private static bool hudShowPerformance = true;
+    private static bool hudShowVitals = true;
+    private static bool hudShowPositionTime = true;
+    private static bool hudShowBiome;
+    private static bool hudShowVelocity;
+    private static bool hudShowInventory;
+    private static bool hudShowCounts;
     private static bool commandConsolePreviousPanelVisible;
     private static string commandConsoleInput = string.Empty;
     private static string commandConsoleOutput = "Consola: Ctrl derecho abre/cierra · Alt derecho o Enter ejecuta · Esc cierra.";
@@ -2206,8 +2215,40 @@ internal static partial class HerosModPanel
     {
         Player p = Main.LocalPlayer;
         if (p == null || !p.active) return;
-        int width = Math.Min(430, Math.Max(220, Main.screenWidth - 24));
-        int height = 112;
+        int width = Math.Min(560, Math.Max(260, Main.screenWidth - 24));
+        var hudLines = new List<(string text, Color color, float scale)>();
+        string connection = Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador" : "Servidor";
+        string world = string.IsNullOrWhiteSpace(Main.worldName) ? "Mundo sin nombre" : Main.worldName;
+        if (hudShowConnection) hudLines.Add(("HERO | " + connection + " | " + world, new Color(110, 220, 255), 0.68f));
+        if (hudShowPerformance)
+        {
+            string mode = Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal";
+            hudLines.Add(($"Ping: {GetPingLabel()} | FPS: {Main.frameRate} | Modo: {mode}", Color.White, 0.64f));
+        }
+        if (hudShowVitals) hudLines.Add(($"Vida: {p.statLife}/{p.statLifeMax2} | Maná: {p.statMana}/{p.statManaMax2} | DEF: {p.statDefense}", Color.White, 0.64f));
+        if (hudShowPositionTime) hudLines.Add(($"X: {(int)(p.position.X / 16f)} Y: {(int)(p.position.Y / 16f)} | {(Main.dayTime ? "Día" : "Noche")}", new Color(210, 220, 235), 0.62f));
+        if (hudShowBiome)
+        {
+            string biome = p.ZoneDungeon ? "Mazmorra" : p.ZoneUnderworldHeight ? "Inframundo" : p.ZoneJungle ? "Jungla" :
+                p.ZoneSnow ? "Nieve" : p.ZoneDesert ? "Desierto" : p.ZoneBeach ? "Playa" :
+                p.ZoneCorrupt ? "Corrupción" : p.ZoneCrimson ? "Carmesí" : p.ZoneHallow ? "Sagrado" :
+                (p.position.Y / 16f < Main.worldSurface ? "Superficie" : "Subsuelo");
+            hudLines.Add(("Bioma: " + biome, new Color(190, 220, 190), 0.62f));
+        }
+        if (hudShowVelocity) hudLines.Add(($"Velocidad: X {p.velocity.X:0.00} | Y {p.velocity.Y:0.00}", Color.LightGray, 0.62f));
+        if (hudShowInventory)
+        {
+            int occupied = p.inventory.Count(item => item != null && !item.IsAir);
+            Item held = p.inventory != null && p.selectedItem >= 0 && p.selectedItem < p.inventory.Length ? p.inventory[p.selectedItem] : null;
+            hudLines.Add(($"Inventario: {occupied}/{p.inventory.Length} espacios | Mano: {(held == null || held.IsAir ? "vacía" : held.Name)}", Color.LightGray, 0.62f));
+        }
+        if (hudShowCounts)
+        {
+            int hostile = Main.npc.Count(n => n != null && n.active && n.CanBeChasedBy());
+            hudLines.Add(($"NPC activos: {Main.npc.Count(n => n != null && n.active)} | Enemigos: {hostile} | Proyectiles: {CountActiveProjectiles()}", Color.LightGray, 0.62f));
+        }
+        int width = Math.Min(560, Math.Max(260, Main.screenWidth - 24));
+        int height = Math.Max(48, 24 + hudLines.Count * 21);
         int margin = 12;
         int maxX = Math.Max(margin, Main.screenWidth - width - margin);
         int maxY = Math.Max(margin, Main.screenHeight - height - margin);
@@ -2230,14 +2271,15 @@ internal static partial class HerosModPanel
         sb.Draw(pixel, box, new Color(7, 10, 18, 220));
         sb.Draw(pixel, new Rectangle(x, y, width, 3), new Color(110, 220, 255));
         sb.Draw(pixel, new Rectangle(x, y + height - 2, width, 2), UiAccent * 0.9f);
-        string connection = Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador" : "Servidor";
-        string world = string.IsNullOrWhiteSpace(Main.worldName) ? "Mundo sin nombre" : Main.worldName;
-        if (world.Length > 32) world = world.Substring(0, 29) + "...";
-        string mode = Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal";
-        Utils.DrawBorderString(sb, "HERO | " + connection + " | " + world, new Vector2(x + 9, y + 8), new Color(110, 220, 255), 0.72f);
-        Utils.DrawBorderString(sb, $"Ping: {GetPingLabel()}    FPS: {Main.frameRate}    Modo: {mode}", new Vector2(x + 9, y + 31), Color.White, 0.68f);
-        Utils.DrawBorderString(sb, $"Vida: {p.statLife}/{p.statLifeMax2}    Maná: {p.statMana}/{p.statManaMax2}    DEF: {p.statDefense}", new Vector2(x + 9, y + 52), Color.White, 0.68f);
-        Utils.DrawBorderString(sb, $"X: {(int)(p.position.X / 16f)}  Y: {(int)(p.position.Y / 16f)}    {(Main.dayTime ? "Día" : "Noche")} | .hud on/off", new Vector2(x + 9, y + 74), new Color(210, 220, 235), 0.65f);
+        int lineY = y + 7;
+        foreach (var line in hudLines)
+        {
+            string display = line.text;
+            while (display.Length > 1 && FontAssets.MouseText.Value.MeasureString(display).X * line.scale > width - 18)
+                display = display.Substring(0, display.Length - 1);
+            Utils.DrawBorderString(sb, display, new Vector2(x + 9, lineY), line.color, line.scale);
+            lineY += 21;
+        }
         if (box.Contains(new Point(Main.mouseX, Main.mouseY))) p.mouseInterface = true;
     }
 
