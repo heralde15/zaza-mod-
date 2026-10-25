@@ -4928,7 +4928,7 @@ internal static partial class HerosModPanel
     private static void DrawCommandConsole(SpriteBatch sb, Texture2D pixel)
     {
         int width = Math.Min(760, Main.screenWidth - 32);
-        int height = 150;
+        int height = 190;
         int x = Math.Max(16, (Main.screenWidth - width) / 2);
         int y = Math.Max(24, Main.screenHeight - height - 70);
         var panel = new Rectangle(x, y, width, height);
@@ -4940,9 +4940,24 @@ internal static partial class HerosModPanel
         string output = commandConsoleOutput ?? string.Empty;
         var font = FontAssets.MouseText.Value;
         float maxOutputWidth = width - 24;
-        while (output.Length > 1 && font.MeasureString(output).X * 0.68f > maxOutputWidth)
-            output = "…" + output.Substring(Math.Max(1, output.Length / 20));
-        Utils.DrawBorderString(sb, output, new Vector2(x + 12, y + 62), Color.White, 0.68f);
+        var outputLines = new List<string>();
+        string currentLine = string.Empty;
+        foreach (string word in output.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            string candidate = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+            if (font.MeasureString(candidate).X * 0.62f > maxOutputWidth && !string.IsNullOrEmpty(currentLine))
+            {
+                outputLines.Add(currentLine);
+                currentLine = word;
+                if (outputLines.Count >= 3) break;
+            }
+            else currentLine = candidate;
+        }
+        if (outputLines.Count < 3 && !string.IsNullOrEmpty(currentLine)) outputLines.Add(currentLine);
+        if (outputLines.Count == 3 && output.Length > string.Join(" ", outputLines).Length)
+            outputLines[2] = outputLines[2].TrimEnd('.') + " …";
+        for (int i = 0; i < outputLines.Count && i < 3; i++)
+            Utils.DrawBorderString(sb, outputLines[i], new Vector2(x + 12, y + 59 + i * 18), Color.White, 0.62f);
         var inputRect = new Rectangle(x + 10, y + height - 38, width - 20, 27);
         sb.Draw(pixel, inputRect, new Color(35, 43, 59));
         string input = "> " + commandConsoleInput;
@@ -5017,7 +5032,65 @@ internal static partial class HerosModPanel
             case ".helpall":
             case ".helpfull":
             case ".comandos":
-                commandConsoleOutput = ".hud [on/off] · .hudpos <0-5|arribaizq|arribader|abajoizq|abajoder|centroarriba|centroabajo> · .toggle <god|fly|ghost|minions|lifelock|luck|antilag|effects|projectiles|fps|mute|shopfree> [on/off] · .buff <ID> [segundos] · .heal · .debuffclear · .clearhostiles · .server · .ping · .pos · .life · .mana · .world · .biome · .clock · .inventory · .buffs · .counts · .nearby · .players · .equipment · .status · .help2 · .help3";
+                commandConsoleOutput = ".hud [on/off] · .hudpos <0-5> · .hudinfo <conexion|rendimiento|vida|posicion|bioma|velocidad|inventario|conteos> [on/off] · .toggle <función> [on/off] · .report · .diagnostics · .buff <ID> [segundos] · .heal · .debuffclear · .clearhostiles · .server · .ping · .pos · .life · .mana · .world · .biome · .clock · .inventory · .buffs · .counts · .nearby · .players · .equipment · .status · .help2 · .help3";
+                break;
+            case ".hudinfo":
+                {
+                    if (parts.Length < 2)
+                    {
+                        commandConsoleOutput = "Uso: .hudinfo <conexion|rendimiento|vida|posicion|bioma|velocidad|inventario|conteos> [on/off]. Controla qué datos salen en el HUD.";
+                        break;
+                    }
+                    string category = argument;
+                    bool? value = parts.Length > 2 ? parts[2].ToLowerInvariant() switch
+                    {
+                        "on" or "1" or "true" or "activar" or "si" or "sí" => true,
+                        "off" or "0" or "false" or "desactivar" or "no" => false,
+                        _ => null
+                    } : null;
+                    bool ReadFlag() => value ?? false;
+                    bool known = true;
+                    switch (category)
+                    {
+                        case "conexion": hudShowConnection = value ?? !hudShowConnection; break;
+                        case "rendimiento": hudShowPerformance = value ?? !hudShowPerformance; break;
+                        case "vida": hudShowVitals = value ?? !hudShowVitals; break;
+                        case "posicion": hudShowPositionTime = value ?? !hudShowPositionTime; break;
+                        case "bioma": hudShowBiome = value ?? !hudShowBiome; break;
+                        case "velocidad": hudShowVelocity = value ?? !hudShowVelocity; break;
+                        case "inventario": hudShowInventory = value ?? !hudShowInventory; break;
+                        case "conteos": hudShowCounts = value ?? !hudShowCounts; break;
+                        default: known = false; break;
+                    }
+                    commandConsoleOutput = known
+                        ? "HUD info " + category + "=" + (category switch
+                        {
+                            "conexion" => hudShowConnection,
+                            "rendimiento" => hudShowPerformance,
+                            "vida" => hudShowVitals,
+                            "posicion" => hudShowPositionTime,
+                            "bioma" => hudShowBiome,
+                            "velocidad" => hudShowVelocity,
+                            "inventario" => hudShowInventory,
+                            "conteos" => hudShowCounts,
+                            _ => false
+                        } ? "ON" : "OFF") + "."
+                        : "Categoría desconocida. Usa conexion, rendimiento, vida, posicion, bioma, velocidad, inventario o conteos.";
+                    break;
+                }
+            case ".report":
+            case ".informe":
+                {
+                    Player rp = Main.LocalPlayer;
+                    int activeNpcCount = Main.npc.Count(n => n != null && n.active);
+                    int hostileCount = Main.npc.Count(n => n != null && n.active && n.CanBeChasedBy());
+                    int itemCount = rp != null && rp.active ? rp.inventory.Count(it => it != null && !it.IsAir) : 0;
+                    commandConsoleOutput = $"INFORME | Mundo={Main.worldName} ({Main.maxTilesX}x{Main.maxTilesY}) | Modo={(Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal")} | Hardmode={Main.hardMode} | Hora={(Main.dayTime ? "Día" : "Noche")} | Clima={(Main.raining ? "Lluvia" : "despejado")} | Ping={GetPingLabel()} | FPS={Main.frameRate} | NPC={activeNpcCount} enemigos={hostileCount} proyectiles={CountActiveProjectiles()} | Inventario={itemCount} objetos | HUD={(serverHudEnabled ? "ON" : "OFF")}";
+                    break;
+                }
+            case ".diagnostics":
+            case ".diag":
+                commandConsoleOutput = $"DIAGNÓSTICO | Terraria={Main.versionNumber} | Red={Main.netMode} | Pantalla={Main.screenWidth}x{Main.screenHeight} | FPS={Main.frameRate} | NPC={Main.npc.Count(n => n != null && n.active)} | Proyectiles={CountActiveProjectiles()} | Polvo={CountActiveDust()} | Gore={CountActiveGore()} | Jugadores={Main.player.Count(pl => pl != null && pl.active)} | Ping={GetPingLabel()}";
                 break;
             case ".hudpos":
             case ".hudposition":
