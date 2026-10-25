@@ -52,6 +52,8 @@ internal static partial class HerosModPanel
     private static bool commandConsoleVisible;
     // HUD superior opcional con información local de conexión, mundo y personaje.
     private static bool serverHudEnabled = true;
+    // Posición del HUD: 0 arriba-izquierda, 1 arriba-derecha, 2 abajo-izquierda, 3 abajo-derecha, 4 centro-arriba, 5 centro-abajo.
+    private static int serverHudPosition = 0;
     private static bool commandConsolePreviousPanelVisible;
     private static string commandConsoleInput = string.Empty;
     private static string commandConsoleOutput = "Consola: Ctrl derecho abre/cierra · Alt derecho o Enter ejecuta · Esc cierra.";
@@ -2205,7 +2207,25 @@ internal static partial class HerosModPanel
         Player p = Main.LocalPlayer;
         if (p == null || !p.active) return;
         int width = Math.Min(430, Math.Max(220, Main.screenWidth - 24));
-        int height = 112, x = 12, y = 12;
+        int height = 112;
+        int margin = 12;
+        int maxX = Math.Max(margin, Main.screenWidth - width - margin);
+        int maxY = Math.Max(margin, Main.screenHeight - height - margin);
+        int x = serverHudPosition switch
+        {
+            1 => maxX,
+            3 => maxX,
+            4 => Math.Max(margin, (Main.screenWidth - width) / 2),
+            5 => Math.Max(margin, (Main.screenWidth - width) / 2),
+            _ => margin
+        };
+        int y = serverHudPosition switch
+        {
+            2 => maxY,
+            3 => maxY,
+            5 => maxY,
+            _ => margin
+        };
         Rectangle box = new Rectangle(x, y, width, height);
         sb.Draw(pixel, box, new Color(7, 10, 18, 220));
         sb.Draw(pixel, new Rectangle(x, y, width, 3), new Color(110, 220, 255));
@@ -2287,12 +2307,29 @@ internal static partial class HerosModPanel
     {
         var p = Main.LocalPlayer;
         DrawSectionHeader(sb, panel, ref y, "Resumen del mundo y conexión");
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, 210, 27), serverHudEnabled ? "HUD superior: ACTIVADO" : "HUD superior: DESACTIVADO", new Point(Main.mouseX, Main.mouseY)))
+        Point mouse = new Point(Main.mouseX, Main.mouseY);
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, 210, 27), serverHudEnabled ? "HUD superior: ACTIVADO" : "HUD superior: DESACTIVADO", mouse))
         {
             serverHudEnabled = !serverHudEnabled;
             SetStatus("HUD superior " + (serverHudEnabled ? "activado." : "desactivado."));
         }
-        y += 33;
+        y += 34;
+        DrawSectionHeader(sb, panel, ref y, "Posición del HUD");
+        string[] hudPositionLabels = { "Arriba izq.", "Arriba der.", "Abajo izq.", "Abajo der.", "Centro arriba", "Centro abajo" };
+        int hudButtonGap = 6;
+        int hudButtonWidth = (panel.Width - Pad * 2 - hudButtonGap * 2) / 3;
+        for (int i = 0; i < hudPositionLabels.Length; i++)
+        {
+            int col = i % 3;
+            int row = i / 3;
+            Rectangle hudButton = new Rectangle(panel.X + Pad + col * (hudButtonWidth + hudButtonGap), y + row * 29, hudButtonWidth, 25);
+            if (DrawButton(sb, pixel, hudButton, hudPositionLabels[i], mouse, serverHudPosition == i ? UiAccent : UiTabColor))
+            {
+                serverHudPosition = i;
+                SetStatus("Posición del HUD: " + hudPositionLabels[i] + ".");
+            }
+        }
+        y += 62;
         DrawInfoLine(sb, panel, ref y, "Conexión", Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador cliente" : "Servidor dedicado");
         DrawInfoLine(sb, panel, ref y, "Ping", GetPingLabel());
         string mode = Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal";
