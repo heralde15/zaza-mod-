@@ -50,6 +50,8 @@ internal static partial class HerosModPanel
 
     // Consola independiente del panel HERO. No concede permisos: el servidor decide qué comandos acepta.
     private static bool commandConsoleVisible;
+    // HUD superior opcional con información local de conexión, mundo y personaje.
+    private static bool serverHudEnabled = true;
     private static bool commandConsolePreviousPanelVisible;
     private static string commandConsoleInput = string.Empty;
     private static string commandConsoleOutput = "Consola: Ctrl derecho abre/cierra · Alt derecho o Enter ejecuta · Esc cierra.";
@@ -646,6 +648,10 @@ internal static partial class HerosModPanel
 
         var pixel = TextureAssets.MagicPixel.Value;
         DrawWorldSelectionOverlay(sb, pixel);
+
+        // HUD superior independiente: permanece visible con el panel HERO cerrado.
+        if (serverHudEnabled)
+            DrawServerHud(sb, pixel);
 
         // Al abrir la consola se oculta visualmente HERO para que solo aparezca la consola.
         if (commandConsoleVisible)
@@ -2193,12 +2199,102 @@ internal static partial class HerosModPanel
         SetStatus($"Solicitud enviada: {amount} × {Lang.GetItemNameValue(itemId)} para {target.name}. Requiere TShock y permiso /give.");
     }
 
+    // HUD compacto, dibujado aunque el panel principal esté cerrado.
+    private static void DrawServerHud(SpriteBatch sb, Texture2D pixel)
+    {
+        Player p = Main.LocalPlayer;
+        if (p == null || !p.active) return;
+        int width = Math.Min(430, Math.Max(220, Main.screenWidth - 24));
+        int height = 112, x = 12, y = 12;
+        Rectangle box = new Rectangle(x, y, width, height);
+        sb.Draw(pixel, box, new Color(7, 10, 18, 220));
+        sb.Draw(pixel, new Rectangle(x, y, width, 3), new Color(110, 220, 255));
+        sb.Draw(pixel, new Rectangle(x, y + height - 2, width, 2), UiAccent * 0.9f);
+        string connection = Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador" : "Servidor";
+        string world = string.IsNullOrWhiteSpace(Main.worldName) ? "Mundo sin nombre" : Main.worldName;
+        if (world.Length > 32) world = world.Substring(0, 29) + "...";
+        string mode = Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal";
+        Utils.DrawBorderString(sb, "HERO | " + connection + " | " + world, new Vector2(x + 9, y + 8), new Color(110, 220, 255), 0.72f);
+        Utils.DrawBorderString(sb, $"Ping: {GetPingLabel()}    FPS: {Main.frameRate}    Modo: {mode}", new Vector2(x + 9, y + 31), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, $"Vida: {p.statLife}/{p.statLifeMax2}    Maná: {p.statMana}/{p.statManaMax2}    DEF: {p.statDefense}", new Vector2(x + 9, y + 52), Color.White, 0.68f);
+        Utils.DrawBorderString(sb, $"X: {(int)(p.position.X / 16f)}  Y: {(int)(p.position.Y / 16f)}    {(Main.dayTime ? "Día" : "Noche")} | .hud on/off", new Vector2(x + 9, y + 74), new Color(210, 220, 235), 0.65f);
+        if (box.Contains(new Point(Main.mouseX, Main.mouseY))) p.mouseInterface = true;
+    }
+
+    private static string GetServerInfoSummary()
+    {
+        Player p = Main.LocalPlayer;
+        string connection = Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador cliente" : "Servidor";
+        if (p == null || !p.active) return $"Conexión={connection} · Mundo={Main.worldName} · Ping={GetPingLabel()} · FPS={Main.frameRate}";
+        return $"Conexión={connection} · Mundo={Main.worldName} · Ping={GetPingLabel()} · FPS={Main.frameRate} · Vida={p.statLife}/{p.statLifeMax2} · Maná={p.statMana}/{p.statManaMax2} · X={(int)(p.position.X / 16f)} Y={(int)(p.position.Y / 16f)}";
+    }
+
+    // Busca latencia mediante reflexión para no depender de una API concreta de cada versión.
+    private static string GetPingLabel()
+    {
+        try
+        {
+            Type t = typeof(Main).Assembly.GetType("Terraria.Netplay");
+            object root = null;
+            if (t != null)
+            {
+                FieldInfo f = t.GetField("Connection", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (f != null) root = f.GetValue(null);
+                if (root == null)
+                {
+                    PropertyInfo p = t.GetProperty("Connection", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                    if (p != null) root = p.GetValue(null);
+                }
+            }
+            Queue<object> queue = new Queue<object>();
+            HashSet<object> seen = new HashSet<object>();
+            if (root != null) queue.Enqueue(root);
+            if (Main.instance != null) queue.Enqueue(Main.instance);
+            int inspected = 0;
+            while (queue.Count > 0 && inspected++ < 24)
+            {
+                object obj = queue.Dequeue();
+                if (obj == null || obj is string || obj.GetType().IsPrimitive || !seen.Add(obj)) continue;
+                foreach (MemberInfo m in obj.GetType().GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    try
+                    {
+                        object value = null;
+                        if (m is FieldInfo fi) value = fi.GetValue(obj);
+                        else if (m is PropertyInfo pi && pi.GetIndexParameters().Length == 0 && pi.GetMethod != null) value = pi.GetValue(obj);
+                        else continue;
+                        string name = m.Name.ToLowerInvariant();
+                        if ((name.Contains("ping") || name.Contains("latency") || name.Contains("roundtrip")) && value != null)
+                        {
+                            if (value is int n && n >= 0 && n < 120000) return n + " ms";
+                            if (value is long l && l >= 0 && l < 120000) return l + " ms";
+                            if (value is float f && f >= 0 && f < 120000) return ((int)f) + " ms";
+                        }
+                        if (value != null && !(value is string) && !value.GetType().IsPrimitive && queue.Count < 24 &&
+                            (name.Contains("connection") || name.Contains("socket") || name.Contains("net") || name.Contains("diagnostic") || name.Contains("ping"))) queue.Enqueue(value);
+                    }
+                    catch { }
+                }
+            }
+        }
+        catch { }
+        return Main.netMode == 0 ? "N/A (local)" : "N/D";
+    }
+
     // ------------------------------------------------------------------ Informacion del mundo y jugador
 
     private static void DrawInfoTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y)
     {
         var p = Main.LocalPlayer;
-        DrawSectionHeader(sb, panel, ref y, "Resumen del mundo");
+        DrawSectionHeader(sb, panel, ref y, "Resumen del mundo y conexión");
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, 210, 27), serverHudEnabled ? "HUD superior: ACTIVADO" : "HUD superior: DESACTIVADO", new Point(Main.mouseX, Main.mouseY)))
+        {
+            serverHudEnabled = !serverHudEnabled;
+            SetStatus("HUD superior " + (serverHudEnabled ? "activado." : "desactivado."));
+        }
+        y += 33;
+        DrawInfoLine(sb, panel, ref y, "Conexión", Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador cliente" : "Servidor dedicado");
+        DrawInfoLine(sb, panel, ref y, "Ping", GetPingLabel());
         string mode = Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal";
         DrawInfoLine(sb, panel, ref y, "Mundo", string.IsNullOrWhiteSpace(Main.worldName) ? "(sin nombre)" : Main.worldName);
         DrawInfoLine(sb, panel, ref y, "TamaÃ±o", $"{Main.maxTilesX} x {Main.maxTilesY} tiles");
@@ -4811,10 +4907,10 @@ internal static partial class HerosModPanel
         {
             case ".help":
             case ".ayuda":
-                commandConsoleOutput = ".god .fly .heal .ghost .minions .lifelock .luck .status · escribe .help2 para más comandos";
+                commandConsoleOutput = ".hud .server .ping .pos .life .mana .god .fly .heal .ghost .minions .lifelock .luck .status · .help2 para más";
                 break;
             case ".help2":
-                commandConsoleOutput = ".antilag .effects .projectiles .fps .mute .shopfree .buff ID [seg] .clearhostiles";
+                commandConsoleOutput = ".antilag .effects .projectiles .fps .mute .shopfree .buff ID [seg] .clearhostiles · HUD: .hud on/off · info: .server/.ping/.pos/.life/.mana";
                 break;
             case ".god":
                 godmodeEnabled = Toggle(godmodeEnabled);
@@ -4932,8 +5028,32 @@ internal static partial class HerosModPanel
                 RemovePanelHostileNpcs();
                 commandConsoleOutput = "Limpieza local de enemigos solicitada; el servidor puede restaurarlos.";
                 break;
+            case ".hud":
+            case ".serverhud":
+                serverHudEnabled = requestedState ?? !serverHudEnabled;
+                commandConsoleOutput = "HUD superior " + (serverHudEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".server":
+            case ".info":
+                commandConsoleOutput = GetServerInfoSummary();
+                break;
+            case ".ping":
+                commandConsoleOutput = "Ping: " + GetPingLabel() + " · la versión del juego puede no exponer la latencia al cliente.";
+                break;
+            case ".pos":
+                {
+                    var p = Main.LocalPlayer;
+                    commandConsoleOutput = p != null && p.active ? $"Posición X={(int)(p.position.X / 16f)} Y={(int)(p.position.Y / 16f)} · velocidad X={p.velocity.X:0.0} Y={p.velocity.Y:0.0}" : "No hay personaje activo.";
+                    break;
+                }
+            case ".life":
+                commandConsoleOutput = Main.LocalPlayer != null && Main.LocalPlayer.active ? $"Vida {Main.LocalPlayer.statLife}/{Main.LocalPlayer.statLifeMax2} · Defensa {Main.LocalPlayer.statDefense}" : "No hay personaje activo.";
+                break;
+            case ".mana":
+                commandConsoleOutput = Main.LocalPlayer != null && Main.LocalPlayer.active ? $"Maná {Main.LocalPlayer.statMana}/{Main.LocalPlayer.statManaMax2}" : "No hay personaje activo.";
+                break;
             case ".status":
-                commandConsoleOutput = $"god={(godmodeEnabled ? "ON" : "OFF")} fly={(flyEnabled ? "ON" : "OFF")} ghost={(ghostModeEnabled ? "ON" : "OFF")} minions={(infiniteMinionsEnabled ? "ON" : "OFF")} lifelock={(lifeLockEnabled ? "ON" : "OFF")} luck={(luckBoostEnabled ? "ON" : "OFF")} antilag={(antiLagEnabled ? "ON" : "OFF")} effects={(antiEffectsEnabled ? "ON" : "OFF")} projectiles={(antiLagProjectilesEnabled ? "ON" : "OFF")} fps={(fpsStabilizerEnabled ? "ON" : "OFF")} mute={(muteGameSoundsEnabled ? "ON" : "OFF")} shopfree={(npcShopFreeEnabled ? "ON" : "OFF")}";
+                commandConsoleOutput = $"hud={(serverHudEnabled ? "ON" : "OFF")} god={(godmodeEnabled ? "ON" : "OFF")} fly={(flyEnabled ? "ON" : "OFF")} ghost={(ghostModeEnabled ? "ON" : "OFF")} minions={(infiniteMinionsEnabled ? "ON" : "OFF")} lifelock={(lifeLockEnabled ? "ON" : "OFF")} luck={(luckBoostEnabled ? "ON" : "OFF")} antilag={(antiLagEnabled ? "ON" : "OFF")} effects={(antiEffectsEnabled ? "ON" : "OFF")} projectiles={(antiLagProjectilesEnabled ? "ON" : "OFF")} fps={(fpsStabilizerEnabled ? "ON" : "OFF")} mute={(muteGameSoundsEnabled ? "ON" : "OFF")} shopfree={(npcShopFreeEnabled ? "ON" : "OFF")}";
                 break;
             default:
                 commandConsoleOutput = "Comando local desconocido: " + command + " · escribe .help";
