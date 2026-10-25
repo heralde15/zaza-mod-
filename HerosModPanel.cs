@@ -2382,7 +2382,7 @@ internal static partial class HerosModPanel
             Utils.DrawBorderString(sb, display, new Vector2(x + 9, lineY), line.color, line.scale);
             lineY += 21;
         }
-        if (box.Contains(new Point(Main.mouseX, Main.mouseY))) p.mouseInterface = true;
+        // El HUD es solo informativo: no captura el ratón ni bloquea menús/interacciones.
     }
 
     private static string GetServerInfoSummary()
