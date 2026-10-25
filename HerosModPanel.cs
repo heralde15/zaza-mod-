@@ -3298,7 +3298,7 @@ internal static partial class HerosModPanel
             }
 
             worldSchematicStatus = $"Pegado en POS1: {worldEditClipboardWidth} × {worldEditClipboardHeight}.";
-            SetStatus($"Pegado completado: {changed:N0} tiles. En multijugador el servidor puede revertir cambios.");
+            SetStatus($"Pegado local completado: {changed:N0} tiles." + GetWorldEditAuthorityNotice());
         }
         catch (Exception ex)
         {
@@ -3398,7 +3398,7 @@ internal static partial class HerosModPanel
                 }
             }
             worldSchematicStatus = "Importado " + Path.GetFileName(path) + " · " + width + "×" + height;
-            SetStatus("Construcción importada en POS1: " + changed.ToString("N0") + " tiles.");
+            SetStatus("Construcción importada localmente en POS1: " + changed.ToString("N0") + " tiles." + GetWorldEditAuthorityNotice());
         }
         catch (Exception ex) { worldSchematicStatus = "Error al importar: " + ex.Message; SetStatus("No se pudo importar el archivo."); }
     }
@@ -3435,6 +3435,15 @@ internal static partial class HerosModPanel
 
         worldPos2 = new Point(newX, newY);
         SetStatus($"Selección ampliada ×{multiplier}: {width * multiplier} × {height * multiplier}. Pulsa Fill para colocar el bloque seleccionado.");
+    }
+
+    // En un cliente multijugador solo podemos modificar la copia local del mundo.
+    // Este aviso evita presentar los cambios como confirmados por un servidor remoto.
+    private static string GetWorldEditAuthorityNotice()
+    {
+        return Main.netMode == 1
+            ? " Aviso: cambio local del cliente; el servidor remoto no lo ha confirmado y puede revertirlo."
+            : string.Empty;
     }
 
     private static void ApplyWorldEdit(string operation)
@@ -3594,11 +3603,11 @@ internal static partial class HerosModPanel
             SetStatus("No hubo cambios en la selección.");
             return;
         }
-        SetStatus(removeIdNearPlayer
+        SetStatus((removeIdNearPlayer
             ? $"WorldEdit quitar ID {replaceId}: {changed:N0} bloques eliminados en radio de {removeIdRadius} tiles alrededor del jugador. Undo disponible."
             : liquidOperation
                 ? $"WorldEdit líquidos {operation}: {changed:N0} celdas procesadas. Undo disponible para la última operación."
-                : $"WorldEdit {operation}: {changed:N0} celdas modificadas. Undo disponible para la última operación.");
+                : $"WorldEdit {operation}: {changed:N0} celdas modificadas. Undo disponible para la última operación.") + GetWorldEditAuthorityNotice());
     }
 
     private static void UndoWorldEdit()
@@ -3618,7 +3627,7 @@ internal static partial class HerosModPanel
         }
         int count = worldEditUndo.Count;
         worldEditUndo.Clear();
-        SetStatus($"Undo completado: restaurados {count} tiles.");
+        SetStatus($"Undo local completado: restaurados {count} tiles." + GetWorldEditAuthorityNotice());
     }
 
     // ------------------------------------------------------------------ Herramientas adicionales: 200 acciones categorizadas
