@@ -4990,10 +4990,18 @@ internal static partial class HerosModPanel
                         break;
                     }
                     string feature = argument;
+                    bool? toggleRequestedState = parts.Length > 2 ? parts[2].ToLowerInvariant() switch
+                    {
+                        "on" or "1" or "true" or "activar" or "si" or "sí" => true,
+                        "off" or "0" or "false" or "desactivar" or "no" => false,
+                        _ => null
+                    } : null;
+                    bool ToggleFeature(bool current) => toggleRequestedState ?? !current;
+                    bool blocked = false;
                     switch (feature)
                     {
                         case "god":
-                            godmodeEnabled = Toggle(godmodeEnabled);
+                            godmodeEnabled = ToggleFeature(godmodeEnabled);
                             if (Main.LocalPlayer != null && Main.LocalPlayer.active)
                             {
                                 Main.LocalPlayer.creativeGodMode = godmodeEnabled;
@@ -5002,44 +5010,52 @@ internal static partial class HerosModPanel
                             }
                             break;
                         case "fly":
-                            flyEnabled = Toggle(flyEnabled);
-                            if (IsServer && flyEnabled) flyEnabled = false;
+                            flyEnabled = ToggleFeature(flyEnabled);
+                            if (IsServer && flyEnabled)
+                            {
+                                flyEnabled = false;
+                                commandConsoleOutput = "Vuelo bloqueado en modo COMANDOS: el servidor controla el movimiento.";
+                                blocked = true;
+                            }
                             break;
                         case "ghost":
-                            ghostModeEnabled = Toggle(ghostModeEnabled);
+                            ghostModeEnabled = ToggleFeature(ghostModeEnabled);
                             if (Main.LocalPlayer != null && Main.LocalPlayer.active) Main.LocalPlayer.ghost = ghostModeEnabled;
                             break;
                         case "minions":
-                            infiniteMinionsEnabled = Toggle(infiniteMinionsEnabled);
+                            infiniteMinionsEnabled = ToggleFeature(infiniteMinionsEnabled);
                             if (Main.LocalPlayer != null && Main.LocalPlayer.active && infiniteMinionsEnabled) Main.LocalPlayer.maxMinions = 9999;
                             break;
                         case "lifelock":
-                            if (IsServer && requestedState != false)
+                            if (IsServer && toggleRequestedState != false && !lifeLockEnabled)
                             {
                                 commandConsoleOutput = "Vida infinita bloqueada en modo COMANDOS porque el servidor controla la vida.";
+                                blocked = true;
                                 break;
                             }
-                            lifeLockEnabled = Toggle(lifeLockEnabled);
+                            lifeLockEnabled = ToggleFeature(lifeLockEnabled);
                             break;
-                        case "luck": luckBoostEnabled = Toggle(luckBoostEnabled); break;
-                        case "antilag": antiLagEnabled = Toggle(antiLagEnabled); break;
-                        case "effects": antiEffectsEnabled = Toggle(antiEffectsEnabled); break;
-                        case "projectiles": antiLagProjectilesEnabled = Toggle(antiLagProjectilesEnabled); break;
-                        case "fps": fpsStabilizerEnabled = Toggle(fpsStabilizerEnabled); break;
+                        case "luck": luckBoostEnabled = ToggleFeature(luckBoostEnabled); break;
+                        case "antilag": antiLagEnabled = ToggleFeature(antiLagEnabled); break;
+                        case "effects": antiEffectsEnabled = ToggleFeature(antiEffectsEnabled); break;
+                        case "projectiles": antiLagProjectilesEnabled = ToggleFeature(antiLagProjectilesEnabled); break;
+                        case "fps": fpsStabilizerEnabled = ToggleFeature(fpsStabilizerEnabled); break;
                         case "mute":
-                            muteGameSoundsEnabled = Toggle(muteGameSoundsEnabled);
+                            muteGameSoundsEnabled = ToggleFeature(muteGameSoundsEnabled);
                             ApplySoundMuteSetting();
                             break;
                         case "shopfree":
-                            npcShopFreeEnabled = Toggle(npcShopFreeEnabled);
+                            npcShopFreeEnabled = ToggleFeature(npcShopFreeEnabled);
                             ApplyNpcShopFreeSetting();
                             break;
                         default:
                             commandConsoleOutput = "Función desconocida: " + feature + ". Usa .helpall.";
+                            blocked = true;
                             break;
                     }
-                    if (string.IsNullOrEmpty(commandConsoleOutput) || !commandConsoleOutput.StartsWith("Función desconocida:", StringComparison.Ordinal))
-                        commandConsoleOutput = "toggle " + feature + "=" + (feature switch
+                    if (!blocked)
+                    {
+                        bool enabled = feature switch
                         {
                             "god" => godmodeEnabled,
                             "fly" => flyEnabled,
@@ -5054,7 +5070,9 @@ internal static partial class HerosModPanel
                             "mute" => muteGameSoundsEnabled,
                             "shopfree" => npcShopFreeEnabled,
                             _ => false
-                        } ? "ON" : "OFF") + ".";
+                        };
+                        commandConsoleOutput = "toggle " + feature + "=" + (enabled ? "ON" : "OFF") + ".";
+                    }
                     break;
                 }
             case ".help2":
