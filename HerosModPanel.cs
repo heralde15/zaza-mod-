@@ -1862,7 +1862,7 @@ internal static partial class HerosModPanel
         if (area.Width <= 0 || area.Height <= 0) return;
         sb.Draw(pixel, area, new Color(8, 12, 22));
         // Celdas adaptables al alto disponible para mejorar la legibilidad del minimapa.
-        int cell = area.Height >= 150 ? 10 : 8, span = 2;
+        int cell = area.Height >= 250 ? 12 : area.Height >= 150 ? 10 : 8, span = 2;
         int cols = Math.Max(1, area.Width / cell), rows = Math.Max(1, area.Height / cell);
         int cx = (int)(Main.LocalPlayer.Center.X / 16f), cy = (int)(Main.LocalPlayer.Center.Y / 16f);
         int left = cx - cols * span / 2, top = cy - rows * span / 2;
@@ -3013,8 +3013,8 @@ internal static partial class HerosModPanel
         int bx = panel.X + Pad;
         int bw = (Width - Pad * 2 - 8) / 2;
         int navGap = 4;
-        int navW = (Width - Pad * 2 - navGap * 3) / 4;
-        string[] pageNames = { "Selección", "Bloques", "Copiar/Líquidos", "Archivos" };
+        int navW = (Width - Pad * 2 - navGap * 4) / 5;
+        string[] pageNames = { "Selección", "Bloques", "Paredes/ID", "Copiar/Líquidos", "Archivos" };
         for (int page = 0; page < pageNames.Length; page++)
         {
             var navRect = new Rectangle(bx + page * (navW + navGap), y, navW, 25);
@@ -3064,7 +3064,7 @@ internal static partial class HerosModPanel
             int mapSpace = panel.Bottom - y - RowH - 38;
             if (mapSpace >= 64)
             {
-                int availableMapHeight = Math.Clamp(mapSpace, 64, 230);
+                int availableMapHeight = Math.Clamp(mapSpace, 64, 320);
                 DrawWorldMiniMap(sb, pixel, new Rectangle(bx, y, Math.Max(1, panel.Width - Pad * 2), availableMapHeight), mouse, true);
                 y += availableMapHeight + 5;
             }
@@ -3085,42 +3085,46 @@ internal static partial class HerosModPanel
         }
         else if (worldEditUiPage == 1)
         {
-            Utils.DrawBorderString(sb, "Tile ID (0 = aire/borrar):", new Vector2(bx, y), Color.White, 0.68f);
-            Utils.DrawBorderString(sb, "Reemplazar tile ID:", new Vector2(bx + 250, y), Color.White, 0.68f);
+            int idFieldGap = 12;
+            int idFieldWidth = (Width - Pad * 2 - idFieldGap) / 2;
+            Utils.DrawBorderString(sb, "Tile ID (0 = aire):", new Vector2(bx, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "ID objetivo:", new Vector2(bx + idFieldWidth + idFieldGap, y), Color.White, 0.68f);
             y += 18;
-            DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 12, worldTileType, mouse, "1");
-            DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 13, worldReplaceType, mouse, "0");
-            y += 32;
-            Utils.DrawBorderString(sb, "Wall ID:", new Vector2(bx, y), Color.White, 0.68f);
-            Utils.DrawBorderString(sb, "Reemplazar wall ID:", new Vector2(bx + 250, y), Color.White, 0.68f);
-            y += 18;
-            DrawTextField(sb, pixel, new Rectangle(bx, y, 190, 25), 27, worldWallType, mouse, "1");
-            DrawTextField(sb, pixel, new Rectangle(bx + 250, y, 190, 25), 28, worldReplaceWallType, mouse, "0");
+            DrawTextField(sb, pixel, new Rectangle(bx, y, idFieldWidth, 25), 12, worldTileType, mouse, "1");
+            DrawTextField(sb, pixel, new Rectangle(bx + idFieldWidth + idFieldGap, y, idFieldWidth, 25), 13, worldReplaceType, mouse, "0");
             y += 32;
             if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar selección", mouse, new Color(50, 105, 70))) ApplyWorldEdit("fill");
             if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar tiles", mouse, new Color(135, 65, 60))) ApplyWorldEdit("clear");
             y += RowH + 5;
-            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar tile ID → ID", mouse, new Color(80, 75, 130))) ApplyWorldEdit("replace");
-            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Contorno de tiles", mouse, new Color(65, 105, 135))) ApplyWorldEdit("outline");
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar ID → ID objetivo", mouse, new Color(80, 75, 130))) ApplyWorldEdit("replace");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Quitar bloques por ID objetivo", mouse, new Color(145, 55, 55))) ApplyWorldEdit("removeid");
             y += RowH + 5;
-            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar paredes", mouse, new Color(50, 105, 70))) ApplyWorldEdit("wallfill");
-            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Borrar paredes", mouse, new Color(135, 65, 60))) ApplyWorldEdit("wallclear");
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Contorno de tiles", mouse, new Color(65, 105, 135))) ApplyWorldEdit("outline");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Rellenar solo aire", mouse, new Color(45, 115, 85))) ApplyWorldEdit("airfill");
             y += RowH + 5;
-            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar wall ID", mouse, new Color(80, 75, 130))) ApplyWorldEdit("wallreplace");
-            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse)) UndoWorldEdit();
-            y += RowH + 5;
-            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar solo aire", mouse, new Color(45, 115, 85))) ApplyWorldEdit("airfill");
-            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Vaciar interior", mouse, new Color(120, 75, 65))) ApplyWorldEdit("hollow");
-            y += RowH + 5;
-            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Borrar tiles + paredes", mouse, new Color(145, 55, 55))) ApplyWorldEdit("clearall");
-            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Limpiar selección", mouse))
-            {
-                worldPos1 = null;
-                worldPos2 = null;
-                SetStatus("Selección borrada.");
-            }
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Vaciar interior", mouse, new Color(120, 75, 65))) ApplyWorldEdit("hollow");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Borrar tiles + paredes", mouse, new Color(145, 55, 55))) ApplyWorldEdit("clearall");
         }
         else if (worldEditUiPage == 2)
+        {
+            DrawSectionHeader(sb, panel, ref y, "Paredes · edición por ID");
+            int wallFieldGap = 12;
+            int wallFieldWidth = (Width - Pad * 2 - wallFieldGap) / 2;
+            Utils.DrawBorderString(sb, "Wall ID:", new Vector2(bx, y), Color.White, 0.68f);
+            Utils.DrawBorderString(sb, "Reemplazar wall ID:", new Vector2(bx + wallFieldWidth + wallFieldGap, y), Color.White, 0.68f);
+            y += 18;
+            DrawTextField(sb, pixel, new Rectangle(bx, y, wallFieldWidth, 25), 27, worldWallType, mouse, "1");
+            DrawTextField(sb, pixel, new Rectangle(bx + wallFieldWidth + wallFieldGap, y, wallFieldWidth, 25), 28, worldReplaceWallType, mouse, "0");
+            y += 34;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Rellenar paredes", mouse, new Color(50, 105, 70))) ApplyWorldEdit("wallfill");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Borrar paredes", mouse, new Color(135, 65, 60))) ApplyWorldEdit("wallclear");
+            y += RowH + 6;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar wall ID", mouse, new Color(80, 75, 130))) ApplyWorldEdit("wallreplace");
+            if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse, new Color(75, 85, 115))) UndoWorldEdit();
+            y += RowH + 8;
+            Utils.DrawBorderString(sb, "Los cambios se guardan en la pila Undo de WorldEdit.", new Vector2(bx, y), new Color(190, 205, 225), 0.62f);
+        }
+        else if (worldEditUiPage == 3)
         {
             DrawSectionHeader(sb, panel, ref y, "Copiar y pegar · portapapeles");
             if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Copiar POS1 → POS2", mouse, new Color(65, 95, 145))) CopyWorldEditSelection();
@@ -3142,7 +3146,7 @@ internal static partial class HerosModPanel
             y += RowH + 8;
             Utils.DrawBorderString(sb, "Usa POS1 y POS2 para definir el área de los líquidos.", new Vector2(bx, y), new Color(190, 205, 225), 0.62f);
         }
-        else
+        else if (worldEditUiPage == 4)
         {
             Utils.DrawBorderString(sb, "Archivo de construcción (.hws)", new Vector2(bx, y), UiAccent, 0.72f);
             y += 22;
@@ -3412,7 +3416,7 @@ internal static partial class HerosModPanel
         int wallId = int.TryParse(worldWallType, out int parsedWall) ? parsedWall : 1;
         int replaceWallId = int.TryParse(worldReplaceWallType, out int parsedReplaceWall) ? parsedReplaceWall : 0;
         bool tileOperation = operation == "fill" || operation == "replace" || operation == "outline" ||
-            operation == "clear" || operation == "airfill" || operation == "hollow" || operation == "clearall";
+            operation == "clear" || operation == "airfill" || operation == "hollow" || operation == "clearall" || operation == "removeid";
         bool wallOperation = operation == "wallfill" || operation == "wallclear" ||
             operation == "wallreplace" || operation == "clearall";
         bool liquidOperation = operation.StartsWith("liquid", StringComparison.Ordinal);
@@ -3437,7 +3441,7 @@ internal static partial class HerosModPanel
                 if (tile == null)
                     continue;
 
-                if (operation == "replace" && (!tile.HasTile || tile.TileType != replaceId))
+                if ((operation == "replace" || operation == "removeid") && (!tile.HasTile || tile.TileType != replaceId))
                     continue;
                 if (operation == "wallreplace" && tile.WallType != replaceWallId)
                     continue;
@@ -3477,6 +3481,9 @@ internal static partial class HerosModPanel
                         break;
                     case "liquidclear":
                         tile.LiquidAmount = 0;
+                        break;
+                    case "removeid":
+                        WorldGen.KillTile(x, yy, false, false, true);
                         break;
                     case "clear":
                     case "hollow":
