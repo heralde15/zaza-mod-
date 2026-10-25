@@ -36,7 +36,7 @@ internal static partial class HerosModPanel
         public string Context => "HerosModPanel";
     }
 
-    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Info, Inventario, Guia, Perfiles, Personalizar, NPCs, Proyectiles, AntiLag, FPSBoost }
+    private enum Tab { Jugador, Mundo, Items, EditorItems, EditorVida, WorldEdit, Jefes, Teleport, Jugadores, Herramientas, Inventario, Guia, Perfiles, Personalizar, NPCs, Proyectiles, AntiLag, FPSBoost }
 
     // Dimensiones ampliadas para que los controles respiren y sean más fáciles de leer.
     private const int Width = 820;
@@ -102,6 +102,7 @@ internal static partial class HerosModPanel
     private static bool IsServer => Main.netMode == 1 && serverMode == ServerMode.Comandos;
 
     private static Tab currentTab = Tab.Jugador;
+    private static bool englishUi;
     // Apariencia del panel; solo cambia el dibujo, no altera las funciones del mod.
     private static int uiTheme = 6;
     private static bool uiHighContrast;
@@ -897,18 +898,23 @@ internal static partial class HerosModPanel
         Utils.DrawBorderString(sb, "CENTRO DE CONTROL  /  TERRARIA", new Vector2(panelRect.X + 150, panelRect.Y + 12), new Color(177, 185, 205), 0.58f);
 
         string modeText = !InMultiplayer
-            ? "MODO: UN JUGADOR"
-            : (serverMode == ServerMode.Comandos ? "SERVIDOR CON PERMISOS (TShock)" : "ANÁRQUICO / DIRECTO");
+            ? (englishUi ? "MODE: SINGLE PLAYER" : "MODO: UN JUGADOR")
+            : (serverMode == ServerMode.Comandos
+                ? (englishUi ? "PERMISSION SERVER (TShock)" : "SERVIDOR CON PERMISOS (TShock)")
+                : (englishUi ? "ANARCHY / DIRECT" : "ANÁRQUICO / DIRECTO"));
         Color modeColor = !InMultiplayer ? new Color(35, 95, 75) : (serverMode == ServerMode.Comandos ? new Color(35, 82, 125) : new Color(125, 78, 30));
         if (DrawButton(sb, pixel, new Rectangle(panelRect.Right - 218, panelRect.Y + 8, 180, 24), modeText, mouse, modeColor))
         {
             ToggleServerMode();
         }
 
-        if (DrawButton(sb, pixel, new Rectangle(panelRect.Right - 335, panelRect.Y + 8, 108, 24), "Desactivar todo", mouse, new Color(145, 55, 55)))
+        if (DrawButton(sb, pixel, new Rectangle(panelRect.Right - 335, panelRect.Y + 8, 108, 24), (englishUi ? "Disable all" : "Desactivar todo"), mouse, new Color(145, 55, 55)))
         {
             DisableAllActiveFeatures();
         }
+
+        if (DrawButton(sb, pixel, new Rectangle(panelRect.X + Pad, panelRect.Y + 8, 54, 24), englishUi ? "EN" : "ES", mouse, new Color(75, 90, 125)))
+            englishUi = !englishUi;
 
         var closeRect = new Rectangle(panelRect.Right - 30, panelRect.Y + 8, 22, 24);
         if (DrawButton(sb, pixel, closeRect, "×", mouse, new Color(150, 45, 60)))
@@ -922,17 +928,13 @@ internal static partial class HerosModPanel
         [
             [Tab.Jugador, Tab.EditorVida, Tab.Inventario, Tab.Items, Tab.EditorItems],
             [Tab.Mundo, Tab.WorldEdit, Tab.Teleport, Tab.Perfiles, Tab.Guia],
-            [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Info, Tab.Personalizar],
+            [Tab.Jugadores, Tab.Jefes, Tab.Herramientas, Tab.Personalizar],
             [Tab.NPCs, Tab.Proyectiles, Tab.AntiLag, Tab.FPSBoost]
         ];
-        string[] groupLabels = ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES", "NPC  /  PROYECTILES  /  RENDIMIENTO"];
-        string[] tabLabels =
-        [
-            "Jugador", "Editor vida", "Inventario", "Items", "Editor items",
-            "Mundo", "WorldEdit", "Teleport", "Perfiles", "Guía",
-            "Jugadores", "Jefes", "Herramientas", "Info", "Personalizar",
-            "NPCs", "Proyectiles", "Anti-Lag", "FPS Boost"
-        ];
+        string[] groupLabels = englishUi ? ["CHARACTER  /  INVENTORY", "WORLD  /  BUILDING", "ADMIN  /  SETTINGS", "NPCs  /  PROJECTILES  /  PERFORMANCE"] : ["PERSONAJE  /  INVENTARIO", "MUNDO  /  CONSTRUCCIÓN", "ADMINISTRACIÓN  /  AJUSTES", "NPC  /  PROYECTILES  /  RENDIMIENTO"];
+        string[] tabLabels = englishUi
+            ? ["Player", "Life Editor", "Inventory", "Items", "Item Editor", "World", "WorldEdit", "Teleport", "Profiles", "Guide", "Players", "Bosses", "Tools", "Customize", "NPCs", "Projectiles", "Anti-Lag", "FPS Boost"]
+            : ["Jugador", "Editor vida", "Inventario", "Items", "Editor items", "Mundo", "WorldEdit", "Teleport", "Perfiles", "Guía", "Jugadores", "Jefes", "Herramientas", "Personalizar", "NPCs", "Proyectiles", "Anti-Lag", "FPS Boost"];
         int tabCols = 5;
         int tabWidth = (Width - (Pad * 2) - ((tabCols - 1) * 6)) / tabCols;
         // Separadores finos y etiquetas de sección para una navegación más parecida a Terraria/Calamity.
@@ -1008,9 +1010,6 @@ internal static partial class HerosModPanel
                 break;
             case Tab.FPSBoost:
                 DrawFPSBoostTab(sb, pixel, panelRect, ref contentY, mouse);
-                break;
-            case Tab.Info:
-                DrawInfoTab(sb, pixel, panelRect, ref contentY);
                 break;
             case Tab.Inventario:
                 DrawInventoryTab(sb, pixel, panelRect, ref contentY, mouse);
