@@ -3006,6 +3006,8 @@ internal static partial class HerosModPanel
     // ------------------------------------------------------------------ WorldEdit basico local
 
     private static int worldEditUiPage;
+    private static int worldEditCatalogPage;
+    private static bool worldEditCatalogWalls;
 
     private static void DrawWorldEditTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
@@ -3013,8 +3015,8 @@ internal static partial class HerosModPanel
         int bx = panel.X + Pad;
         int bw = (Width - Pad * 2 - 8) / 2;
         int navGap = 4;
-        int navW = (Width - Pad * 2 - navGap * 4) / 5;
-        string[] pageNames = { "Selección", "Bloques", "Paredes/ID", "Copiar/Líquidos", "Archivos" };
+        int navW = (Width - Pad * 2 - navGap * 5) / 6;
+        string[] pageNames = { "Selección", "Bloques", "Paredes/ID", "Copiar/Líquidos", "Archivos", "Catálogo IDs" };
         for (int page = 0; page < pageNames.Length; page++)
         {
             var navRect = new Rectangle(bx + page * (navW + navGap), y, navW, 25);
@@ -3120,6 +3122,8 @@ internal static partial class HerosModPanel
             if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Borrar paredes", mouse, new Color(135, 65, 60))) ApplyWorldEdit("wallclear");
             y += RowH + 6;
             if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Reemplazar wall ID", mouse, new Color(80, 75, 130))) ApplyWorldEdit("wallreplace");
+            y += RowH + 6;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, bw, RowH), "Quitar paredes por ID", mouse, new Color(145, 55, 55))) ApplyWorldEdit("wallremoveid");
             if (DrawButton(sb, pixel, new Rectangle(bx + bw + 8, y, bw, RowH), "Undo última acción", mouse, new Color(75, 85, 115))) UndoWorldEdit();
             y += RowH + 8;
             Utils.DrawBorderString(sb, "Los cambios se guardan en la pila Undo de WorldEdit.", new Vector2(bx, y), new Color(190, 205, 225), 0.62f);
@@ -3161,6 +3165,49 @@ internal static partial class HerosModPanel
             y += 22;
             Utils.DrawBorderString(sb, "En multijugador el servidor puede revertir cambios locales.", new Vector2(bx, y), new Color(235, 195, 120), 0.62f);
         }
+        else if (worldEditUiPage == 5)
+        {
+            DrawSectionHeader(sb, panel, ref y, "Catálogo completo de IDs · Terraria");
+            int toggleW = (Width - Pad * 2 - 8) / 2;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, toggleW, RowH),
+                worldEditCatalogWalls ? "Ver bloques" : "Ver paredes", mouse, UiAccent))
+            {
+                worldEditCatalogWalls = !worldEditCatalogWalls;
+                worldEditCatalogPage = 0;
+            }
+            Type idType = worldEditCatalogWalls ? typeof(WallID) : typeof(TileID);
+            var idEntries = idType.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Where(f => f.IsLiteral && !f.IsInitOnly && (f.FieldType == typeof(ushort) || f.FieldType == typeof(int)))
+                .Select(f => new { Name = f.Name, Value = Convert.ToInt32(f.GetRawConstantValue()) })
+                .Where(v => v.Value >= 0 && v.Value < (worldEditCatalogWalls ? WallID.Count : TileID.Count))
+                .GroupBy(v => v.Value).Select(g => g.OrderBy(v => v.Name.Length).First())
+                .OrderBy(v => v.Value).ToList();
+            int pageSize = 8;
+            int maxPage = Math.Max(0, (idEntries.Count - 1) / pageSize);
+            worldEditCatalogPage = Math.Clamp(worldEditCatalogPage, 0, maxPage);
+            y += RowH + 5;
+            Utils.DrawBorderString(sb, $"{(worldEditCatalogWalls ? "PAREDES" : "BLOQUES")} · {idEntries.Count} IDs · página {worldEditCatalogPage + 1}/{maxPage + 1}",
+                new Vector2(bx, y), new Color(190, 220, 255), 0.65f);
+            y += 21;
+            for (int i = worldEditCatalogPage * pageSize; i < Math.Min(idEntries.Count, (worldEditCatalogPage + 1) * pageSize); i++)
+            {
+                var entry = idEntries[i];
+                Utils.DrawBorderString(sb, $"{entry.Value,5}  ·  {entry.Name}", new Vector2(bx, y), Color.White, 0.62f);
+                y += 19;
+            }
+            y += 3;
+            if (DrawButton(sb, pixel, new Rectangle(bx, y, toggleW, RowH), "Anterior", mouse, new Color(55, 75, 105)))
+                worldEditCatalogPage = Math.Max(0, worldEditCatalogPage - 1);
+            if (DrawButton(sb, pixel, new Rectangle(bx + toggleW + 8, y, toggleW, RowH), "Siguiente", mouse, new Color(55, 75, 105)))
+                worldEditCatalogPage = Math.Min(maxPage, worldEditCatalogPage + 1);
+            y += RowH + 5;
+            Utils.DrawBorderString(sb, worldEditCatalogWalls
+                ? "Borrar por ID: en Paredes/ID escribe el ID en Wall ID y pulsa Quitar paredes por ID."
+                : "Borrar por ID: en Bloques escribe el ID en ID objetivo y pulsa Quitar bloques por ID objetivo.",
+                new Vector2(bx, y), new Color(190, 205, 225), 0.58f);
+        }
+    }
+
     }
 
     private static void CopyWorldEditSelection()
@@ -3418,7 +3465,7 @@ internal static partial class HerosModPanel
         bool tileOperation = operation == "fill" || operation == "replace" || operation == "outline" ||
             operation == "clear" || operation == "airfill" || operation == "hollow" || operation == "clearall" || operation == "removeid";
         bool wallOperation = operation == "wallfill" || operation == "wallclear" ||
-            operation == "wallreplace" || operation == "clearall";
+            operation == "wallreplace" || operation == "wallremoveid" || operation == "clearall";
         bool liquidOperation = operation.StartsWith("liquid", StringComparison.Ordinal);
 
         if (tileOperation && (tileId < 0 || tileId >= TileID.Count || replaceId < 0 || replaceId >= TileID.Count))
@@ -3443,9 +3490,10 @@ internal static partial class HerosModPanel
 
                 if ((operation == "replace" || operation == "removeid") && (!tile.HasTile || tile.TileType != replaceId))
                     continue;
-                if (operation == "wallreplace" && tile.WallType != replaceWallId)
+                if ((operation == "wallreplace" && tile.WallType != replaceWallId) ||
+                    (operation == "wallremoveid" && tile.WallType != wallId))
                     continue;
-                if (operation == "wallclear" && tile.WallType == 0)
+                if ((operation == "wallclear" || operation == "wallremoveid") && tile.WallType == 0)
                     continue;
                 if (operation == "clear" && !tile.HasTile)
                     continue;
@@ -3515,6 +3563,7 @@ internal static partial class HerosModPanel
                             WorldGen.PlaceTile(x, yy, tileId, true, true);
                         break;
                     case "wallclear":
+                    case "wallremoveid":
                         tile.WallType = 0;
                         break;
                     case "wallfill":
