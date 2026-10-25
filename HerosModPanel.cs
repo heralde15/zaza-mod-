@@ -3208,8 +3208,6 @@ internal static partial class HerosModPanel
         }
     }
 
-    }
-
     private static void CopyWorldEditSelection()
     {
         if (!worldPos1.HasValue || !worldPos2.HasValue)
