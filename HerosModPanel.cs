@@ -4774,7 +4774,10 @@ internal static partial class HerosModPanel
         {
             case ".help":
             case ".ayuda":
-                commandConsoleOutput = ".god .fly .heal .ghost .minions .lifelock .luck .antilag .effects .projectiles .fps .mute .shopfree .buff ID [seg] .clearhostiles .status";
+                commandConsoleOutput = ".god .fly .heal .ghost .minions .lifelock .luck .status · escribe .help2 para más comandos";
+                break;
+            case ".help2":
+                commandConsoleOutput = ".antilag .effects .projectiles .fps .mute .shopfree .buff ID [seg] .clearhostiles";
                 break;
             case ".god":
                 godmodeEnabled = Toggle(godmodeEnabled);
@@ -4868,9 +4871,9 @@ internal static partial class HerosModPanel
                 commandConsoleOutput = "Precios gratis de tiendas NPC " + (npcShopFreeEnabled ? "ACTIVADOS localmente." : "DESACTIVADOS.");
                 break;
             case ".buff":
-                if (parts.Length < 2 || !int.TryParse(parts[1], out int buffId) || buffId < 1 || buffId >= BuffLoader.BuffCount)
+                if (parts.Length < 2 || !int.TryParse(parts[1], out int buffId) || buffId < 1 || buffId >= BuffID.Count)
                 {
-                    commandConsoleOutput = "Uso: .buff ID [segundos] · ID válido: 1-" + (BuffLoader.BuffCount - 1);
+                    commandConsoleOutput = "Uso: .buff ID [segundos] · ID válido: 1-" + (BuffID.Count - 1);
                     break;
                 }
                 int seconds = 600;
