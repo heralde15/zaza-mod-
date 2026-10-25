@@ -50,6 +50,7 @@ internal static partial class HerosModPanel
 
     // Consola independiente del panel HERO. No concede permisos: el servidor decide qué comandos acepta.
     private static bool commandConsoleVisible;
+    private static bool commandConsolePreviousPanelVisible;
     private static string commandConsoleInput = string.Empty;
     private static string commandConsoleOutput = "Consola de comandos. Ctrl derecho abre/cierra; Enter envía; Esc cierra.";
     private static int commandConsoleOutputTimer;
@@ -4662,6 +4663,7 @@ internal static partial class HerosModPanel
             commandConsoleVisible = !commandConsoleVisible;
             if (commandConsoleVisible)
             {
+                commandConsolePreviousPanelVisible = Visible;
                 activeField = 0;
                 Visible = false;
                 commandConsoleInput = string.Empty;
@@ -4669,6 +4671,7 @@ internal static partial class HerosModPanel
             }
             else
             {
+                Visible = commandConsolePreviousPanelVisible;
                 Main.clrInput();
             }
         }
@@ -4719,6 +4722,7 @@ internal static partial class HerosModPanel
         if (Main.inputTextEscape)
         {
             commandConsoleVisible = false;
+            Visible = commandConsolePreviousPanelVisible;
             commandConsoleInput = string.Empty;
             Main.clrInput();
             return;
