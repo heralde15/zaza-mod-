@@ -4944,8 +4944,119 @@ internal static partial class HerosModPanel
         {
             case ".help":
             case ".ayuda":
-                commandConsoleOutput = ".hud .server .ping .pos .life .mana .world .biome .clock .inventory .buffs .counts · .help2";
+                commandConsoleOutput = ".helpall = lista completa · .toggle <función> [on/off] · .hudpos <posición> · .buff <ID> [segundos] · .help2";
                 break;
+            case ".helpall":
+            case ".helpfull":
+            case ".comandos":
+                commandConsoleOutput = ".hud [on/off] · .hudpos <0-5|arribaizq|arribader|abajoizq|abajoder|centroarriba|centroabajo> · .toggle <god|fly|ghost|minions|lifelock|luck|antilag|effects|projectiles|fps|mute|shopfree> [on/off] · .buff <ID> [segundos] · .heal · .debuffclear · .clearhostiles · .server · .ping · .pos · .life · .mana · .world · .biome · .clock · .inventory · .buffs · .counts · .nearby · .players · .equipment · .status · .help2 · .help3";
+                break;
+            case ".hudpos":
+            case ".hudposition":
+                {
+                    if (parts.Length < 2)
+                    {
+                        commandConsoleOutput = "Posición actual del HUD: " + serverHudPosition + " (" +
+                            new[] { "arriba izq.", "arriba der.", "abajo izq.", "abajo der.", "centro arriba", "centro abajo" }[Math.Clamp(serverHudPosition, 0, 5)] +
+                            "). Uso: .hudpos 0-5 o nombre de posición.";
+                        break;
+                    }
+                    string pos = argument.Replace("-", "").Replace("_", "").Replace(" ", "");
+                    int position = pos switch
+                    {
+                        "0" or "arribaizq" or "izquierdaarriba" or "topleft" => 0,
+                        "1" or "arribader" or "derechaarriba" or "topright" => 1,
+                        "2" or "abajoizq" or "izquierdaabajo" or "bottomleft" => 2,
+                        "3" or "abajoder" or "derechaabajo" or "bottomright" => 3,
+                        "4" or "centroarriba" or "topcenter" => 4,
+                        "5" or "centroabajo" or "bottomcenter" => 5,
+                        _ => -1
+                    };
+                    if (position < 0)
+                        commandConsoleOutput = "Posición inválida. Usa .hudpos 0-5; 0=arriba izq., 1=arriba der., 2=abajo izq., 3=abajo der., 4=centro arriba, 5=centro abajo.";
+                    else
+                    {
+                        serverHudPosition = position;
+                        serverHudEnabled = true;
+                        commandConsoleOutput = "HUD movido a: " + new[] { "arriba izquierda", "arriba derecha", "abajo izquierda", "abajo derecha", "centro arriba", "centro abajo" }[position] + ".";
+                    }
+                    break;
+                }
+            case ".toggle":
+                {
+                    if (parts.Length < 2)
+                    {
+                        commandConsoleOutput = "Uso: .toggle <god|fly|ghost|minions|lifelock|luck|antilag|effects|projectiles|fps|mute|shopfree> [on/off]";
+                        break;
+                    }
+                    string feature = argument;
+                    switch (feature)
+                    {
+                        case "god":
+                            godmodeEnabled = Toggle(godmodeEnabled);
+                            if (Main.LocalPlayer != null && Main.LocalPlayer.active)
+                            {
+                                Main.LocalPlayer.creativeGodMode = godmodeEnabled;
+                                Main.LocalPlayer.immune = godmodeEnabled;
+                                Main.LocalPlayer.immuneTime = godmodeEnabled ? Math.Max(Main.LocalPlayer.immuneTime, 2) : 0;
+                            }
+                            break;
+                        case "fly":
+                            flyEnabled = Toggle(flyEnabled);
+                            if (IsServer && flyEnabled) flyEnabled = false;
+                            break;
+                        case "ghost":
+                            ghostModeEnabled = Toggle(ghostModeEnabled);
+                            if (Main.LocalPlayer != null && Main.LocalPlayer.active) Main.LocalPlayer.ghost = ghostModeEnabled;
+                            break;
+                        case "minions":
+                            infiniteMinionsEnabled = Toggle(infiniteMinionsEnabled);
+                            if (Main.LocalPlayer != null && Main.LocalPlayer.active && infiniteMinionsEnabled) Main.LocalPlayer.maxMinions = 9999;
+                            break;
+                        case "lifelock":
+                            if (IsServer && requestedState != false)
+                            {
+                                commandConsoleOutput = "Vida infinita bloqueada en modo COMANDOS porque el servidor controla la vida.";
+                                break;
+                            }
+                            lifeLockEnabled = Toggle(lifeLockEnabled);
+                            break;
+                        case "luck": luckBoostEnabled = Toggle(luckBoostEnabled); break;
+                        case "antilag": antiLagEnabled = Toggle(antiLagEnabled); break;
+                        case "effects": antiEffectsEnabled = Toggle(antiEffectsEnabled); break;
+                        case "projectiles": antiLagProjectilesEnabled = Toggle(antiLagProjectilesEnabled); break;
+                        case "fps": fpsStabilizerEnabled = Toggle(fpsStabilizerEnabled); break;
+                        case "mute":
+                            muteGameSoundsEnabled = Toggle(muteGameSoundsEnabled);
+                            ApplySoundMuteSetting();
+                            break;
+                        case "shopfree":
+                            npcShopFreeEnabled = Toggle(npcShopFreeEnabled);
+                            ApplyNpcShopFreeSetting();
+                            break;
+                        default:
+                            commandConsoleOutput = "Función desconocida: " + feature + ". Usa .helpall.";
+                            break;
+                    }
+                    if (string.IsNullOrEmpty(commandConsoleOutput) || !commandConsoleOutput.StartsWith("Función desconocida:", StringComparison.Ordinal))
+                        commandConsoleOutput = "toggle " + feature + "=" + (feature switch
+                        {
+                            "god" => godmodeEnabled,
+                            "fly" => flyEnabled,
+                            "ghost" => ghostModeEnabled,
+                            "minions" => infiniteMinionsEnabled,
+                            "lifelock" => lifeLockEnabled,
+                            "luck" => luckBoostEnabled,
+                            "antilag" => antiLagEnabled,
+                            "effects" => antiEffectsEnabled,
+                            "projectiles" => antiLagProjectilesEnabled,
+                            "fps" => fpsStabilizerEnabled,
+                            "mute" => muteGameSoundsEnabled,
+                            "shopfree" => npcShopFreeEnabled,
+                            _ => false
+                        } ? "ON" : "OFF") + ".";
+                    break;
+                }
             case ".help2":
                 commandConsoleOutput = ".god .fly .heal .ghost .minions .lifelock .luck .debuffclear .nearby .players .equipment .help3";
                 break;
