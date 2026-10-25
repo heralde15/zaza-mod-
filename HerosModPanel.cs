@@ -73,7 +73,16 @@ internal static partial class HerosModPanel
     private static bool eventLogPlayersEnabled = true;
     private static bool eventLogDeathsEnabled = true;
     private static bool eventLogBossesEnabled = true;
+    private static bool eventLogWorldEnabled = true;
+    private static bool eventLogCombatEnabled = true;
+    private static bool eventLogSystemEnabled = true;
     private static bool eventLogInitialized;
+    private static bool eventLogLastDayTime;
+    private static bool eventLogLastRaining;
+    private static bool eventLogLastLowLife;
+    private static bool eventLogLastLowMana;
+    private static string eventLogLastBiome = string.Empty;
+    private static int eventLogLastActiveBossCount;
     private static readonly bool[] eventLogPlayerActive = new bool[256];
     private static readonly bool[] eventLogPlayerDead = new bool[256];
     private static readonly string[] eventLogPlayerNames = new string[256];
@@ -665,8 +674,27 @@ internal static partial class HerosModPanel
         if (!eventLogEnabled || Main.dedServ || Main.gameMenu || Main.netMode == 2)
             return;
 
-        // Primera pasada: guardar el estado actual para no anunciar como nuevos a todos
-        // los jugadores que ya estaban conectados al abrir/cargar el mundo.
+        Player local = Main.LocalPlayer;
+        string biome = local == null || !local.active ? "Sin personaje" :
+            local.ZoneDungeon ? "Mazmorra" :
+            local.ZoneUnderworldHeight ? "Inframundo" :
+            local.ZoneJungle ? "Jungla" :
+            local.ZoneSnow ? "Nieve" :
+            local.ZoneDesert ? "Desierto" :
+            local.ZoneBeach ? "Playa" :
+            local.ZoneCorrupt ? "Corrupción" :
+            local.ZoneCrimson ? "Carmesí" :
+            local.ZoneHallow ? "Sagrado" : "Superficie/subsuelo/otro";
+
+        int activeBossCount = 0;
+        for (int i = 0; i < Main.npc.Length && i < eventLogBossTypes.Length; i++)
+        {
+            NPC n = Main.npc[i];
+            if (n != null && n.active && n.boss)
+                activeBossCount++;
+        }
+
+        // Inicializa el estado para evitar falsos anuncios al cargar el mundo.
         if (!eventLogInitialized)
         {
             for (int i = 0; i < Main.player.Length && i < eventLogPlayerActive.Length; i++)
@@ -681,10 +709,19 @@ internal static partial class HerosModPanel
                 NPC n = Main.npc[i];
                 eventLogBossTypes[i] = n != null && n.active && n.boss ? n.type : 0;
             }
+            eventLogLastDayTime = Main.dayTime;
+            eventLogLastRaining = Main.raining;
+            eventLogLastLowLife = local != null && local.active && local.statLife > 0 && local.statLifeMax2 > 0 && local.statLife <= Math.Max(1, local.statLifeMax2 / 4);
+            eventLogLastLowMana = local != null && local.active && local.statManaMax2 > 0 && local.statMana <= Math.Max(1, local.statManaMax2 / 4);
+            eventLogLastBiome = biome;
+            eventLogLastActiveBossCount = activeBossCount;
             eventLogInitialized = true;
+            if (eventLogSystemEnabled)
+                Main.NewText("[HERO | SISTEMA] Registro ampliado activo: jugadores, muertes, jefes, mundo, clima, biomas y alertas de combate.", new Color(120, 200, 255));
             return;
         }
 
+        // Entradas y salidas de jugadores visibles para este cliente.
         if (eventLogPlayersEnabled)
         {
             for (int i = 0; i < Main.player.Length && i < eventLogPlayerActive.Length; i++)
@@ -696,9 +733,7 @@ internal static partial class HerosModPanel
                     Main.NewText("[HERO | ENTRADA] " + (string.IsNullOrWhiteSpace(name) ? "Jugador " + i : name) + " entró al mundo.", new Color(100, 220, 150));
                 else if (!active && eventLogPlayerActive[i] && i != Main.myPlayer)
                     Main.NewText("[HERO | SALIDA] " + (string.IsNullOrWhiteSpace(eventLogPlayerNames[i]) ? "Jugador " + i : eventLogPlayerNames[i]) + " salió del mundo.", new Color(235, 170, 100));
-
-                if (active && !string.IsNullOrWhiteSpace(name))
-                    eventLogPlayerNames[i] = name;
+                if (active && !string.IsNullOrWhiteSpace(name)) eventLogPlayerNames[i] = name;
                 eventLogPlayerActive[i] = active;
             }
         }
@@ -737,7 +772,9 @@ internal static partial class HerosModPanel
                 NPC n = Main.npc[i];
                 int type = n != null && n.active && n.boss ? n.type : 0;
                 if (type != 0 && eventLogBossTypes[i] != type)
-                    Main.NewText("[HERO | JEFE] Apareció: " + n.FullName + ".", new Color(255, 205, 90));
+                    Main.NewText("[HERO | JEFE] Apareció: " + n.FullName + " (ID " + n.type + ", vida " + n.life + "/" + n.lifeMax + ").", new Color(255, 205, 90));
+                else if (type == 0 && eventLogBossTypes[i] != 0)
+                    Main.NewText("[HERO | JEFE] El jefe ID " + eventLogBossTypes[i] + " ya no está activo; pudo ser derrotado o desaparecer.", new Color(255, 205, 90));
                 eventLogBossTypes[i] = type;
             }
         }
@@ -749,6 +786,45 @@ internal static partial class HerosModPanel
                 eventLogBossTypes[i] = n != null && n.active && n.boss ? n.type : 0;
             }
         }
+
+        if (eventLogWorldEnabled)
+        {
+            if (Main.dayTime != eventLogLastDayTime)
+                Main.NewText(Main.dayTime ? "[HERO | MUNDO] Comienza el día." : "[HERO | MUNDO] Comienza la noche.", new Color(255, 220, 130));
+            if (Main.raining != eventLogLastRaining)
+                Main.NewText(Main.raining ? "[HERO | CLIMA] Ha comenzado la lluvia." : "[HERO | CLIMA] La lluvia ha terminado.", new Color(120, 190, 255));
+            if (!string.Equals(biome, eventLogLastBiome, StringComparison.Ordinal) && local != null && local.active)
+                Main.NewText("[HERO | BIOMA] Zona actual: " + biome + ".", new Color(100, 220, 210));
+        }
+        eventLogLastDayTime = Main.dayTime;
+        eventLogLastRaining = Main.raining;
+        eventLogLastBiome = biome;
+
+        // Alertas por umbral: no repite mensajes cada fotograma mientras la vida/maná siga bajo.
+        if (local != null && local.active && eventLogCombatEnabled)
+        {
+            bool lowLife = local.statLife > 0 && local.statLifeMax2 > 0 && local.statLife <= Math.Max(1, local.statLifeMax2 / 4);
+            bool lowMana = local.statManaMax2 > 0 && local.statMana <= Math.Max(1, local.statManaMax2 / 4);
+            if (lowLife && !eventLogLastLowLife)
+                Main.NewText("[HERO | COMBATE] ¡Vida crítica! " + local.statLife + "/" + local.statLifeMax2 + " vida; defensa " + local.statDefense + ".", new Color(255, 80, 80));
+            if (lowMana && !eventLogLastLowMana)
+                Main.NewText("[HERO | COMBATE] Maná bajo: " + local.statMana + "/" + local.statManaMax2 + ".", new Color(100, 150, 255));
+            if (!lowLife && local.statLifeMax2 > 0 && local.statLife > local.statLifeMax2 * 0.35f) eventLogLastLowLife = false;
+            else if (lowLife) eventLogLastLowLife = true;
+            if (!lowMana && local.statManaMax2 > 0 && local.statMana > local.statManaMax2 * 0.35f) eventLogLastLowMana = false;
+            else if (lowMana) eventLogLastLowMana = true;
+        }
+        else if (local != null && local.active)
+        {
+            eventLogLastLowLife = local.statLife > 0 && local.statLifeMax2 > 0 && local.statLife <= Math.Max(1, local.statLifeMax2 / 4);
+            eventLogLastLowMana = local.statManaMax2 > 0 && local.statMana <= Math.Max(1, local.statManaMax2 / 4);
+        }
+
+        if (eventLogWorldEnabled && activeBossCount != eventLogLastActiveBossCount)
+        {
+            Main.NewText("[HERO | MUNDO] Cantidad de jefes activos: " + activeBossCount + ".", new Color(255, 190, 100));
+        }
+        eventLogLastActiveBossCount = activeBossCount;
     }
 
     public static void Draw(SpriteBatch sb)
@@ -5087,7 +5163,7 @@ internal static partial class HerosModPanel
         {
             case ".help":
             case ".ayuda":
-                commandConsoleOutput = ".helpall = lista completa · .toggle <función> [on/off] · .hudpos <posición> · .buff <ID> [segundos] · .log [on/off] · .help2";
+                commandConsoleOutput = ".helpall = lista completa · .toggle <función> [on/off] · .hudpos <posición> · .buff <ID> [segundos] · .log [on/off] · .logall · .logworld · .logcombat · .logsystem · .help2";
                 break;
             case ".log":
             case ".eventlog":
@@ -5106,6 +5182,29 @@ internal static partial class HerosModPanel
             case ".logbosses":
                 eventLogBossesEnabled = requestedState ?? !eventLogBossesEnabled;
                 commandConsoleOutput = "Registro de aparición de jefes " + (eventLogBossesEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".logworld":
+                eventLogWorldEnabled = requestedState ?? !eventLogWorldEnabled;
+                commandConsoleOutput = "Registro de mundo, clima y biomas " + (eventLogWorldEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".logcombat":
+                eventLogCombatEnabled = requestedState ?? !eventLogCombatEnabled;
+                commandConsoleOutput = "Alertas de combate " + (eventLogCombatEnabled ? "ACTIVADAS." : "DESACTIVADAS.");
+                break;
+            case ".logsystem":
+                eventLogSystemEnabled = requestedState ?? !eventLogSystemEnabled;
+                commandConsoleOutput = "Mensajes del sistema " + (eventLogSystemEnabled ? "ACTIVADOS." : "DESACTIVADOS.");
+                break;
+            case ".logall":
+                eventLogPlayersEnabled = true;
+                eventLogDeathsEnabled = true;
+                eventLogBossesEnabled = true;
+                eventLogWorldEnabled = true;
+                eventLogCombatEnabled = true;
+                eventLogSystemEnabled = true;
+                eventLogEnabled = true;
+                eventLogInitialized = false;
+                commandConsoleOutput = "Registro ampliado activado: jugadores, muertes, jefes, mundo, clima, biomas y alertas de combate.";
                 break;
             case ".helpall":
             case ".helpfull":
