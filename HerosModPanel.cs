@@ -2215,7 +2215,6 @@ internal static partial class HerosModPanel
     {
         Player p = Main.LocalPlayer;
         if (p == null || !p.active) return;
-        int width = Math.Min(560, Math.Max(260, Main.screenWidth - 24));
         var hudLines = new List<(string text, Color color, float scale)>();
         string connection = Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador" : "Servidor";
         string world = string.IsNullOrWhiteSpace(Main.worldName) ? "Mundo sin nombre" : Main.worldName;
@@ -2372,6 +2371,33 @@ internal static partial class HerosModPanel
             }
         }
         y += 62;
+        DrawSectionHeader(sb, panel, ref y, "Información que muestra el HUD");
+        string[] hudInfoLabels = { "Conexión / mundo", "Ping / FPS / modo", "Vida / maná / defensa", "Coordenadas / hora", "Bioma", "Velocidad", "Inventario / objeto", "NPC / enemigos / proyectiles" };
+        bool[] hudInfoValues = { hudShowConnection, hudShowPerformance, hudShowVitals, hudShowPositionTime, hudShowBiome, hudShowVelocity, hudShowInventory, hudShowCounts };
+        int infoGap = 6;
+        int infoButtonWidth = (panel.Width - Pad * 2 - infoGap) / 2;
+        for (int i = 0; i < hudInfoLabels.Length; i++)
+        {
+            int col = i % 2;
+            int row = i / 2;
+            Rectangle infoButton = new Rectangle(panel.X + Pad + col * (infoButtonWidth + infoGap), y + row * 28, infoButtonWidth, 24);
+            if (DrawButton(sb, pixel, infoButton, hudInfoLabels[i] + (hudInfoValues[i] ? " ✓" : " —"), mouse, hudInfoValues[i] ? UiAccent : UiTabColor))
+            {
+                switch (i)
+                {
+                    case 0: hudShowConnection = !hudShowConnection; break;
+                    case 1: hudShowPerformance = !hudShowPerformance; break;
+                    case 2: hudShowVitals = !hudShowVitals; break;
+                    case 3: hudShowPositionTime = !hudShowPositionTime; break;
+                    case 4: hudShowBiome = !hudShowBiome; break;
+                    case 5: hudShowVelocity = !hudShowVelocity; break;
+                    case 6: hudShowInventory = !hudShowInventory; break;
+                    case 7: hudShowCounts = !hudShowCounts; break;
+                }
+                SetStatus("Configuración de información del HUD actualizada.");
+            }
+        }
+        y += 4 * 28 + 8;
         DrawInfoLine(sb, panel, ref y, "Conexión", Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador cliente" : "Servidor dedicado");
         DrawInfoLine(sb, panel, ref y, "Ping", GetPingLabel());
         string mode = Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal";
