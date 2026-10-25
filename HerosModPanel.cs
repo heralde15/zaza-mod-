@@ -4850,7 +4850,6 @@ internal static partial class HerosModPanel
                 break;
         }
     }
-    }
 
     private static void HandleTyping()
     {
