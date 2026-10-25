@@ -68,6 +68,17 @@ internal static partial class HerosModPanel
     private static string commandConsoleOutput = "Consola: Ctrl derecho abre/cierra · Alt derecho o Enter ejecuta · Esc cierra.";
     private static int commandConsoleOutputTimer;
 
+    // Registro de eventos HERO en el chat, sin requerir que el panel esté abierto.
+    private static bool eventLogEnabled = true;
+    private static bool eventLogPlayersEnabled = true;
+    private static bool eventLogDeathsEnabled = true;
+    private static bool eventLogBossesEnabled = true;
+    private static bool eventLogInitialized;
+    private static readonly bool[] eventLogPlayerActive = new bool[256];
+    private static readonly bool[] eventLogPlayerDead = new bool[256];
+    private static readonly string[] eventLogPlayerNames = new string[256];
+    private static readonly int[] eventLogBossTypes = new int[Main.maxNPCs];
+
     private enum ServerMode { Comandos, Directo }
 
     /// <summary>
@@ -649,11 +660,103 @@ internal static partial class HerosModPanel
         }
     }
 
+    private static void UpdateEventChatLog()
+    {
+        if (!eventLogEnabled || Main.dedServ || Main.gameMenu || Main.netMode == 2)
+            return;
+
+        // Primera pasada: guardar el estado actual para no anunciar como nuevos a todos
+        // los jugadores que ya estaban conectados al abrir/cargar el mundo.
+        if (!eventLogInitialized)
+        {
+            for (int i = 0; i < Main.player.Length && i < eventLogPlayerActive.Length; i++)
+            {
+                Player p = Main.player[i];
+                eventLogPlayerActive[i] = p != null && p.active;
+                eventLogPlayerDead[i] = p != null && p.dead;
+                eventLogPlayerNames[i] = p?.name ?? ("Jugador " + i);
+            }
+            for (int i = 0; i < Main.npc.Length && i < eventLogBossTypes.Length; i++)
+            {
+                NPC n = Main.npc[i];
+                eventLogBossTypes[i] = n != null && n.active && n.boss ? n.type : 0;
+            }
+            eventLogInitialized = true;
+            return;
+        }
+
+        if (eventLogPlayersEnabled)
+        {
+            for (int i = 0; i < Main.player.Length && i < eventLogPlayerActive.Length; i++)
+            {
+                Player p = Main.player[i];
+                bool active = p != null && p.active;
+                string name = p?.name;
+                if (active && !eventLogPlayerActive[i])
+                    Main.NewText("[HERO | ENTRADA] " + (string.IsNullOrWhiteSpace(name) ? "Jugador " + i : name) + " entró al mundo.", new Color(100, 220, 150));
+                else if (!active && eventLogPlayerActive[i] && i != Main.myPlayer)
+                    Main.NewText("[HERO | SALIDA] " + (string.IsNullOrWhiteSpace(eventLogPlayerNames[i]) ? "Jugador " + i : eventLogPlayerNames[i]) + " salió del mundo.", new Color(235, 170, 100));
+
+                if (active && !string.IsNullOrWhiteSpace(name))
+                    eventLogPlayerNames[i] = name;
+                eventLogPlayerActive[i] = active;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < Main.player.Length && i < eventLogPlayerActive.Length; i++)
+            {
+                Player p = Main.player[i];
+                eventLogPlayerActive[i] = p != null && p.active;
+                if (p != null && p.active && !string.IsNullOrWhiteSpace(p.name)) eventLogPlayerNames[i] = p.name;
+            }
+        }
+
+        if (eventLogDeathsEnabled)
+        {
+            for (int i = 0; i < Main.player.Length && i < eventLogPlayerDead.Length; i++)
+            {
+                Player p = Main.player[i];
+                bool active = p != null && p.active;
+                bool dead = active && p.dead;
+                if (active && dead && !eventLogPlayerDead[i])
+                    Main.NewText("[HERO | MUERTE] " + (string.IsNullOrWhiteSpace(p.name) ? "Jugador " + i : p.name) + " murió.", new Color(255, 100, 100));
+                eventLogPlayerDead[i] = dead;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < Main.player.Length && i < eventLogPlayerDead.Length; i++)
+                eventLogPlayerDead[i] = Main.player[i] != null && Main.player[i].active && Main.player[i].dead;
+        }
+
+        if (eventLogBossesEnabled)
+        {
+            for (int i = 0; i < Main.npc.Length && i < eventLogBossTypes.Length; i++)
+            {
+                NPC n = Main.npc[i];
+                int type = n != null && n.active && n.boss ? n.type : 0;
+                if (type != 0 && eventLogBossTypes[i] != type)
+                    Main.NewText("[HERO | JEFE] Apareció: " + n.FullName + ".", new Color(255, 205, 90));
+                eventLogBossTypes[i] = type;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < Main.npc.Length && i < eventLogBossTypes.Length; i++)
+            {
+                NPC n = Main.npc[i];
+                eventLogBossTypes[i] = n != null && n.active && n.boss ? n.type : 0;
+            }
+        }
+    }
+
     public static void Draw(SpriteBatch sb)
     {
         if (Main.dedServ || Main.gameMenu)
             return;
 
+        UpdateEventChatLog();
         UpdateLogic();
         HandleToggleKey();
 
@@ -5027,12 +5130,30 @@ internal static partial class HerosModPanel
         {
             case ".help":
             case ".ayuda":
-                commandConsoleOutput = ".helpall = lista completa · .toggle <función> [on/off] · .hudpos <posición> · .buff <ID> [segundos] · .help2";
+                commandConsoleOutput = ".helpall = lista completa · .toggle <función> [on/off] · .hudpos <posición> · .buff <ID> [segundos] · .log [on/off] · .help2";
+                break;
+            case ".log":
+            case ".eventlog":
+                eventLogEnabled = requestedState ?? !eventLogEnabled;
+                if (eventLogEnabled) eventLogInitialized = false;
+                commandConsoleOutput = "Registro de eventos HERO en chat " + (eventLogEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".logplayers":
+                eventLogPlayersEnabled = requestedState ?? !eventLogPlayersEnabled;
+                commandConsoleOutput = "Registro de entradas/salidas " + (eventLogPlayersEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".logdeaths":
+                eventLogDeathsEnabled = requestedState ?? !eventLogDeathsEnabled;
+                commandConsoleOutput = "Registro de muertes " + (eventLogDeathsEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".logbosses":
+                eventLogBossesEnabled = requestedState ?? !eventLogBossesEnabled;
+                commandConsoleOutput = "Registro de aparición de jefes " + (eventLogBossesEnabled ? "ACTIVADO." : "DESACTIVADO.");
                 break;
             case ".helpall":
             case ".helpfull":
             case ".comandos":
-                commandConsoleOutput = "Ayuda por categorías: .help2 / .help3 · HUD: .hud .hudpos .hudinfo · informes: .report .diagnostics .status · jugador: .god .fly .heal .ghost .buff .debuffclear · mundo: .world .biome .clock .nearby .clearhostiles · datos: .server .ping .pos .life .mana .inventory .buffs .counts .players .equipment · funciones: .helpfeatures";
+                commandConsoleOutput = "Ayuda por categorías: .help2 / .help3 · registro de chat: .log .logplayers .logdeaths .logbosses · HUD: .hud .hudpos .hudinfo · informes: .report .diagnostics .status · jugador: .god .fly .heal .ghost .buff .debuffclear · mundo: .world .biome .clock .nearby .clearhostiles · datos: .server .ping .pos .life .mana .inventory .buffs .counts .players .equipment · funciones: .helpfeatures";
                 break;
             case ".helpinfo":
             case ".helpdatos":
@@ -5353,7 +5474,6 @@ internal static partial class HerosModPanel
                     var p = Main.LocalPlayer;
                     if (p == null || !p.active) { commandConsoleOutput = "No hay personaje activo."; break; }
                     var biomes = new List<string>();
-                    if (p.ZoneForest) biomes.Add("Bosque");
                     if (p.ZoneDesert) biomes.Add("Desierto");
                     if (p.ZoneJungle) biomes.Add("Jungla");
                     if (p.ZoneSnow) biomes.Add("Nieve");
