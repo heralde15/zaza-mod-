@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
@@ -36,8 +37,8 @@ public class PacketHistory
 	public void Record(byte[] buffer, int offset, int length)
 	{
 		length = Math.Max(0, length);
-		PacketView packetView = AppendPacket(length);
-		Buffer.BlockCopy(buffer, offset, _buffer, packetView.Offset, length);
+		int offset2 = AppendPacket(length).Offset;
+		Buffer.BlockCopy(buffer, offset, _buffer, offset2, length);
 	}
 
 	private PacketView AppendPacket(int size)
@@ -69,7 +70,13 @@ public class PacketHistory
 			{
 				continue;
 			}
-			stringBuilder.Append(string.Format("Packet {0} [Assumed MessageID: {4}, Size: {2}, Buffer Position: {1}, Timestamp: {3:G}]\r\n", num++, packetView.Offset, packetView.Length, packetView.Time, _buffer[packetView.Offset]));
+			InlineArray5<object> buffer = default(InlineArray5<object>);
+			buffer[0] = num++;
+			buffer[1] = packetView.Offset;
+			buffer[2] = packetView.Length;
+			buffer[3] = packetView.Time;
+			buffer[4] = _buffer[packetView.Offset];
+			stringBuilder.Append(string.Format("Packet {0} [Assumed MessageID: {4}, Size: {2}, Buffer Position: {1}, Timestamp: {3:G}]\r\n", (ReadOnlySpan<object?>)buffer));
 			for (int j = 0; j < packetView.Length; j++)
 			{
 				stringBuilder.Append(_buffer[packetView.Offset + j].ToString("X2") + " ");
@@ -88,7 +95,12 @@ public class PacketHistory
 	private string CreateDumpFileName()
 	{
 		DateTime dateTime = DateTime.Now.ToLocalTime();
-		return string.Format("Net_{0}_{1}_{2}_{3}.txt", Main.dedServ ? "TerrariaServer" : "Terraria", Main.versionNumber, dateTime.ToString("MM-dd-yy_HH-mm-ss-ffff", CultureInfo.InvariantCulture), Thread.CurrentThread.ManagedThreadId);
+		InlineArray4<object> buffer = default(InlineArray4<object>);
+		buffer[0] = (Main.dedServ ? "TerrariaServer" : "Terraria");
+		buffer[1] = Main.versionNumber;
+		buffer[2] = dateTime.ToString("MM-dd-yy_HH-mm-ss-ffff", CultureInfo.InvariantCulture);
+		buffer[3] = Thread.CurrentThread.ManagedThreadId;
+		return string.Format("Net_{0}_{1}_{2}_{3}.txt", (ReadOnlySpan<object?>)buffer);
 	}
 
 	[Conditional("DEBUG")]

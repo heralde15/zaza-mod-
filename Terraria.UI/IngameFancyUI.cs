@@ -6,6 +6,7 @@ using Terraria.GameContent.UI.States;
 using Terraria.GameInput;
 using Terraria.Localization;
 using Terraria.UI.Gamepad;
+using Terraria.Unified.Features;
 
 namespace Terraria.UI;
 
@@ -25,18 +26,23 @@ public class IngameFancyUI
 			CoverForOneUIFrame = false;
 			return true;
 		}
+		if (Main.inFancyUI)
+		{
+			return true;
+		}
 		return false;
 	}
 
 	public static void OpenAchievements()
 	{
-		CoverNextFrame();
-		Main.playerInventory = false;
-		Main.editChest = false;
-		Main.npcChatText = "";
-		Main.inFancyUI = true;
-		ClearChat();
-		Main.InGameUI.SetState(Main.AchievementsMenu);
+		if (Main.gameMenu)
+		{
+			Main.MenuUI.SetState(Main.AchievementsMenu);
+		}
+		else
+		{
+			OpenUIState(Main.AchievementsMenu);
+		}
 	}
 
 	public static void OpenAchievementsAndGoto(Achievement achievement)
@@ -58,12 +64,18 @@ public class IngameFancyUI
 
 	public static void OpenUIState(UIState uiState)
 	{
+		OpenUIState(uiState, true);
+	}
+
+	public static void OpenUIState(UIState uiState, bool closeIngameWindows = true)
+	{
 		CoverNextFrame();
-		Main.playerInventory = false;
-		Main.editChest = false;
-		Main.npcChatText = "";
-		Main.inFancyUI = true;
 		ClearChat();
+		if (!Main.inFancyUI & closeIngameWindows)
+		{
+			IngameUIWindows.CloseAll(quiet: true);
+		}
+		Main.inFancyUI = true;
 		Main.InGameUI.SetState(uiState);
 	}
 
@@ -90,15 +102,9 @@ public class IngameFancyUI
 			Player player = Main.player[Main.myPlayer];
 			Main.npcChatText = Main.chest[player.chest].name;
 			Tile tile = Main.tile[player.chestX, player.chestY];
-			int chestId = tile.frameX / 36;
-			int dresserId = tile.frameX / 54;
 			if (tile.type == 21)
 			{
-				if (!Lang.chestType.IndexInRange(chestId))
-				{
-					chestId = 0;
-				}
-				Main.defaultChestName = Lang.chestType[chestId].Value;
+				Main.defaultChestName = Lang.chestType[tile.frameX / 36].Value;
 			}
 			else if (tile.type == 467 && tile.frameX / 36 == 4)
 			{
@@ -106,26 +112,17 @@ public class IngameFancyUI
 			}
 			else if (tile.type == 467)
 			{
-				if (!Lang.chestType2.IndexInRange(chestId))
-				{
-					chestId = 0;
-				}
-				Main.defaultChestName = Lang.chestType2[chestId].Value;
+				Main.defaultChestName = Lang.chestType2[tile.frameX / 36].Value;
 			}
 			else if (tile.type == 88)
 			{
-				if (!Lang.dresserType.IndexInRange(dresserId))
-				{
-					dresserId = 0;
-				}
-				Main.defaultChestName = Lang.dresserType[dresserId].Value;
+				Main.defaultChestName = Lang.dresserType[tile.frameX / 54].Value;
 			}
 			if (Main.npcChatText == "")
 			{
 				Main.npcChatText = Main.defaultChestName;
 			}
 			Main.editChest = true;
-			Main.caretPosition = Main.npcChatText.Length;
 			break;
 		}
 		}
@@ -141,50 +138,50 @@ public class IngameFancyUI
 			Main.InGameUI.SetState(new UIVirtualKeyboard(labelText, Main.npcChatText, delegate
 			{
 				Main.SubmitSignText();
-				Close();
+				Close(quiet: true);
 			}, delegate
 			{
 				Main.InputTextSignCancel();
-				Close();
-			}, keyboardContext));
+				Close(quiet: true);
+			}, keyboardContext, allowEmpty: false, 1200));
 			break;
 		case 2:
 			Main.InGameUI.SetState(new UIVirtualKeyboard(labelText, Main.npcChatText, delegate
 			{
 				ChestUI.RenameChestSubmit(Main.player[Main.myPlayer]);
-				Close();
+				Close(quiet: true);
 			}, delegate
 			{
 				ChestUI.RenameChestCancel();
-				Close();
-			}, keyboardContext));
+				Close(quiet: true);
+			}, keyboardContext, allowEmpty: false, ChestNameLengthExtender.PreferredMaxChestNameLength));
 			break;
 		}
 		UILinkPointNavigator.GoToDefaultPage(1);
 	}
 
-	public static void Close()
+	public static void Close(bool quiet = false)
 	{
 		Main.inFancyUI = false;
-		SoundEngine.PlaySound(11);
-		bool flag = !Main.gameMenu;
-		bool flag2 = !(Main.InGameUI.CurrentState is UIVirtualKeyboard);
-		bool flag3 = false;
-		if ((uint)(UIVirtualKeyboard.KeyboardContext - 2) <= 1u)
+		if (!quiet)
 		{
-			flag3 = true;
+			SoundEngine.PlaySound(11);
 		}
-		if (flag && !(flag2 | flag3))
+		bool flag = false;
+		if (!Main.gameMenu)
 		{
-			flag = false;
+			if (Main.InGameUI.CurrentState is UIVirtualKeyboard)
+			{
+				flag = UIVirtualKeyboard.KeyboardContext == 2;
+			}
+			else if (!(Main.InGameUI.CurrentState is UIEmotesMenu))
+			{
+				flag = true;
+			}
 		}
 		if (flag)
 		{
 			Main.playerInventory = true;
-		}
-		if (!Main.gameMenu && Main.InGameUI.CurrentState is UIEmotesMenu)
-		{
-			Main.playerInventory = false;
 		}
 		Main.LocalPlayer.releaseInventory = false;
 		Main.InGameUI.SetState(null);
@@ -193,7 +190,6 @@ public class IngameFancyUI
 
 	public static bool Draw(SpriteBatch spriteBatch, GameTime gameTime)
 	{
-		//IL_00bd: Unknown result type (might be due to invalid IL or missing references)
 		bool result = false;
 		if (Main.InGameUI.CurrentState is UIVirtualKeyboard && UIVirtualKeyboard.KeyboardContext > 0)
 		{
@@ -223,6 +219,8 @@ public class IngameFancyUI
 				Main.InGameUI.SetState(null);
 			}
 			Main.instance.DrawMouseOver();
+			Main.spriteBatch.End();
+			Main.spriteBatch.Begin((SpriteSortMode)0, BlendState.AlphaBlend, Main.SamplerStateForCursor, DepthStencilState.None, RasterizerState.CullCounterClockwise, (Effect)null, Main.UIScaleMatrix);
 			Main.DrawCursor(Main.DrawThickCursor());
 		}
 		return result;

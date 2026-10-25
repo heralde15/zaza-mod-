@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using ReLogic.Content;
-using ReLogic.OS;
+using Terraria.Utilities;
 
 namespace Terraria.UI;
 
@@ -40,7 +40,6 @@ public class FancyErrorPrinter
 			IncludeOriginalMessage(stringBuilder, exception);
 			ShowTheBox(stringBuilder.ToString());
 			Console.WriteLine(stringBuilder.ToString());
-			Main.FinalizeShutdown();
 		}
 	}
 
@@ -129,7 +128,7 @@ public class FancyErrorPrinter
 
 	private static void ShowTheBox(string preparedMessage)
 	{
-		if (Platform.IsWindows && !Main.dedServ)
+		if (!Main.dedServ)
 		{
 			MessageBox.Show(preparedMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 		}

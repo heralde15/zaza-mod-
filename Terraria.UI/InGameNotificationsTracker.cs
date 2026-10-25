@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+using System.Drawing;
+using System.Numerics;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.Achievements;
 using Terraria.GameInput;
@@ -37,15 +38,12 @@ public class InGameNotificationsTracker
 
 	public static void DrawInGame(SpriteBatch sb)
 	{
-		//IL_003f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004c: Unknown result type (might be due to invalid IL or missing references)
 		float num = Main.screenHeight - 40;
 		if (PlayerInput.UsingGamepad)
 		{
 			num -= 25f;
 		}
-		Vector2 positionAnchorBottom = default(Vector2);
-		((Vector2)(ref positionAnchorBottom))._002Ector((float)(Main.screenWidth / 2), num);
+		Vector2 positionAnchorBottom = new Vector2(Main.screenWidth / 2, num);
 		foreach (IInGameNotification notification in _notifications)
 		{
 			notification.DrawInGame(sb, positionAnchorBottom);
@@ -59,15 +57,9 @@ public class InGameNotificationsTracker
 
 	public static void DrawInIngameOptions(SpriteBatch spriteBatch, Rectangle area, ref int gamepadPointIdLocalIndexToUse)
 	{
-		//IL_0002: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0015: Unknown result type (might be due to invalid IL or missing references)
-		//IL_001b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0041: Unknown result type (might be due to invalid IL or missing references)
 		int num = 4;
 		int num2 = area.Height / 5 - num;
-		Rectangle area2 = default(Rectangle);
-		((Rectangle)(ref area2))._002Ector(area.X, area.Y, area.Width - 6, num2);
+		Rectangle area2 = new Rectangle(area.X, area.Y, area.Width - 6, num2);
 		int num3 = 0;
 		foreach (IInGameNotification notification in _notifications)
 		{

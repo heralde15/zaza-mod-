@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Numerics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Graphics;
@@ -16,9 +18,11 @@ public class UIElement : IComparable
 
 	public delegate void ElementEvent(UIElement affectedElement);
 
+	public delegate void DrawEvent(UIElement affectedElement, SpriteBatch sb);
+
 	public delegate void UIElementAction(UIElement element);
 
-	public readonly List<UIElement> Elements = new List<UIElement>();
+	protected readonly List<UIElement> Elements = new List<UIElement>();
 
 	public StyleDimension Top;
 
@@ -39,6 +43,8 @@ public class UIElement : IComparable
 	private bool _isInitialized;
 
 	public bool IgnoresMouseInteraction;
+
+	public bool PassThroughMouseInteraction;
 
 	public bool OverflowHidden;
 
@@ -110,6 +116,8 @@ public class UIElement : IComparable
 
 	public event ElementEvent OnUpdate;
 
+	public event DrawEvent OnDraw;
+
 	public UIElement()
 	{
 		UniqueId = _idCounter++;
@@ -117,10 +125,6 @@ public class UIElement : IComparable
 
 	public void SetSnapPoint(string name, int id, Vector2? anchor = null, Vector2? offset = null)
 	{
-		//IL_0010: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0034: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0025: Unknown result type (might be due to invalid IL or missing references)
 		if (!anchor.HasValue)
 		{
 			anchor = new Vector2(0.5f);
@@ -196,16 +200,10 @@ public class UIElement : IComparable
 
 	public virtual void Draw(SpriteBatch spriteBatch)
 	{
-		//IL_001f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0024: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ad: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00b2: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ba: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e4: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0065: Unknown result type (might be due to invalid IL or missing references)
-		//IL_008f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0103: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0124: Unknown result type (might be due to invalid IL or missing references)
+		if (OnDraw != null)
+		{
+			OnDraw(this, spriteBatch);
+		}
 		bool overflowHidden = OverflowHidden;
 		bool useImmediateMode = UseImmediateMode;
 		RasterizerState rasterizerState = ((GraphicsResource)spriteBatch).GraphicsDevice.RasterizerState;
@@ -255,40 +253,11 @@ public class UIElement : IComparable
 
 	public Rectangle GetClippingRectangle(SpriteBatch spriteBatch)
 	{
-		//IL_0033: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0038: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0039: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0040: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0045: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0051: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0056: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0059: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0060: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0067: Unknown result type (might be due to invalid IL or missing references)
-		//IL_006d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0075: Unknown result type (might be due to invalid IL or missing references)
-		//IL_007b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00a7: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00bb: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00d0: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00d8: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00eb: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00f4: Unknown result type (might be due to invalid IL or missing references)
-		//IL_010b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0110: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0190: Unknown result type (might be due to invalid IL or missing references)
-		Vector2 vector = default(Vector2);
-		((Vector2)(ref vector))._002Ector(_innerDimensions.X, _innerDimensions.Y);
+		Vector2 vector = new Vector2(_innerDimensions.X, _innerDimensions.Y);
 		Vector2 position = new Vector2(_innerDimensions.Width, _innerDimensions.Height) + vector;
 		vector = Vector2.Transform(vector, Main.UIScaleMatrix);
 		position = Vector2.Transform(position, Main.UIScaleMatrix);
-		Rectangle rectangle = default(Rectangle);
-		((Rectangle)(ref rectangle))._002Ector((int)vector.X, (int)vector.Y, (int)(position.X - vector.X), (int)(position.Y - vector.Y));
+		Rectangle rectangle = new Rectangle((int)vector.X, (int)vector.Y, (int)(position.X - vector.X), (int)(position.Y - vector.Y));
 		int num = (int)((float)Main.screenWidth * Main.UIScale);
 		int num2 = (int)((float)Main.screenHeight * Main.UIScale);
 		rectangle.X = Utils.Clamp(rectangle.X, 0, num);
@@ -296,10 +265,10 @@ public class UIElement : IComparable
 		rectangle.Width = Utils.Clamp(rectangle.Width, 0, num - rectangle.X);
 		rectangle.Height = Utils.Clamp(rectangle.Height, 0, num2 - rectangle.Y);
 		Rectangle scissorRectangle = ((GraphicsResource)spriteBatch).GraphicsDevice.ScissorRectangle;
-		int num3 = Utils.Clamp(((Rectangle)(ref rectangle)).Left, ((Rectangle)(ref scissorRectangle)).Left, ((Rectangle)(ref scissorRectangle)).Right);
-		int num4 = Utils.Clamp(((Rectangle)(ref rectangle)).Top, ((Rectangle)(ref scissorRectangle)).Top, ((Rectangle)(ref scissorRectangle)).Bottom);
-		int num5 = Utils.Clamp(((Rectangle)(ref rectangle)).Right, ((Rectangle)(ref scissorRectangle)).Left, ((Rectangle)(ref scissorRectangle)).Right);
-		int num6 = Utils.Clamp(((Rectangle)(ref rectangle)).Bottom, ((Rectangle)(ref scissorRectangle)).Top, ((Rectangle)(ref scissorRectangle)).Bottom);
+		int num3 = Utils.Clamp(rectangle.Left, scissorRectangle.Left, scissorRectangle.Right);
+		int num4 = Utils.Clamp(rectangle.Top, scissorRectangle.Top, scissorRectangle.Bottom);
+		int num5 = Utils.Clamp(rectangle.Right, scissorRectangle.Left, scissorRectangle.Right);
+		int num6 = Utils.Clamp(rectangle.Bottom, scissorRectangle.Top, scissorRectangle.Bottom);
 		return new Rectangle(num3, num4, num5 - num3, num6 - num4);
 	}
 
@@ -360,9 +329,6 @@ public class UIElement : IComparable
 
 	public UIElement GetElementAt(Vector2 point)
 	{
-		//IL_0028: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0040: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0052: Unknown result type (might be due to invalid IL or missing references)
 		UIElement uIElement = null;
 		for (int num = Elements.Count - 1; num >= 0; num--)
 		{
@@ -370,7 +336,10 @@ public class UIElement : IComparable
 			if (!uIElement2.IgnoresMouseInteraction && uIElement2.ContainsPoint(point))
 			{
 				uIElement = uIElement2;
-				break;
+				if (!uIElement2.PassThroughMouseInteraction)
+				{
+					break;
+				}
 			}
 		}
 		if (uIElement != null)
@@ -390,20 +359,11 @@ public class UIElement : IComparable
 
 	public virtual bool ContainsPoint(Vector2 point)
 	{
-		//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0013: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0026: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0045: Unknown result type (might be due to invalid IL or missing references)
-		if (point.X > _dimensions.X && point.Y > _dimensions.Y && point.X < _dimensions.X + _dimensions.Width)
-		{
-			return point.Y < _dimensions.Y + _dimensions.Height;
-		}
-		return false;
+		return _dimensions.ToRectangle().Contains(point.ToPoint());
 	}
 
 	public virtual Rectangle GetViewCullingArea()
 	{
-		//IL_0006: Unknown result type (might be due to invalid IL or missing references)
 		return _dimensions.ToRectangle();
 	}
 
@@ -613,29 +573,9 @@ public class UIElement : IComparable
 	{
 		//IL_001d: Unknown result type (might be due to invalid IL or missing references)
 		//IL_0022: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0034: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0044: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0049: Unknown result type (might be due to invalid IL or missing references)
 		//IL_0053: Unknown result type (might be due to invalid IL or missing references)
-		//IL_005c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_006c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0071: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0078: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0089: Unknown result type (might be due to invalid IL or missing references)
-		//IL_008e: Unknown result type (might be due to invalid IL or missing references)
 		//IL_0098: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00a1: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00b2: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00b7: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00be: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ce: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00d3: Unknown result type (might be due to invalid IL or missing references)
 		//IL_00dd: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e6: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00f6: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00fb: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0102: Unknown result type (might be due to invalid IL or missing references)
 		//IL_010c: Unknown result type (might be due to invalid IL or missing references)
 		if (IsMouseHovering)
 		{

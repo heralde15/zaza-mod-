@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+using System.Numerics;
 
 namespace Terraria.UI;
 
@@ -26,14 +26,7 @@ public struct Alignment
 
 	public readonly float HorizontalOffsetMultiplier;
 
-	public Vector2 OffsetMultiplier
-	{
-		get
-		{
-			//IL_000c: Unknown result type (might be due to invalid IL or missing references)
-			return new Vector2(HorizontalOffsetMultiplier, VerticalOffsetMultiplier);
-		}
-	}
+	public Vector2 OffsetMultiplier => new Vector2(HorizontalOffsetMultiplier, VerticalOffsetMultiplier);
 
 	private Alignment(float horizontal, float vertical)
 	{

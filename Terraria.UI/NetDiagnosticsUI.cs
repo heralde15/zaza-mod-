@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Numerics;
+using System.Threading;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Graphics;
@@ -46,12 +48,24 @@ public class NetDiagnosticsUI : INetDiagnosticsUI
 
 	private Dictionary<int, CounterForMessage> _counterByModuleId = new Dictionary<int, CounterForMessage>();
 
+	private volatile int bytesRecv;
+
+	private volatile int bytesRecvLast;
+
+	private volatile int bytesSent;
+
+	private volatile int bytesSentLast;
+
 	private int _highestFoundReadBytes = 1;
 
 	private int _highestFoundReadCount = 1;
 
 	public void Reset()
 	{
+		bytesRecv = 0;
+		bytesRecvLast = 0;
+		bytesSent = 0;
+		bytesSentLast = 0;
 		for (int i = 0; i < _counterByMessageId.Length; i++)
 		{
 			_counterByMessageId[i].Reset();
@@ -63,11 +77,13 @@ public class NetDiagnosticsUI : INetDiagnosticsUI
 
 	public void CountReadMessage(int messageId, int messageLength)
 	{
+		Interlocked.Add(ref bytesRecv, messageLength);
 		_counterByMessageId[messageId].CountReadMessage(messageLength);
 	}
 
 	public void CountSentMessage(int messageId, int messageLength)
 	{
+		Interlocked.Add(ref bytesSent, messageLength);
 		_counterByMessageId[messageId].CountSentMessage(messageLength);
 	}
 
@@ -85,13 +101,24 @@ public class NetDiagnosticsUI : INetDiagnosticsUI
 		_counterByModuleId[moduleMessageId] = value;
 	}
 
+	public void RotateSendRecvCounters()
+	{
+		bytesRecvLast = Interlocked.Exchange(ref bytesRecv, 0);
+		bytesSentLast = Interlocked.Exchange(ref bytesSent, 0);
+	}
+
+	public void GetLastSentRecvBytes(out int sent, out int recv)
+	{
+		sent = bytesSentLast;
+		recv = bytesRecvLast;
+	}
+
 	public void Draw(SpriteBatch spriteBatch)
 	{
-		//IL_0035: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00a7: Unknown result type (might be due to invalid IL or missing references)
-		//IL_013e: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0019: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0068: Unknown result type (might be due to invalid IL or missing references)
+		//IL_006e: Unknown result type (might be due to invalid IL or missing references)
+		Utils.DrawBorderString(Main.spriteBatch, "Packet Stats (bytes) F8 to hide", new Vector2(800f, 80f), Color.White);
 		int num = _counterByMessageId.Length + _counterByModuleId.Count;
 		for (int i = 0; i <= num / 51; i++)
 		{
@@ -121,22 +148,14 @@ public class NetDiagnosticsUI : INetDiagnosticsUI
 
 	private void DrawCounter(SpriteBatch spriteBatch, ref CounterForMessage counter, string title, Vector2 position)
 	{
-		//IL_003c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003e: Unknown result type (might be due to invalid IL or missing references)
 		//IL_008a: Unknown result type (might be due to invalid IL or missing references)
 		//IL_008f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00a9: Unknown result type (might be due to invalid IL or missing references)
 		//IL_00aa: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e3: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e4: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0113: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0114: Unknown result type (might be due to invalid IL or missing references)
-		//IL_012e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_012f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0168: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0169: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0198: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0199: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00ec: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0124: Unknown result type (might be due to invalid IL or missing references)
+		//IL_013f: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0181: Unknown result type (might be due to invalid IL or missing references)
+		//IL_01b9: Unknown result type (might be due to invalid IL or missing references)
 		//IL_0098: Unknown result type (might be due to invalid IL or missing references)
 		//IL_009d: Unknown result type (might be due to invalid IL or missing references)
 		if (!counter.exemptFromBadScoreTest)
@@ -180,9 +199,7 @@ public class NetDiagnosticsUI : INetDiagnosticsUI
 
 	private void DrawText(SpriteBatch spriteBatch, string text, Vector2 pos, Color color)
 	{
-		//IL_000c: Unknown result type (might be due to invalid IL or missing references)
 		//IL_000d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0014: Unknown result type (might be due to invalid IL or missing references)
-		DynamicSpriteFontExtensionMethods.DrawString(spriteBatch, FontAssets.MouseText.Value, text, pos, color, 0f, Vector2.Zero, 0.7f, (SpriteEffects)0, 0f);
+		DynamicSpriteFontExtensionMethods.DrawString(spriteBatch, FontAssets.MouseText.Value, text, pos, color, 0f, Vector2.Zero, 0.7f, (SpriteEffects)0, 0f, (Vector2[])null, (Color[])null);
 	}
 }

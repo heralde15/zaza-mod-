@@ -1,5 +1,5 @@
 using System;
-using Microsoft.Xna.Framework;
+using System.Numerics;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.GameInput;
 
@@ -19,14 +19,7 @@ public class GameInterfaceLayer
 
 	public bool Draw()
 	{
-		//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0017: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0035: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0028: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0048: Unknown result type (might be due to invalid IL or missing references)
-		Matrix transformMatrix;
+		Matrix4x4 transformMatrix;
 		if (ScaleType == InterfaceScaleType.Game)
 		{
 			PlayerInput.SetZoom_World();
@@ -40,7 +33,7 @@ public class GameInterfaceLayer
 		else
 		{
 			PlayerInput.SetZoom_Unscaled();
-			transformMatrix = Matrix.Identity;
+			transformMatrix = Matrix4x4.Identity;
 		}
 		bool result = false;
 		Main.spriteBatch.Begin((SpriteSortMode)0, (BlendState)null, (SamplerState)null, (DepthStencilState)null, (RasterizerState)null, (Effect)null, transformMatrix);

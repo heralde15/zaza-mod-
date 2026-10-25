@@ -1,8 +1,12 @@
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Numerics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
+using Terraria.Audio;
+using Terraria.Enums;
 using Terraria.GameInput;
 
 namespace Terraria.UI;
@@ -47,10 +51,6 @@ public class AchievementAdvisor
 
 	public void DrawOneAchievement(SpriteBatch spriteBatch, Vector2 position, bool large)
 	{
-		//IL_0039: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0045: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004a: Unknown result type (might be due to invalid IL or missing references)
 		List<AchievementAdvisorCard> bestCards = GetBestCards(1);
 		if (bestCards.Count < 1)
 		{
@@ -64,20 +64,17 @@ public class AchievementAdvisor
 		}
 		_hoveredCard = null;
 		DrawCard(bestCards[0], spriteBatch, position + new Vector2(8f) * num, num, out var hovered);
-		if (!hovered)
+		if (hovered)
 		{
-			return;
-		}
-		_hoveredCard = hoveredCard;
-		if (!PlayerInput.IgnoreMouseInterface)
-		{
-			Main.player[Main.myPlayer].mouseInterface = true;
+			_hoveredCard = hoveredCard;
 			if (Main.mouseLeft && Main.mouseLeftRelease)
 			{
 				Main.ingameOptionsWindow = false;
 				IngameFancyUI.OpenAchievementsAndGoto(_hoveredCard.achievement);
+				SoundEngine.PlaySound(12);
 			}
 		}
+		Main.DoStatefulTickSound(ref Main.achievementAdvisorMouseOver, hovered);
 	}
 
 	public void Update()
@@ -87,12 +84,6 @@ public class AchievementAdvisor
 
 	public void DrawOptionsPanel(SpriteBatch spriteBatch, Vector2 leftPosition, Vector2 rightPosition)
 	{
-		//IL_002a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0035: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0072: Unknown result type (might be due to invalid IL or missing references)
-		//IL_007e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0083: Unknown result type (might be due to invalid IL or missing references)
 		List<AchievementAdvisorCard> bestCards = GetBestCards();
 		_hoveredCard = null;
 		int num = bestCards.Count;
@@ -103,7 +94,7 @@ public class AchievementAdvisor
 		bool hovered;
 		for (int i = 0; i < num; i++)
 		{
-			DrawCard(bestCards[i], spriteBatch, leftPosition + new Vector2((float)(42 * i), 0f), 0.5f, out hovered);
+			DrawCard(bestCards[i], spriteBatch, leftPosition + new Vector2(42 * i, 0f), 0.5f, out hovered);
 			if (hovered)
 			{
 				_hoveredCard = bestCards[i];
@@ -111,24 +102,19 @@ public class AchievementAdvisor
 		}
 		for (int j = 5; j < bestCards.Count; j++)
 		{
-			DrawCard(bestCards[j], spriteBatch, rightPosition + new Vector2((float)(42 * j), 0f), 0.5f, out hovered);
+			DrawCard(bestCards[j], spriteBatch, rightPosition + new Vector2(42 * j, 0f), 0.5f, out hovered);
 			if (hovered)
 			{
 				_hoveredCard = bestCards[j];
 			}
 		}
-		if (_hoveredCard == null)
+		if (_hoveredCard != null)
 		{
-			return;
-		}
-		if (_hoveredCard.achievement.IsCompleted)
-		{
-			_hoveredCard = null;
-		}
-		else if (!PlayerInput.IgnoreMouseInterface)
-		{
-			Main.player[Main.myPlayer].mouseInterface = true;
-			if (Main.mouseLeft && Main.mouseLeftRelease)
+			if (_hoveredCard.achievement.IsCompleted)
+			{
+				_hoveredCard = null;
+			}
+			else if (Main.mouseLeft && Main.mouseLeftRelease)
 			{
 				Main.ingameOptionsWindow = false;
 				IngameFancyUI.OpenAchievementsAndGoto(_hoveredCard.achievement);
@@ -138,64 +124,26 @@ public class AchievementAdvisor
 
 	public void DrawMouseHover()
 	{
-		//IL_0020: Unknown result type (might be due to invalid IL or missing references)
 		if (_hoveredCard != null)
 		{
 			Main.spriteBatch.End();
 			Main.spriteBatch.Begin((SpriteSortMode)0, (BlendState)null, (SamplerState)null, (DepthStencilState)null, (RasterizerState)null, (Effect)null, Main.UIScaleMatrix);
 			PlayerInput.SetZoom_UI();
-			Item item = new Item();
-			item.SetDefaults(0, noMatCheck: true);
+			Item item = Main.DisplayAndGetFakeItem(ItemRarityColor.StrongRed10);
 			item.SetNameOverride(_hoveredCard.achievement.FriendlyName.Value);
 			item.ToolTip = ItemTooltip.FromLanguageKey(_hoveredCard.achievement.Description.Key);
-			item.type = 1;
-			item.scale = 0f;
-			item.rare = 10;
-			item.value = -1;
-			Main.HoverItem = item;
-			Main.instance.MouseText("", 0, 0);
-			Main.mouseText = true;
 		}
 	}
 
 	private void DrawCard(AchievementAdvisorCard card, SpriteBatch spriteBatch, Vector2 position, float scale, out bool hovered)
 	{
-		//IL_0004: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0009: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0011: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0018: Unknown result type (might be due to invalid IL or missing references)
-		//IL_001d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0038: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0063: Unknown result type (might be due to invalid IL or missing references)
-		//IL_006a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_006f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0075: Unknown result type (might be due to invalid IL or missing references)
-		//IL_007c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0081: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00b6: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00bb: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00d9: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00da: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e1: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e7: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0105: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0106: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0107: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0116: Unknown result type (might be due to invalid IL or missing references)
-		//IL_011c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00a8: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00af: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00b4: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0135: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0136: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0137: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0146: Unknown result type (might be due to invalid IL or missing references)
+		//IL_003f: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0044: Unknown result type (might be due to invalid IL or missing references)
+		//IL_00eb: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0120: Unknown result type (might be due to invalid IL or missing references)
 		//IL_0150: Unknown result type (might be due to invalid IL or missing references)
 		hovered = false;
-		if (Main.MouseScreen.Between(position, position + card.frame.Size() * scale))
+		if (Main.MouseScreen.Between(position, position + card.frame.Size() * scale) && !PlayerInput.IgnoreMouseInterface)
 		{
 			Main.LocalPlayer.mouseInterface = true;
 			hovered = true;
@@ -239,6 +187,19 @@ public class AchievementAdvisor
 			}
 		}
 		return list;
+	}
+
+	public bool HasAvailableCardToDisplay()
+	{
+		for (int i = 0; i < _cards.Count; i++)
+		{
+			AchievementAdvisorCard achievementAdvisorCard = _cards[i];
+			if (achievementAdvisorCard.IsAchievableInWorld() && !achievementAdvisorCard.achievement.IsCompleted)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public void Initialize()

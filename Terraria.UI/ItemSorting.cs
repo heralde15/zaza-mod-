@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.ID;
+using Terraria.Testing;
 
 namespace Terraria.UI;
 
@@ -23,7 +24,7 @@ public class ItemSorting
 		{
 			if (_layerWhiteLists.TryGetValue(Name, out var list))
 			{
-				indexesSortable = indexesSortable.Where((int i) => list.Contains(inv[i].netID)).ToList();
+				indexesSortable = indexesSortable.Where((int i) => list.Contains(inv[i].type)).ToList();
 			}
 		}
 
@@ -37,22 +38,18 @@ public class ItemSorting
 	{
 		public static ItemSortingLayer WeaponsMelee = new ItemSortingLayer("Weapons - Melee", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].maxStack == 1 && inv[i].damage > 0 && inv[i].ammo == 0 && inv[i].melee && inv[i].pick < 1 && inv[i].hammer < 1 && inv[i].axe < 1).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].damage > 0 && !inv[i].consumable && inv[i].ammo == 0 && inv[i].melee && inv[i].pick < 1 && inv[i].hammer < 1 && inv[i].axe < 1).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
 					num = inv[y].OriginalDamage.CompareTo(inv[x].OriginalDamage);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -61,22 +58,22 @@ public class ItemSorting
 
 		public static ItemSortingLayer WeaponsRanged = new ItemSortingLayer("Weapons - Ranged", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].maxStack == 1 && inv[i].damage > 0 && inv[i].ammo == 0 && inv[i].ranged).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => (inv[i].damage > 0 && !inv[i].consumable && inv[i].ammo == 0 && inv[i].ranged) || (inv[i].type >= 0 && ItemID.Sets.SortingPriorityWeaponsRanged[inv[i].type] > -1)).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
-				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				int num = CompareWithPrioritySet(ItemID.Sets.SortingPriorityWeaponsRanged, inv[x].type, inv[y].type);
 				if (num == 0)
 				{
-					num = inv[y].OriginalDamage.CompareTo(inv[x].OriginalDamage);
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				}
 				if (num == 0)
 				{
-					num = x.CompareTo(y);
+					num = inv[y].OriginalDamage.CompareTo(inv[x].OriginalDamage);
 				}
 				return num;
 			});
@@ -85,22 +82,18 @@ public class ItemSorting
 
 		public static ItemSortingLayer WeaponsMagic = new ItemSortingLayer("Weapons - Magic", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].maxStack == 1 && inv[i].damage > 0 && inv[i].ammo == 0 && inv[i].magic).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].damage > 0 && !inv[i].consumable && inv[i].ammo == 0 && inv[i].magic).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
 					num = inv[y].OriginalDamage.CompareTo(inv[x].OriginalDamage);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -109,22 +102,18 @@ public class ItemSorting
 
 		public static ItemSortingLayer WeaponsMinions = new ItemSortingLayer("Weapons - Minions", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].maxStack == 1 && inv[i].damage > 0 && inv[i].summon).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].damage > 0 && !inv[i].consumable && inv[i].summon).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
 					num = inv[y].OriginalDamage.CompareTo(inv[x].OriginalDamage);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -139,16 +128,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
 					num = inv[y].OriginalDamage.CompareTo(inv[x].OriginalDamage);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -163,16 +148,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
 					num = inv[y].OriginalDamage.CompareTo(inv[x].OriginalDamage);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -187,7 +168,7 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort((int x, int y) => inv[x].pick.CompareTo(inv[y].pick));
+			SortIndicesStable(indexesSortable, (int x, int y) => inv[x].pick.CompareTo(inv[y].pick));
 			return indexesSortable;
 		});
 
@@ -199,7 +180,7 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort((int x, int y) => inv[x].axe.CompareTo(inv[y].axe));
+			SortIndicesStable(indexesSortable, (int x, int y) => inv[x].axe.CompareTo(inv[y].axe));
 			return indexesSortable;
 		});
 
@@ -211,19 +192,19 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort((int x, int y) => inv[x].pick.CompareTo(inv[y].pick));
+			SortIndicesStable(indexesSortable, (int x, int y) => inv[x].pick.CompareTo(inv[y].pick));
 			return indexesSortable;
 		});
 
 		public static ItemSortingLayer ToolsAxes = new ItemSortingLayer("Tools - Axes", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].pick > 0).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].axe > 0).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort((int x, int y) => inv[x].axe.CompareTo(inv[y].axe));
+			SortIndicesStable(indexesSortable, (int x, int y) => inv[x].axe.CompareTo(inv[y].axe));
 			return indexesSortable;
 		});
 
@@ -235,28 +216,167 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort((int x, int y) => inv[x].hammer.CompareTo(inv[y].hammer));
+			SortIndicesStable(indexesSortable, (int x, int y) => inv[x].hammer.CompareTo(inv[y].hammer));
 			return indexesSortable;
 		});
 
 		public static ItemSortingLayer ToolsTerraforming = new ItemSortingLayer("Tools - Terraforming", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].netID > 0 && ItemID.Sets.SortingPriorityTerraforming[inv[i].netID] > -1).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityTerraforming[inv[i].type] > -1).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
-				int num = ItemID.Sets.SortingPriorityTerraforming[inv[x].netID].CompareTo(ItemID.Sets.SortingPriorityTerraforming[inv[y].netID]);
+				int num = ItemID.Sets.SortingPriorityTerraforming[inv[x].type].CompareTo(ItemID.Sets.SortingPriorityTerraforming[inv[y].type]);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer ToolsFishing = new ItemSortingLayer("Tools - Fishing", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].fishingPole > 0 || inv[i].bait > 0 || inv[i].questItem || (inv[i].type > 0 && (ItemID.Sets.IsFishingCrate[inv[i].type] || ItemID.Sets.IsBasicFish[inv[i].type] || ItemID.Sets.SortingPriorityToolsFishing[inv[i].type] > -1))).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = CompareWithPrioritySet(ItemID.Sets.SortingPriorityToolsFishing, inv[x].type, inv[y].type);
 				if (num == 0)
 				{
-					num = x.CompareTo(y);
+					num = inv[y].fishingPole.CompareTo(inv[x].fishingPole);
+				}
+				if (num == 0)
+				{
+					num = inv[y].bait.CompareTo(inv[x].bait);
+				}
+				if (num == 0)
+				{
+					num = inv[y].questItem.CompareTo(inv[x].questItem);
+				}
+				if (num == 0 && inv[y].type >= 0 && inv[x].type >= 0)
+				{
+					if (num == 0)
+					{
+						num = ItemID.Sets.IsFishingCrate[inv[y].type].CompareTo(ItemID.Sets.IsFishingCrate[inv[x].type]);
+					}
+					if (num == 0)
+					{
+						num = ItemID.Sets.IsBasicFish[inv[y].type].CompareTo(ItemID.Sets.IsBasicFish[inv[x].type]);
+					}
+				}
+				if (num == 0)
+				{
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
+				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer ToolsGolf = new ItemSortingLayer("Tools - Golf", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityToolsGolf[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityToolsGolf[inv[x].type].CompareTo(ItemID.Sets.SortingPriorityToolsGolf[inv[y].type]);
+				if (num == 0)
+				{
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
+				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer ToolsInstruments = new ItemSortingLayer("Tools - Instruments", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityToolsInstruments[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityToolsInstruments[inv[x].type].CompareTo(ItemID.Sets.SortingPriorityToolsInstruments[inv[y].type]);
+				if (num == 0)
+				{
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
+				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer ToolsKeys = new ItemSortingLayer("Tools - Keys", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityToolsKeys[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityToolsKeys[inv[x].type].CompareTo(ItemID.Sets.SortingPriorityToolsKeys[inv[y].type]);
+				if (num == 0)
+				{
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
+				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer ToolsKites = new ItemSortingLayer("Tools - Kites", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityToolsKites[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityToolsKites[inv[x].type].CompareTo(ItemID.Sets.SortingPriorityToolsKites[inv[y].type]);
+				if (num == 0)
+				{
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
 				return num;
 			});
@@ -265,22 +385,42 @@ public class ItemSorting
 
 		public static ItemSortingLayer ToolsAmmoLeftovers = new ItemSortingLayer("Weapons - Ammo Leftovers", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].ammo > 0).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].ammo > 0 && inv[i].type >= 0 && inv[i].type < ItemID.Count && !ItemID.Sets.IsFood[inv[i].type] && ItemID.Sets.SortingPriorityMiscAcorns[inv[i].type] == -1).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
 					num = inv[y].OriginalDamage.CompareTo(inv[x].OriginalDamage);
 				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer ToolsMisc = new ItemSortingLayer("Tools - Misc", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityToolsMisc[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityToolsMisc[inv[x].type].CompareTo(ItemID.Sets.SortingPriorityToolsMisc[inv[y].type]);
 				if (num == 0)
 				{
-					num = x.CompareTo(y);
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
 				return num;
 			});
@@ -295,7 +435,7 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
@@ -304,7 +444,7 @@ public class ItemSorting
 				}
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				return num;
 			});
@@ -319,12 +459,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				return num;
 			});
@@ -339,7 +479,7 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[x].vanity.CompareTo(inv[y].vanity);
 				if (num == 0)
@@ -352,7 +492,7 @@ public class ItemSorting
 				}
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				return num;
 			});
@@ -367,16 +507,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				return num;
 			});
@@ -391,16 +527,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				return num;
 			});
@@ -415,16 +547,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				return num;
 			});
@@ -439,16 +567,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				return num;
 			});
@@ -463,16 +587,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				return num;
 			});
@@ -481,25 +601,33 @@ public class ItemSorting
 
 		public static ItemSortingLayer PotionsLife = new ItemSortingLayer("Potions - Life", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].consumable && inv[i].healLife > 0 && inv[i].healMana < 1).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].consumable && inv[i].healLife > 0 && inv[i].healMana < 1 && inv[i].type != 5).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].healLife.CompareTo(inv[x].healLife);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
-				}
 				return num;
 			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer PotionsJustTheMushroom = new ItemSortingLayer("Potions - Just The Mushroom", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type == 5).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, (int x, int y) => inv[y].stack.CompareTo(inv[x].stack));
 			return indexesSortable;
 		});
 
@@ -511,16 +639,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].healMana.CompareTo(inv[x].healMana);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -535,16 +659,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].healLife.CompareTo(inv[x].healLife);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -553,26 +673,54 @@ public class ItemSorting
 
 		public static ItemSortingLayer PotionsBuffs = new ItemSortingLayer("Potions - Buffs", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].consumable && inv[i].buffType > 0).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => (inv[i].consumable && inv[i].buffType > 0 && inv[i].type >= 0 && inv[i].type < ItemID.Count && !ItemID.Sets.IsFood[inv[i].type]) || (inv[i].type >= 0 && ItemID.Sets.SortingPriorityPotionsBuffs[inv[i].type] > -1)).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
-				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				int num = CompareWithPrioritySet(ItemID.Sets.SortingPriorityPotionsBuffs, inv[x].type, inv[y].type);
 				if (num == 0)
 				{
-					num = inv[x].netID.CompareTo(inv[y].netID);
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[x].type.CompareTo(inv[y].type);
 				}
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer PotionsFood = new ItemSortingLayer("Potions - Food", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].consumable && inv[i].buffType > 0 && inv[i].type >= 0 && inv[i].type < ItemID.Count && ItemID.Sets.IsFood[inv[i].type]).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ((inv[y].buffType >= 0 && inv[y].buffType < BuffID.Count) ? BuffID.Sets.SortingPriorityFoodBuffs[inv[y].buffType].CompareTo(BuffID.Sets.SortingPriorityFoodBuffs[inv[x].buffType]) : 0);
 				if (num == 0)
 				{
-					num = x.CompareTo(y);
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[x].type.CompareTo(inv[y].type);
+				}
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
 				return num;
 			});
@@ -581,13 +729,13 @@ public class ItemSorting
 
 		public static ItemSortingLayer PotionsDyes = new ItemSortingLayer("Potions - Dyes", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].dye > 0).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].dye > 0 || (inv[i].type >= 0 && ItemID.Sets.SortingPriorityPotionsDyeMaterial[inv[i].type] > -1)).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
@@ -596,11 +744,11 @@ public class ItemSorting
 				}
 				if (num == 0)
 				{
-					num = inv[y].stack.CompareTo(inv[x].stack);
+					num = CompareWithPrioritySet(ItemID.Sets.SortingPriorityPotionsDyeMaterial, inv[x].type, inv[y].type);
 				}
 				if (num == 0)
 				{
-					num = x.CompareTo(y);
+					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
 				return num;
 			});
@@ -615,7 +763,7 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
@@ -626,10 +774,6 @@ public class ItemSorting
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
-				}
 				return num;
 			});
 			return indexesSortable;
@@ -637,22 +781,18 @@ public class ItemSorting
 
 		public static ItemSortingLayer MiscValuables = new ItemSortingLayer("Misc - Importants", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].netID > 0 && ItemID.Sets.SortingPriorityBossSpawns[inv[i].netID] > -1).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityMiscImportants[inv[i].type] > -1).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
-				int num = ItemID.Sets.SortingPriorityBossSpawns[inv[x].netID].CompareTo(ItemID.Sets.SortingPriorityBossSpawns[inv[y].netID]);
+				int num = ItemID.Sets.SortingPriorityMiscImportants[inv[x].type].CompareTo(ItemID.Sets.SortingPriorityMiscImportants[inv[y].type]);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -661,30 +801,26 @@ public class ItemSorting
 
 		public static ItemSortingLayer MiscWiring = new ItemSortingLayer("Misc - Wiring", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => (inv[i].netID > 0 && ItemID.Sets.SortingPriorityWiring[inv[i].netID] > -1) || inv[i].mech).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => (inv[i].type > 0 && ItemID.Sets.SortingPriorityWiring[inv[i].type] > -1) || inv[i].mech).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
-				int num = ItemID.Sets.SortingPriorityWiring[inv[y].netID].CompareTo(ItemID.Sets.SortingPriorityWiring[inv[x].netID]);
+				int num = ItemID.Sets.SortingPriorityWiring[inv[y].type].CompareTo(ItemID.Sets.SortingPriorityWiring[inv[x].type]);
 				if (num == 0)
 				{
 					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				}
 				if (num == 0)
 				{
-					num = inv[y].netID.CompareTo(inv[x].netID);
+					num = inv[y].type.CompareTo(inv[x].type);
 				}
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -693,46 +829,50 @@ public class ItemSorting
 
 		public static ItemSortingLayer MiscMaterials = new ItemSortingLayer("Misc - Materials", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].netID > 0 && ItemID.Sets.SortingPriorityMaterials[inv[i].netID] > -1).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityMaterials[inv[i].type] > -1).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
-				int num = ItemID.Sets.SortingPriorityMaterials[inv[y].netID].CompareTo(ItemID.Sets.SortingPriorityMaterials[inv[x].netID]);
+				int num = ItemID.Sets.SortingPriorityMaterials[inv[y].type].CompareTo(ItemID.Sets.SortingPriorityMaterials[inv[x].type]);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
 			return indexesSortable;
 		});
 
-		public static ItemSortingLayer MiscExtractinator = new ItemSortingLayer("Misc - Extractinator", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		public static ItemSortingLayer MiscJustTheGlowingMushroom = new ItemSortingLayer("Misc - Just The Glowing Mushroom", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].netID > 0 && ItemID.Sets.SortingPriorityExtractibles[inv[i].netID] > -1).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type == 183).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, (int x, int y) => inv[y].stack.CompareTo(inv[x].stack));
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer MiscExtractinator = new ItemSortingLayer("Misc - Extractinator", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityExtractibles[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
 			{
-				int num = ItemID.Sets.SortingPriorityExtractibles[inv[y].netID].CompareTo(ItemID.Sets.SortingPriorityExtractibles[inv[x].netID]);
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityExtractibles[inv[y].type].CompareTo(ItemID.Sets.SortingPriorityExtractibles[inv[x].type]);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -741,15 +881,15 @@ public class ItemSorting
 
 		public static ItemSortingLayer MiscPainting = new ItemSortingLayer("Misc - Painting", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => (inv[i].netID > 0 && ItemID.Sets.SortingPriorityPainting[inv[i].netID] > -1) || inv[i].paint > 0).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => (inv[i].type > 0 && ItemID.Sets.SortingPriorityPainting[inv[i].type] > -1) || inv[i].paint > 0).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
-				int num = ItemID.Sets.SortingPriorityPainting[inv[y].netID].CompareTo(ItemID.Sets.SortingPriorityPainting[inv[x].netID]);
+				int num = ItemID.Sets.SortingPriorityPainting[inv[y].type].CompareTo(ItemID.Sets.SortingPriorityPainting[inv[x].type]);
 				if (num == 0)
 				{
 					num = inv[x].paint.CompareTo(inv[y].paint);
@@ -762,10 +902,6 @@ public class ItemSorting
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
-				}
 				return num;
 			});
 			return indexesSortable;
@@ -773,22 +909,122 @@ public class ItemSorting
 
 		public static ItemSortingLayer MiscRopes = new ItemSortingLayer("Misc - Ropes", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].netID > 0 && ItemID.Sets.SortingPriorityRopes[inv[i].netID] > -1).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityRopes[inv[i].type] > -1).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
-				int num = ItemID.Sets.SortingPriorityRopes[inv[y].netID].CompareTo(ItemID.Sets.SortingPriorityRopes[inv[x].netID]);
+				int num = ItemID.Sets.SortingPriorityRopes[inv[y].type].CompareTo(ItemID.Sets.SortingPriorityRopes[inv[x].type]);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer MiscHerbsAndSeeds = new ItemSortingLayer("Misc - Herbs And Seeds", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityMiscHerbsAndSeeds[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityMiscHerbsAndSeeds[inv[y].type].CompareTo(ItemID.Sets.SortingPriorityMiscHerbsAndSeeds[inv[x].type]);
 				if (num == 0)
 				{
-					num = x.CompareTo(y);
+					num = inv[y].stack.CompareTo(inv[x].stack);
+				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer MiscGems = new ItemSortingLayer("Misc - Gems", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityMiscGems[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityMiscGems[inv[y].type].CompareTo(ItemID.Sets.SortingPriorityMiscGems[inv[x].type]);
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
+				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer MiscAcorns = new ItemSortingLayer("Misc - Acorns", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityMiscAcorns[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityMiscAcorns[inv[y].type].CompareTo(ItemID.Sets.SortingPriorityMiscAcorns[inv[x].type]);
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
+				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer MiscBossBags = new ItemSortingLayer("Misc - Boss Bags", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].type > 0 && ItemID.Sets.SortingPriorityMiscBossBags[inv[i].type] > -1).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = ItemID.Sets.SortingPriorityMiscBossBags[inv[x].type].CompareTo(ItemID.Sets.SortingPriorityMiscBossBags[inv[y].type]);
+				if (num == 0)
+				{
+					num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
+				}
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
+				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		public static ItemSortingLayer MiscCritters = new ItemSortingLayer("Misc - Critters", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
+		{
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].makeNPC > 0).ToList();
+			layer.Validate(ref indexesSortable, inv);
+			foreach (int current in indexesSortable)
+			{
+				itemsToSort.Remove(current);
+			}
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
+			{
+				int num = inv[x].makeNPC.CompareTo(inv[y].makeNPC);
+				if (num == 0)
+				{
+					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
 				return num;
 			});
@@ -797,13 +1033,13 @@ public class ItemSorting
 
 		public static ItemSortingLayer LastMaterials = new ItemSortingLayer("Last - Materials", delegate(ItemSortingLayer layer, Item[] inv, List<int> itemsToSort)
 		{
-			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].createTile < 0 && inv[i].createWall < 1).ToList();
+			List<int> indexesSortable = itemsToSort.Where((int i) => inv[i].createTile < 0 && inv[i].createWall < 1 && inv[i].rare != -1).ToList();
 			layer.Validate(ref indexesSortable, inv);
 			foreach (int current in indexesSortable)
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
@@ -813,10 +1049,6 @@ public class ItemSorting
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -831,16 +1063,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = string.Compare(inv[x].Name, inv[y].Name, StringComparison.OrdinalIgnoreCase);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -855,16 +1083,12 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = string.Compare(inv[x].Name, inv[y].Name, StringComparison.OrdinalIgnoreCase);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -879,7 +1103,7 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].OriginalRarity.CompareTo(inv[x].OriginalRarity);
 				if (num == 0)
@@ -889,10 +1113,6 @@ public class ItemSorting
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
-				}
-				if (num == 0)
-				{
-					num = x.CompareTo(y);
 				}
 				return num;
 			});
@@ -907,26 +1127,147 @@ public class ItemSorting
 			{
 				itemsToSort.Remove(current);
 			}
-			indexesSortable.Sort(delegate(int x, int y)
+			SortIndicesStable(indexesSortable, delegate(int x, int y)
 			{
 				int num = inv[y].value.CompareTo(inv[x].value);
 				if (num == 0)
 				{
 					num = inv[y].stack.CompareTo(inv[x].stack);
 				}
+				return num;
+			});
+			return indexesSortable;
+		});
+
+		private static void SortIndicesStable(List<int> list, Comparison<int> comparison)
+		{
+			list.Sort(delegate(int x, int y)
+			{
+				int num = comparison(x, y);
 				if (num == 0)
 				{
 					num = x.CompareTo(y);
 				}
 				return num;
 			});
-			return indexesSortable;
-		});
+		}
+
+		public static int CompareWithPrioritySet(int[] prioritySet, int typeOne, int typeTwo)
+		{
+			if (typeOne < 0 || typeTwo < 0)
+			{
+				return 0;
+			}
+			if (prioritySet[typeOne] >= 0 && prioritySet[typeTwo] < 0)
+			{
+				return -1;
+			}
+			if (prioritySet[typeOne] < 0 && prioritySet[typeTwo] >= 0)
+			{
+				return 1;
+			}
+			if (prioritySet[typeOne] < 0 && prioritySet[typeTwo] < 0)
+			{
+				return 0;
+			}
+			return prioritySet[typeOne].CompareTo(prioritySet[typeTwo]);
+		}
+	}
+
+	private struct DamageTypeSortingLayerEntry(float multiplier, ItemSortingLayer layer, int index)
+	{
+		public float Multiplier = multiplier;
+
+		public ItemSortingLayer Layer = layer;
+
+		public int Index = index;
+	}
+
+	private struct MemoryStamp
+	{
+		public int ItemType;
+
+		public int Stack;
+
+		public int Prefix;
+
+		public MemoryStamp(int itemType, int stack, int prefix)
+		{
+			ItemType = itemType;
+			Stack = stack;
+			Prefix = prefix;
+		}
+
+		public MemoryStamp(Item item)
+		{
+			ItemType = item.type;
+			Stack = item.stack;
+			Prefix = item.prefix;
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj == null || !(obj is MemoryStamp))
+			{
+				return false;
+			}
+			return Equals((MemoryStamp)obj);
+		}
+
+		public bool Equals(MemoryStamp other)
+		{
+			if (ItemType == other.ItemType && Stack == other.Stack)
+			{
+				return Prefix == other.Prefix;
+			}
+			return false;
+		}
+
+		public override int GetHashCode()
+		{
+			return (((ItemType * 397) ^ Stack) * 397) ^ Prefix;
+		}
+
+		public static bool operator ==(MemoryStamp left, MemoryStamp right)
+		{
+			return left.Equals(right);
+		}
+
+		public static bool operator !=(MemoryStamp left, MemoryStamp right)
+		{
+			return !left.Equals(right);
+		}
 	}
 
 	private static List<ItemSortingLayer> _layerList = new List<ItemSortingLayer>();
 
 	private static Dictionary<string, List<int>> _layerWhiteLists = new Dictionary<string, List<int>>();
+
+	private static int[] _layerIndexForItemType;
+
+	private static int _layerCount;
+
+	private static List<DamageTypeSortingLayerEntry> _damageRankings = new List<DamageTypeSortingLayerEntry>();
+
+	private static readonly List<int> _sort_itemsToSort = new List<int>();
+
+	private static readonly List<int> _sort_sortedItemIndexes = new List<int>();
+
+	private static readonly List<int> _sort_counts = new List<int>();
+
+	private static readonly List<Item> _sort_itemsCache = new List<Item>();
+
+	private static readonly List<int> _sort_availableSortingSlots = new List<int>();
+
+	private static MemoryStamp[] _sortInventory_preStamps = new MemoryStamp[0];
+
+	private static MemoryStamp[] _sortInventory_postStamps = new MemoryStamp[0];
+
+	private static readonly List<int> _fillAmmoFromInventory_acceptedAmmoTypes = new List<int>();
+
+	private static readonly List<int> _fillAmmoFromInventory_emptyAmmoSlots = new List<int>();
+
+	public static int LayerCount => _layerCount;
 
 	public static void SetupWhiteLists()
 	{
@@ -946,7 +1287,13 @@ public class ItemSorting
 		list.Add(ItemSortingLayers.ToolsAxes);
 		list.Add(ItemSortingLayers.ToolsHammers);
 		list.Add(ItemSortingLayers.ToolsTerraforming);
+		list.Add(ItemSortingLayers.ToolsFishing);
+		list.Add(ItemSortingLayers.ToolsGolf);
+		list.Add(ItemSortingLayers.ToolsInstruments);
+		list.Add(ItemSortingLayers.ToolsKeys);
+		list.Add(ItemSortingLayers.ToolsKites);
 		list.Add(ItemSortingLayers.ToolsAmmoLeftovers);
+		list.Add(ItemSortingLayers.ToolsMisc);
 		list.Add(ItemSortingLayers.ArmorCombat);
 		list.Add(ItemSortingLayers.ArmorVanity);
 		list.Add(ItemSortingLayers.ArmorAccessories);
@@ -958,14 +1305,22 @@ public class ItemSorting
 		list.Add(ItemSortingLayers.PotionsDyes);
 		list.Add(ItemSortingLayers.PotionsHairDyes);
 		list.Add(ItemSortingLayers.PotionsLife);
+		list.Add(ItemSortingLayers.PotionsJustTheMushroom);
 		list.Add(ItemSortingLayers.PotionsMana);
 		list.Add(ItemSortingLayers.PotionsElixirs);
 		list.Add(ItemSortingLayers.PotionsBuffs);
+		list.Add(ItemSortingLayers.PotionsFood);
 		list.Add(ItemSortingLayers.MiscValuables);
 		list.Add(ItemSortingLayers.MiscPainting);
 		list.Add(ItemSortingLayers.MiscWiring);
 		list.Add(ItemSortingLayers.MiscMaterials);
+		list.Add(ItemSortingLayers.MiscJustTheGlowingMushroom);
 		list.Add(ItemSortingLayers.MiscRopes);
+		list.Add(ItemSortingLayers.MiscHerbsAndSeeds);
+		list.Add(ItemSortingLayers.MiscAcorns);
+		list.Add(ItemSortingLayers.MiscGems);
+		list.Add(ItemSortingLayers.MiscBossBags);
+		list.Add(ItemSortingLayers.MiscCritters);
 		list.Add(ItemSortingLayers.MiscExtractinator);
 		list.Add(ItemSortingLayers.LastMaterials);
 		list.Add(ItemSortingLayers.LastTilesImportant);
@@ -980,47 +1335,54 @@ public class ItemSorting
 			list3.Add(i + 48);
 		}
 		Item[] array = list2.ToArray();
-		foreach (ItemSortingLayer item2 in list)
+		_layerCount = list.Count;
+		_layerIndexForItemType = new int[ItemID.Count];
+		for (int j = 0; j < list.Count; j++)
 		{
-			List<int> list4 = item2.SortingMethod(item2, array, list3);
+			ItemSortingLayer itemSortingLayer = list[j];
+			List<int> list4 = itemSortingLayer.SortingMethod(itemSortingLayer, array, list3);
 			List<int> list5 = new List<int>();
-			for (int j = 0; j < list4.Count; j++)
+			for (int k = 0; k < list4.Count; k++)
 			{
-				list5.Add(array[list4[j]].netID);
+				Item item2 = array[list4[k]];
+				list5.Add(item2.type);
+				_layerIndexForItemType[item2.type] = j;
 			}
-			_layerWhiteLists.Add(item2.Name, list5);
+			_layerWhiteLists.Add(itemSortingLayer.Name, list5);
 		}
+		Invariant.Assert(!_layerWhiteLists[ItemSortingLayers.LastNotTrash.Name].Any(), "An item has been added which doesn't fit into any sorting layer");
+	}
+
+	private static void AddSortingPrioritiesBasedOnPlayerDamage(List<ItemSortingLayer> list)
+	{
+		Player player = Main.player[Main.myPlayer];
+		_damageRankings.Clear();
+		_damageRankings.Add(new DamageTypeSortingLayerEntry(player.meleeDamage, ItemSortingLayers.WeaponsMelee, 0));
+		_damageRankings.Add(new DamageTypeSortingLayerEntry(player.rangedDamage, ItemSortingLayers.WeaponsRanged, 1));
+		_damageRankings.Add(new DamageTypeSortingLayerEntry(player.magicDamage, ItemSortingLayers.WeaponsMagic, 2));
+		_damageRankings.Add(new DamageTypeSortingLayerEntry(player.minionDamage, ItemSortingLayers.WeaponsMinions, 3));
+		_damageRankings.Sort(Descending);
+		foreach (DamageTypeSortingLayerEntry damageRanking2 in _damageRankings)
+		{
+			list.Add(damageRanking2.Layer);
+		}
+	}
+
+	private static int Descending(DamageTypeSortingLayerEntry x, DamageTypeSortingLayerEntry y)
+	{
+		int num = y.Multiplier.CompareTo(x.Multiplier);
+		if (num == 0)
+		{
+			num = x.Index.CompareTo(y.Index);
+		}
+		return num;
 	}
 
 	private static void SetupSortingPriorities()
 	{
-		Player player = Main.player[Main.myPlayer];
+		_ = Main.player[Main.myPlayer];
 		_layerList.Clear();
-		List<float> list = new List<float> { player.meleeDamage, player.rangedDamage, player.magicDamage, player.minionDamage };
-		list.Sort((float x, float y) => y.CompareTo(x));
-		for (int i = 0; i < 5; i++)
-		{
-			if (!_layerList.Contains(ItemSortingLayers.WeaponsMelee) && player.meleeDamage == list[0])
-			{
-				list.RemoveAt(0);
-				_layerList.Add(ItemSortingLayers.WeaponsMelee);
-			}
-			if (!_layerList.Contains(ItemSortingLayers.WeaponsRanged) && player.rangedDamage == list[0])
-			{
-				list.RemoveAt(0);
-				_layerList.Add(ItemSortingLayers.WeaponsRanged);
-			}
-			if (!_layerList.Contains(ItemSortingLayers.WeaponsMagic) && player.magicDamage == list[0])
-			{
-				list.RemoveAt(0);
-				_layerList.Add(ItemSortingLayers.WeaponsMagic);
-			}
-			if (!_layerList.Contains(ItemSortingLayers.WeaponsMinions) && player.minionDamage == list[0])
-			{
-				list.RemoveAt(0);
-				_layerList.Add(ItemSortingLayers.WeaponsMinions);
-			}
-		}
+		AddSortingPrioritiesBasedOnPlayerDamage(_layerList);
 		_layerList.Add(ItemSortingLayers.WeaponsAssorted);
 		_layerList.Add(ItemSortingLayers.WeaponsAmmo);
 		_layerList.Add(ItemSortingLayers.ToolsPicksaws);
@@ -1029,7 +1391,13 @@ public class ItemSorting
 		_layerList.Add(ItemSortingLayers.ToolsAxes);
 		_layerList.Add(ItemSortingLayers.ToolsHammers);
 		_layerList.Add(ItemSortingLayers.ToolsTerraforming);
+		_layerList.Add(ItemSortingLayers.ToolsFishing);
+		_layerList.Add(ItemSortingLayers.ToolsGolf);
+		_layerList.Add(ItemSortingLayers.ToolsInstruments);
+		_layerList.Add(ItemSortingLayers.ToolsKeys);
+		_layerList.Add(ItemSortingLayers.ToolsKites);
 		_layerList.Add(ItemSortingLayers.ToolsAmmoLeftovers);
+		_layerList.Add(ItemSortingLayers.ToolsMisc);
 		_layerList.Add(ItemSortingLayers.ArmorCombat);
 		_layerList.Add(ItemSortingLayers.ArmorVanity);
 		_layerList.Add(ItemSortingLayers.ArmorAccessories);
@@ -1041,14 +1409,22 @@ public class ItemSorting
 		_layerList.Add(ItemSortingLayers.PotionsDyes);
 		_layerList.Add(ItemSortingLayers.PotionsHairDyes);
 		_layerList.Add(ItemSortingLayers.PotionsLife);
+		_layerList.Add(ItemSortingLayers.PotionsJustTheMushroom);
 		_layerList.Add(ItemSortingLayers.PotionsMana);
 		_layerList.Add(ItemSortingLayers.PotionsElixirs);
 		_layerList.Add(ItemSortingLayers.PotionsBuffs);
+		_layerList.Add(ItemSortingLayers.PotionsFood);
 		_layerList.Add(ItemSortingLayers.MiscValuables);
 		_layerList.Add(ItemSortingLayers.MiscPainting);
 		_layerList.Add(ItemSortingLayers.MiscWiring);
 		_layerList.Add(ItemSortingLayers.MiscMaterials);
+		_layerList.Add(ItemSortingLayers.MiscJustTheGlowingMushroom);
 		_layerList.Add(ItemSortingLayers.MiscRopes);
+		_layerList.Add(ItemSortingLayers.MiscHerbsAndSeeds);
+		_layerList.Add(ItemSortingLayers.MiscAcorns);
+		_layerList.Add(ItemSortingLayers.MiscGems);
+		_layerList.Add(ItemSortingLayers.MiscBossBags);
+		_layerList.Add(ItemSortingLayers.MiscCritters);
 		_layerList.Add(ItemSortingLayers.MiscExtractinator);
 		_layerList.Add(ItemSortingLayers.LastMaterials);
 		_layerList.Add(ItemSortingLayers.LastTilesImportant);
@@ -1057,37 +1433,41 @@ public class ItemSorting
 		_layerList.Add(ItemSortingLayers.LastTrash);
 	}
 
-	private static void Sort(Item[] inv, params int[] ignoreSlots)
+	private static void Sort(bool withFeedback, Item[] inv, params int[] ignoreSlots)
 	{
 		SetupSortingPriorities();
-		List<int> list = new List<int>();
+		_sort_itemsToSort.Clear();
+		_sort_sortedItemIndexes.Clear();
+		_sort_counts.Clear();
+		_sort_itemsCache.Clear();
+		_sort_availableSortingSlots.Clear();
 		for (int i = 0; i < inv.Length; i++)
 		{
-			if (!Enumerable.Contains(ignoreSlots, i))
+			if (!ignoreSlots.Contains(i))
 			{
 				Item item = inv[i];
 				if (item != null && item.stack != 0 && item.type != 0 && !item.favorited)
 				{
-					list.Add(i);
+					_sort_itemsToSort.Add(i);
 				}
 			}
 		}
-		for (int j = 0; j < list.Count; j++)
+		for (int j = 0; j < _sort_itemsToSort.Count; j++)
 		{
-			Item item2 = inv[list[j]];
+			Item item2 = inv[_sort_itemsToSort[j]];
 			if (item2.stack >= item2.maxStack)
 			{
 				continue;
 			}
 			int num = item2.maxStack - item2.stack;
-			for (int k = j; k < list.Count; k++)
+			for (int k = j; k < _sort_itemsToSort.Count; k++)
 			{
 				if (j == k)
 				{
 					continue;
 				}
-				Item item3 = inv[list[k]];
-				if (item2.type == item3.type && item3.stack != item3.maxStack)
+				Item item3 = inv[_sort_itemsToSort[k]];
+				if (Item.CanStack(item2, item3) && item3.stack != item3.maxStack)
 				{
 					int num2 = item3.stack;
 					if (num < num2)
@@ -1099,8 +1479,8 @@ public class ItemSorting
 					num -= num2;
 					if (item3.stack == 0)
 					{
-						inv[list[k]] = new Item();
-						list.Remove(list[k]);
+						inv[_sort_itemsToSort[k]] = new Item();
+						_sort_itemsToSort.Remove(_sort_itemsToSort[k]);
 						j--;
 						k--;
 						break;
@@ -1112,106 +1492,131 @@ public class ItemSorting
 				}
 			}
 		}
-		List<int> list2 = new List<int>(list);
+		_sort_availableSortingSlots.AddRange(_sort_itemsToSort);
 		for (int l = 0; l < inv.Length; l++)
 		{
-			if (!Enumerable.Contains(ignoreSlots, l) && !list2.Contains(l))
+			if (!ignoreSlots.Contains(l) && !_sort_availableSortingSlots.Contains(l))
 			{
 				Item item4 = inv[l];
 				if (item4 == null || item4.stack == 0 || item4.type == 0)
 				{
-					list2.Add(l);
+					_sort_availableSortingSlots.Add(l);
 				}
 			}
 		}
-		list2.Sort();
-		List<int> list3 = new List<int>();
-		List<int> list4 = new List<int>();
+		_sort_availableSortingSlots.Sort();
 		foreach (ItemSortingLayer layer in _layerList)
 		{
-			List<int> list5 = layer.SortingMethod(layer, inv, list);
-			if (list5.Count > 0)
+			List<int> list = layer.SortingMethod(layer, inv, _sort_itemsToSort);
+			if (list.Count > 0)
 			{
-				list4.Add(list5.Count);
+				_sort_counts.Add(list.Count);
 			}
-			list3.AddRange(list5);
+			_sort_sortedItemIndexes.AddRange(list);
 		}
-		list3.AddRange(list);
-		List<Item> list6 = new List<Item>();
-		foreach (int item5 in list3)
+		_sort_sortedItemIndexes.AddRange(_sort_itemsToSort);
+		foreach (int sort_sortedItemIndex in _sort_sortedItemIndexes)
 		{
-			list6.Add(inv[item5]);
-			inv[item5] = new Item();
+			_sort_itemsCache.Add(inv[sort_sortedItemIndex]);
+			inv[sort_sortedItemIndex] = new Item();
 		}
-		float num3 = 1f / (float)list4.Count;
+		float num3 = 1f / (float)_sort_counts.Count;
 		float num4 = num3 / 2f;
-		for (int m = 0; m < list6.Count; m++)
+		for (int m = 0; m < _sort_itemsCache.Count; m++)
 		{
-			int num5 = list2[0];
-			ItemSlot.SetGlow(num5, num4, Main.player[Main.myPlayer].chest != -1);
-			list4[0]--;
-			if (list4[0] == 0)
+			int num5 = _sort_availableSortingSlots[0];
+			if (withFeedback)
 			{
-				list4.RemoveAt(0);
+				ItemSlot.SetGlow(num5, num4, Main.player[Main.myPlayer].chest != -1);
+			}
+			_sort_counts[0]--;
+			if (_sort_counts[0] == 0)
+			{
+				_sort_counts.RemoveAt(0);
 				num4 += num3;
 			}
-			inv[num5] = list6[m];
-			list2.Remove(num5);
+			inv[num5] = _sort_itemsCache[m];
+			_sort_availableSortingSlots.Remove(num5);
 		}
+	}
+
+	public static string GetSortingLayer(int itemType)
+	{
+		foreach (KeyValuePair<string, List<int>> layerWhiteList in _layerWhiteLists)
+		{
+			if (layerWhiteList.Value.Contains(itemType))
+			{
+				return layerWhiteList.Key;
+			}
+		}
+		return null;
+	}
+
+	public static int GetSortingLayerIndex(int itemType)
+	{
+		return _layerIndexForItemType[itemType];
 	}
 
 	public static void SortInventory()
 	{
-		if (!Main.LocalPlayer.HasItem(905))
+		if (!Main.LocalPlayer.HasLockedInventory())
 		{
-			SortCoins();
+			if (!Main.LocalPlayer.HasItem(905))
+			{
+				SortCoins();
+			}
+			SortAmmo();
+			Sort(true, Main.player[Main.myPlayer].inventory, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 50, 51, 52, 53, 54, 55, 56, 57, 58);
 		}
-		SortAmmo();
-		Sort(Main.player[Main.myPlayer].inventory, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 50, 51, 52, 53, 54, 55, 56, 57, 58);
 	}
 
 	public static void SortChest()
 	{
 		int chest = Main.player[Main.myPlayer].chest;
-		if (chest == -1)
+		if (chest != -1)
+		{
+			_ = Main.player[Main.myPlayer].bank.item;
+			if (chest == -3)
+			{
+				_ = Main.player[Main.myPlayer].bank2.item;
+			}
+			if (chest == -4)
+			{
+				_ = Main.player[Main.myPlayer].bank3.item;
+			}
+			if (chest == -5)
+			{
+				_ = Main.player[Main.myPlayer].bank4.item;
+			}
+			if (chest > -1)
+			{
+				_ = Main.chest[chest].item;
+			}
+			SortInventory(Main.LocalPlayer.GetCurrentContainer(), withSync: true, withFeedback: true);
+		}
+	}
+
+	public static void SortInventory(Chest chest, bool withSync, bool withFeedback)
+	{
+		Item[] item = chest.item;
+		Array.Resize(ref _sortInventory_preStamps, chest.maxItems);
+		Array.Resize(ref _sortInventory_postStamps, chest.maxItems);
+		for (int i = 0; i < chest.maxItems; i++)
+		{
+			_sortInventory_preStamps[i] = new MemoryStamp(item[i]);
+		}
+		Sort(withFeedback, item);
+		for (int j = 0; j < chest.maxItems; j++)
+		{
+			_sortInventory_postStamps[j] = new MemoryStamp(item[j]);
+		}
+		if (!withSync || Main.netMode != 1 || Main.player[Main.myPlayer].chest <= -1)
 		{
 			return;
 		}
-		Item[] item = Main.player[Main.myPlayer].bank.item;
-		if (chest == -3)
+		for (int k = 0; k < chest.maxItems; k++)
 		{
-			item = Main.player[Main.myPlayer].bank2.item;
-		}
-		if (chest == -4)
-		{
-			item = Main.player[Main.myPlayer].bank3.item;
-		}
-		if (chest == -5)
-		{
-			item = Main.player[Main.myPlayer].bank4.item;
-		}
-		if (chest > -1)
-		{
-			item = Main.chest[chest].item;
-		}
-		Tuple<int, int, int>[] array = new Tuple<int, int, int>[40];
-		for (int i = 0; i < 40; i++)
-		{
-			array[i] = Tuple.Create(item[i].netID, item[i].stack, (int)item[i].prefix);
-		}
-		Sort(item);
-		Tuple<int, int, int>[] array2 = new Tuple<int, int, int>[40];
-		for (int j = 0; j < 40; j++)
-		{
-			array2[j] = Tuple.Create(item[j].netID, item[j].stack, (int)item[j].prefix);
-		}
-		if (Main.netMode != 1 || Main.player[Main.myPlayer].chest <= -1)
-		{
-			return;
-		}
-		for (int k = 0; k < 40; k++)
-		{
-			if (array2[k] != array[k])
+			if (_sortInventory_postStamps[k] != _sortInventory_preStamps[k])
 			{
 				NetMessage.SendData(32, -1, -1, null, Main.player[Main.myPlayer].chest, k);
 			}
@@ -1226,8 +1631,8 @@ public class ItemSorting
 
 	public static void FillAmmoFromInventory()
 	{
-		List<int> list = new List<int>();
-		List<int> list2 = new List<int>();
+		_fillAmmoFromInventory_acceptedAmmoTypes.Clear();
+		_fillAmmoFromInventory_emptyAmmoSlots.Clear();
 		Item[] inventory = Main.player[Main.myPlayer].inventory;
 		for (int i = 54; i < 58; i++)
 		{
@@ -1235,50 +1640,50 @@ public class ItemSorting
 			Item item = inventory[i];
 			if (item.IsAir)
 			{
-				list2.Add(i);
+				_fillAmmoFromInventory_emptyAmmoSlots.Add(i);
 			}
 			else if (item.ammo != AmmoID.None)
 			{
-				if (!list.Contains(item.type))
+				if (!_fillAmmoFromInventory_acceptedAmmoTypes.Contains(item.type))
 				{
-					list.Add(item.type);
+					_fillAmmoFromInventory_acceptedAmmoTypes.Add(item.type);
 				}
 				RefillItemStack(inventory, inventory[i], 0, 50);
 			}
 		}
-		if (list2.Count < 1)
+		if (_fillAmmoFromInventory_emptyAmmoSlots.Count < 1)
 		{
 			return;
 		}
 		for (int j = 0; j < 50; j++)
 		{
 			Item item2 = inventory[j];
-			if (item2.stack >= 1 && item2.CanFillEmptyAmmoSlot() && list.Contains(item2.type))
+			if (item2.stack >= 1 && item2.CanFillEmptyAmmoSlot() && _fillAmmoFromInventory_acceptedAmmoTypes.Contains(item2.type) && !item2.favorited)
 			{
-				int num = list2[0];
-				list2.Remove(num);
+				int num = _fillAmmoFromInventory_emptyAmmoSlots[0];
+				_fillAmmoFromInventory_emptyAmmoSlots.Remove(num);
 				Utils.Swap(ref inventory[j], ref inventory[num]);
 				RefillItemStack(inventory, inventory[num], 0, 50);
-				if (list2.Count == 0)
+				if (_fillAmmoFromInventory_emptyAmmoSlots.Count == 0)
 				{
 					break;
 				}
 			}
 		}
-		if (list2.Count < 1)
+		if (_fillAmmoFromInventory_emptyAmmoSlots.Count < 1)
 		{
 			return;
 		}
 		for (int k = 0; k < 50; k++)
 		{
 			Item item3 = inventory[k];
-			if (item3.stack >= 1 && item3.CanFillEmptyAmmoSlot() && item3.FitsAmmoSlot())
+			if (item3.stack >= 1 && item3.CanFillEmptyAmmoSlot() && item3.FitsAmmoSlot() && !item3.favorited)
 			{
-				int num2 = list2[0];
-				list2.Remove(num2);
+				int num2 = _fillAmmoFromInventory_emptyAmmoSlots[0];
+				_fillAmmoFromInventory_emptyAmmoSlots.Remove(num2);
 				Utils.Swap(ref inventory[k], ref inventory[num2]);
 				RefillItemStack(inventory, inventory[num2], 0, 50);
-				if (list2.Count == 0)
+				if (_fillAmmoFromInventory_emptyAmmoSlots.Count == 0)
 				{
 					break;
 				}
@@ -1294,12 +1699,13 @@ public class ItemSorting
 			Item item = inventory[i];
 			if (!item.IsAir && item.ammo != AmmoID.None && item.stack < item.maxStack)
 			{
-				RefillItemStack(inventory, item, i + 1, 58);
+				int loopStartIndex = (item.favorited ? 54 : (i + 1));
+				RefillItemStack(inventory, item, loopStartIndex, 58);
 			}
 		}
 		for (int j = 54; j < 58; j++)
 		{
-			if (inventory[j].type > 0)
+			if (inventory[j].type > 0 && !inventory[j].favorited)
 			{
 				TrySlidingUp(inventory, j, 54);
 			}
@@ -1410,7 +1816,7 @@ public class ItemSorting
 			{
 				if (array[num9] > 0)
 				{
-					Main.LocalPlayer.QuickSpawnItem(Main.LocalPlayer.GetItemSource_Misc(7), 71 + num9, array[num9]);
+					Main.LocalPlayer.QuickSpawnItem(Main.LocalPlayer.GetItemSource_InventoryOverflow(), 71 + num9, array[num9]);
 				}
 			}
 			break;
@@ -1427,7 +1833,7 @@ public class ItemSorting
 		for (int i = loopStartIndex; i < loopEndIndex; i++)
 		{
 			Item item = inv[i];
-			if (item.stack >= 1 && item.type == itemToRefill.type)
+			if (item.stack >= 1 && item.type == itemToRefill.type && !item.favorited)
 			{
 				int num2 = item.stack;
 				if (num2 > num)
@@ -1451,11 +1857,12 @@ public class ItemSorting
 
 	private static void TrySlidingUp(Item[] inv, int slot, int minimumIndex)
 	{
-		for (int num = slot; num > minimumIndex; num--)
+		for (int i = minimumIndex; i < slot; i++)
 		{
-			if (inv[num - 1].IsAir)
+			if (inv[i].IsAir)
 			{
-				Utils.Swap(ref inv[num], ref inv[num - 1]);
+				Utils.Swap(ref inv[i], ref inv[slot]);
+				break;
 			}
 		}
 	}

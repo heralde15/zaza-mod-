@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+using System.Drawing;
 using Terraria.Achievements;
 
 namespace Terraria.UI;
@@ -21,9 +21,6 @@ public class AchievementAdvisorCard
 
 	public AchievementAdvisorCard(Achievement achievement, float order)
 	{
-		//IL_0045: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004a: Unknown result type (might be due to invalid IL or missing references)
-		base._002Ector();
 		this.achievement = achievement;
 		this.order = order;
 		achievementIndex = Main.Achievements.GetIconIndex(achievement.Name);

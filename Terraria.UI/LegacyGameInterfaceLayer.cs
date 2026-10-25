@@ -1,3 +1,5 @@
+using Terraria.Testing;
+
 namespace Terraria.UI;
 
 public class LegacyGameInterfaceLayer : GameInterfaceLayer
@@ -7,6 +9,7 @@ public class LegacyGameInterfaceLayer : GameInterfaceLayer
 	public LegacyGameInterfaceLayer(string name, GameInterfaceDrawMethod drawMethod, InterfaceScaleType scaleType = InterfaceScaleType.Game)
 		: base(name, scaleType)
 	{
+		Invariant.Assert(drawMethod != null, "drawMethod should never be null.");
 		_drawMethod = drawMethod;
 	}
 

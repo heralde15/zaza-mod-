@@ -1,15 +1,19 @@
+using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Numerics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using ReLogic.Graphics;
+using ReLogic.Localization.IME;
+using ReLogic.OS;
 using Terraria.Audio;
-using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.UI;
 using Terraria.GameInput;
-using Terraria.Localization;
 using Terraria.UI.Chat;
 using Terraria.UI.Gamepad;
-using Terraria.ZazaMod;
 
 namespace Terraria.UI;
 
@@ -31,8 +35,6 @@ public class ChestUI
 
 		public const int RenameChestCancel = 6;
 
-		public const int ToggleVacuum = 7;
-
 		public static readonly int Count = 7;
 	}
 
@@ -44,8 +46,15 @@ public class ChestUI
 
 	public static bool[] ButtonHovered = new bool[ButtonID.Count];
 
+	public static int StartingRowForDrawing = 0;
+
+	public static int LastHighestChestRow = 0;
+
+	public static Rectangle LastChestDisplayRectangle;
+
 	public static void UpdateHover(int ID, bool hovering)
 	{
+		float scaling = 0.05f * Main.DrawDeltaTime;
 		if (hovering)
 		{
 			if (!ButtonHovered[ID])
@@ -53,7 +62,7 @@ public class ChestUI
 				SoundEngine.PlaySound(12);
 			}
 			ButtonHovered[ID] = true;
-			ButtonScale[ID] += 0.05f;
+			ButtonScale[ID] += scaling;
 			if (ButtonScale[ID] > 1f)
 			{
 				ButtonScale[ID] = 1f;
@@ -62,7 +71,7 @@ public class ChestUI
 		else
 		{
 			ButtonHovered[ID] = false;
-			ButtonScale[ID] -= 0.05f;
+			ButtonScale[ID] -= scaling;
 			if (ButtonScale[ID] < 0.75f)
 			{
 				ButtonScale[ID] = 0.75f;
@@ -72,7 +81,7 @@ public class ChestUI
 
 	public static void Draw(SpriteBatch spritebatch)
 	{
-		if (Main.player[Main.myPlayer].chest != -1 && !Main.recBigList)
+		if (Main.player[Main.myPlayer].chest != -1 && !Main.PipsUseGrid && !NewCraftingUI.Visible)
 		{
 			Main.inventoryScale = 0.755f;
 			if (Utils.FloatIntersect(Main.mouseX, Main.mouseY, 0f, 0f, 73f, Main.instance.invBottom, 560f * Main.inventoryScale, 224f * Main.inventoryScale))
@@ -95,42 +104,20 @@ public class ChestUI
 
 	private static void DrawName(SpriteBatch spritebatch)
 	{
-		//IL_0084: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0296: Unknown result type (might be due to invalid IL or missing references)
-		//IL_02b9: Unknown result type (might be due to invalid IL or missing references)
-		//IL_02be: Unknown result type (might be due to invalid IL or missing references)
-		//IL_030f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0314: Unknown result type (might be due to invalid IL or missing references)
-		//IL_031a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_031f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_032e: Unknown result type (might be due to invalid IL or missing references)
+		//IL_01aa: Unknown result type (might be due to invalid IL or missing references)
+		//IL_01cd: Unknown result type (might be due to invalid IL or missing references)
+		//IL_01d2: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0206: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0295: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0339: Unknown result type (might be due to invalid IL or missing references)
 		Player player = Main.player[Main.myPlayer];
 		string text = string.Empty;
 		if (Main.editChest)
 		{
 			text = Main.npcChatText;
-			Main.instance.textBlinkerCount++;
-			if (Main.instance.textBlinkerCount >= 20)
-			{
-				if (Main.instance.textBlinkerState == 0)
-				{
-					Main.instance.textBlinkerState = 1;
-				}
-				else
-				{
-					Main.instance.textBlinkerState = 0;
-				}
-				Main.instance.textBlinkerCount = 0;
-			}
-			text = Main.TextWithBlinker(text);
-			Main.instance.DrawWindowsIMEPanel(new Vector2(120f, 518f));
 		}
-		else if (player.chest > -1)
+		else if (player.chest > -1 && Main.chest[player.chest] != null)
 		{
-			if (Main.chest[player.chest] == null)
-			{
-				Main.chest[player.chest] = new Chest();
-			}
 			Chest chest = Main.chest[player.chest];
 			if (chest.name != "")
 			{
@@ -141,22 +128,19 @@ public class ChestUI
 				Tile tile = Main.tile[player.chestX, player.chestY];
 				if (tile.type == 21)
 				{
-					int chestId = tile.frameX / 36;
-					text = (Lang.chestType.IndexInRange(chestId) ? Lang.chestType[chestId].Value : Lang.chestType[0].Value);
+					text = Lang.chestType[tile.frameX / 36].Value;
 				}
 				else if (tile.type == 467 && tile.frameX / 36 == 4)
 				{
-					text = Lang.GetItemNameValue(3988);
+					text = Lang.GetItemNameValue(3988, addIdName: false);
 				}
 				else if (tile.type == 467)
 				{
-					int chestId2 = tile.frameX / 36;
-					text = (Lang.chestType2.IndexInRange(chestId2) ? Lang.chestType2[chestId2].Value : Lang.chestType2[0].Value);
+					text = Lang.chestType2[tile.frameX / 36].Value;
 				}
 				else if (tile.type == 88)
 				{
-					int dresserId = tile.frameX / 54;
-					text = (Lang.dresserType.IndexInRange(dresserId) ? Lang.dresserType[dresserId].Value : Lang.dresserType[0].Value);
+					text = Lang.dresserType[tile.frameX / 54].Value;
 				}
 			}
 		}
@@ -170,21 +154,39 @@ public class ChestUI
 		}
 		else if (player.chest == -4)
 		{
-			text = Lang.GetItemNameValue(3813);
+			text = Lang.GetItemNameValue(3813, addIdName: false);
 		}
 		else if (player.chest == -5)
 		{
-			text = Lang.GetItemNameValue(4076);
+			text = Lang.GetItemNameValue(4076, addIdName: false);
 		}
 		Color color = default(Color);
 		((Color)(ref color))._002Ector((int)Main.mouseTextColor, (int)Main.mouseTextColor, (int)Main.mouseTextColor, (int)Main.mouseTextColor);
 		color = Color.White * (1f - (255f - (float)(int)Main.mouseTextColor) / 255f * 0.5f);
 		((Color)(ref color)).A = byte.MaxValue;
-		Utils.WordwrapString(text, FontAssets.MouseText.Value, 200, 1, out var lineAmount);
-		lineAmount++;
-		for (int i = 0; i < lineAmount; i++)
+		DynamicSpriteFont value = FontAssets.MouseText.Value;
+		Vector2 vector = new Vector2(504f, Main.instance.invBottom);
+		ChatManager.DrawColorCodedStringWithShadow(spritebatch, value, text, vector, color, 0f, Vector2.Zero, Vector2.One, -1f, 1.5f);
+		if (Main.editChest)
 		{
-			ChatManager.DrawColorCodedStringWithShadow(spritebatch, FontAssets.MouseText.Value, text, new Vector2(504f, (float)(Main.instance.invBottom + i * 26)), color, 0f, Vector2.Zero, Vector2.One, -1f, 1.5f);
+			vector.X += ChatManager.GetStringSize(value, text, Vector2.One).X;
+			Main.instance.SetIMEPanelAnchor(vector + new Vector2(0f, 56f), 0f);
+			string compositionString = Platform.Get<IImeService>().CompositionString;
+			if (compositionString != null && compositionString.Length > 0)
+			{
+				ChatManager.DrawColorCodedStringWithShadow(spritebatch, value, compositionString, vector, Main.imeCompositionStringColor, 0f, Vector2.Zero, Vector2.One, -1f, 1.5f);
+				vector.X += value.MeasureString(compositionString).X;
+			}
+			Main.instance.textBlinkerCount += 1f * Main.DrawDeltaTime;
+			if (Main.instance.textBlinkerCount >= 20f)
+			{
+				Main.instance.textBlinkerState = ((Main.instance.textBlinkerState == 0) ? 1 : 0);
+				Main.instance.textBlinkerCount = 0f;
+			}
+			if (Main.instance.textBlinkerState == 1)
+			{
+				ChatManager.DrawColorCodedStringWithShadow(spritebatch, value, "|", vector, color, 0f, Vector2.Zero, Vector2.One, -1f, 1.5f);
+			}
 		}
 	}
 
@@ -198,64 +200,24 @@ public class ChestUI
 
 	private static void DrawButton(SpriteBatch spriteBatch, int ID, int X, int Y)
 	{
-		//IL_015c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0161: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0177: Unknown result type (might be due to invalid IL or missing references)
-		//IL_017d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0182: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0184: Unknown result type (might be due to invalid IL or missing references)
-		//IL_018e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01b1: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01b6: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01c5: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01f0: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0203: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0237: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0250: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0285: Unknown result type (might be due to invalid IL or missing references)
-		//IL_028a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0291: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0298: Unknown result type (might be due to invalid IL or missing references)
-		//IL_029e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_02ad: Unknown result type (might be due to invalid IL or missing references)
-		//IL_02b3: Unknown result type (might be due to invalid IL or missing references)
-		//IL_02b6: Unknown result type (might be due to invalid IL or missing references)
-		//IL_02bb: Unknown result type (might be due to invalid IL or missing references)
-		//IL_026d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0272: Unknown result type (might be due to invalid IL or missing references)
-		//IL_02ef: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0307: Unknown result type (might be due to invalid IL or missing references)
-		//IL_031d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0335: Unknown result type (might be due to invalid IL or missing references)
-		//IL_034b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0363: Unknown result type (might be due to invalid IL or missing references)
-		//IL_03a6: Unknown result type (might be due to invalid IL or missing references)
-		//IL_03be: Unknown result type (might be due to invalid IL or missing references)
-		//IL_03d1: Unknown result type (might be due to invalid IL or missing references)
-		//IL_03e9: Unknown result type (might be due to invalid IL or missing references)
-		//IL_037b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0393: Unknown result type (might be due to invalid IL or missing references)
-		//IL_03fc: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0414: Unknown result type (might be due to invalid IL or missing references)
-		int plrTarget = ((Mods.showSpectatedInventory && Mods.spectatePlayerTarget != -1) ? Mods.spectatePlayerTarget : Main.myPlayer);
+		//IL_0104: Unknown result type (might be due to invalid IL or missing references)
+		//IL_010a: Unknown result type (might be due to invalid IL or missing references)
+		//IL_010f: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0111: Unknown result type (might be due to invalid IL or missing references)
+		//IL_011b: Unknown result type (might be due to invalid IL or missing references)
+		//IL_013e: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0143: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0202: Unknown result type (might be due to invalid IL or missing references)
+		//IL_01e6: Unknown result type (might be due to invalid IL or missing references)
+		//IL_01eb: Unknown result type (might be due to invalid IL or missing references)
 		Player player = Main.player[Main.myPlayer];
 		if ((ID == 5 && player.chest < -1) || (ID == 6 && !Main.editChest))
 		{
 			UpdateHover(ID, hovering: false);
 			return;
 		}
-		if (ID == 7 && player.chest != -5)
-		{
-			UpdateHover(ID, hovering: false);
-			return;
-		}
-		int num = ID;
-		if (ID == 7)
-		{
-			num = 5;
-		}
-		Y += num * 26;
-		float num2 = ButtonScale[ID];
+		Y += ID * 26;
+		float num = ButtonScale[ID];
 		string text = "";
 		switch (ID)
 		{
@@ -280,51 +242,46 @@ public class ChestUI
 		case 4:
 			text = Lang.inter[122].Value;
 			break;
-		case 7:
-			text = ((!player.IsVoidVaultEnabled) ? Language.GetTextValue("UI.ToggleBank4VacuumIsOff") : Language.GetTextValue("UI.ToggleBank4VacuumIsOn"));
-			break;
 		}
 		Vector2 vector = FontAssets.MouseText.Value.MeasureString(text);
-		Color color = new Color((int)Main.mouseTextColor, (int)Main.mouseTextColor, (int)Main.mouseTextColor, (int)Main.mouseTextColor) * num2;
+		Color color = new Color((int)Main.mouseTextColor, (int)Main.mouseTextColor, (int)Main.mouseTextColor, (int)Main.mouseTextColor) * num;
 		color = Color.White * 0.97f * (1f - (255f - (float)(int)Main.mouseTextColor) / 255f * 0.5f);
 		((Color)(ref color)).A = byte.MaxValue;
-		X += (int)(vector.X * num2 / 2f);
-		bool flag = Utils.FloatIntersect(Main.mouseX, Main.mouseY, 0f, 0f, (float)X - vector.X / 2f, Y - 12, vector.X, 24f);
+		int num2 = (int)(vector.X * num / 2f);
+		X += num2;
+		bool flag = Utils.FloatIntersect(Main.mouseX, Main.mouseY, 0f, 0f, X - num2, Y - 12, vector.X * num, 24f);
 		if (ButtonHovered[ID])
 		{
-			flag = Utils.FloatIntersect(Main.mouseX, Main.mouseY, 0f, 0f, (float)X - vector.X / 2f - 10f, Y - 12, vector.X + 16f, 24f);
+			flag = Utils.FloatIntersect(Main.mouseX, Main.mouseY, 0f, 0f, X - num2 - 10, Y - 12, vector.X * num + 16f, 24f);
 		}
 		if (flag)
 		{
 			color = Main.OurFavoriteColor;
 		}
-		ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, text, new Vector2((float)X, (float)Y), color, 0f, vector / 2f, new Vector2(num2), -1f, 1.5f);
-		vector *= num2;
+		ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, text, new Vector2(X, Y), color, 0f, vector / 2f, new Vector2(num), -1f, 1.5f);
+		vector *= num;
 		switch (ID)
 		{
 		case 0:
-			UILinkPointNavigator.SetPosition(500, new Vector2((float)X - vector.X * num2 / 2f * 0.8f, (float)Y));
+			UILinkPointNavigator.SetPosition(500, new Vector2((float)X - vector.X * num / 2f * 0.8f, Y));
 			break;
 		case 1:
-			UILinkPointNavigator.SetPosition(501, new Vector2((float)X - vector.X * num2 / 2f * 0.8f, (float)Y));
+			UILinkPointNavigator.SetPosition(501, new Vector2((float)X - vector.X * num / 2f * 0.8f, Y));
 			break;
 		case 2:
-			UILinkPointNavigator.SetPosition(502, new Vector2((float)X - vector.X * num2 / 2f * 0.8f, (float)Y));
+			UILinkPointNavigator.SetPosition(502, new Vector2((float)X - vector.X * num / 2f * 0.8f, Y));
 			break;
 		case 5:
-			UILinkPointNavigator.SetPosition(504, new Vector2((float)X, (float)Y));
+			UILinkPointNavigator.SetPosition(504, new Vector2(X, Y));
 			break;
 		case 6:
-			UILinkPointNavigator.SetPosition(504, new Vector2((float)X, (float)Y));
+			UILinkPointNavigator.SetPosition(504, new Vector2(X, Y));
 			break;
 		case 3:
-			UILinkPointNavigator.SetPosition(503, new Vector2((float)X - vector.X * num2 / 2f * 0.8f, (float)Y));
+			UILinkPointNavigator.SetPosition(503, new Vector2((float)X - vector.X * num / 2f * 0.8f, Y));
 			break;
 		case 4:
-			UILinkPointNavigator.SetPosition(505, new Vector2((float)X - vector.X * num2 / 2f * 0.8f, (float)Y));
-			break;
-		case 7:
-			UILinkPointNavigator.SetPosition(506, new Vector2((float)X - vector.X * num2 / 2f * 0.8f, (float)Y));
+			UILinkPointNavigator.SetPosition(505, new Vector2((float)X - vector.X * num / 2f * 0.8f, Y));
 			break;
 		}
 		if (!flag)
@@ -338,7 +295,7 @@ public class ChestUI
 			return;
 		}
 		player.mouseInterface = true;
-		if (Main.mouseLeft && Main.mouseLeftRelease && plrTarget == Main.myPlayer)
+		if (Main.mouseLeft && Main.mouseLeftRelease)
 		{
 			switch (ID)
 			{
@@ -346,10 +303,10 @@ public class ChestUI
 				LootAll();
 				break;
 			case 1:
-				DepositAll(ContainerTransferContext.FromUnknown(player));
+				DepositAll();
 				break;
 			case 2:
-				QuickStack(ContainerTransferContext.FromUnknown(player));
+				QuickStack();
 				break;
 			case 5:
 				RenameChest();
@@ -363,178 +320,265 @@ public class ChestUI
 			case 4:
 				ItemSorting.SortChest();
 				break;
-			case 7:
-				ToggleVacuum();
-				break;
 			}
-			Recipe.FindRecipes();
 		}
 	}
 
-	private static void ToggleVacuum()
+	public static void Scroll(int mouseWheel)
 	{
-		Player obj = Main.player[Main.myPlayer];
-		obj.IsVoidVaultEnabled = !obj.IsVoidVaultEnabled;
+		int startingRowForDrawing = StartingRowForDrawing;
+		if (mouseWheel > 0)
+		{
+			StartingRowForDrawing--;
+		}
+		else
+		{
+			StartingRowForDrawing++;
+		}
+		StartingRowForDrawing = Utils.Clamp(StartingRowForDrawing, 0, LastHighestChestRow);
+		if (startingRowForDrawing != StartingRowForDrawing)
+		{
+			SoundEngine.PlaySound(12);
+		}
 	}
 
 	private static void DrawSlots(SpriteBatch spriteBatch)
 	{
-		//IL_016b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01d8: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01df: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01e5: Unknown result type (might be due to invalid IL or missing references)
-		int plrTarget = ((Mods.showSpectatedInventory && Mods.spectatePlayerTarget != -1) ? Mods.spectatePlayerTarget : Main.myPlayer);
-		Player player = Main.player[plrTarget];
+		//IL_0199: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0210: Unknown result type (might be due to invalid IL or missing references)
+		//IL_0216: Unknown result type (might be due to invalid IL or missing references)
+		int num = 10;
+		int num2 = 4;
+		Player player = Main.player[Main.myPlayer];
 		int context = 0;
-		Item[] inv = null;
-		if (Main.LocalPlayer.chest > -1)
+		Chest chest = null;
+		if (player.chest > -1)
 		{
 			context = 3;
-			inv = Main.chest[Main.LocalPlayer.chest].item;
+			chest = Main.chest[player.chest];
 		}
-		if (Main.LocalPlayer.chest == -2)
+		if (player.chest == -2)
 		{
 			context = 4;
-			inv = player.bank.item;
+			chest = player.bank;
 		}
-		if (Main.LocalPlayer.chest == -3)
+		if (player.chest == -3)
 		{
 			context = 4;
-			inv = player.bank2.item;
+			chest = player.bank2;
 		}
-		if (Main.LocalPlayer.chest == -4)
+		if (player.chest == -4)
 		{
 			context = 4;
-			inv = player.bank3.item;
+			chest = player.bank3;
 		}
-		if (Main.LocalPlayer.chest == -5)
+		if (player.chest == -5)
 		{
 			context = 32;
-			inv = player.bank4.item;
+			chest = player.bank4;
 		}
+		Item[] item = chest.item;
+		int maxItems = chest.maxItems;
 		Main.inventoryScale = 0.755f;
-		if (Utils.FloatIntersect(Main.mouseX, Main.mouseY, 0f, 0f, 73f, Main.instance.invBottom, 560f * Main.inventoryScale, 224f * Main.inventoryScale) && !PlayerInput.IgnoreMouseInterface)
+		Rectangle rectangle = (LastChestDisplayRectangle = new Rectangle(73, Main.instance.invBottom, (int)((float)(num * 56) * Main.inventoryScale), (int)((float)(num2 * 56) * Main.inventoryScale)));
+		if (rectangle.Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface)
 		{
 			player.mouseInterface = true;
 		}
-		for (int i = 0; i < 10; i++)
+		int num3 = (int)Math.Max(0.0, Math.Ceiling((float)maxItems / (float)num) - 4.0);
+		StartingRowForDrawing = Utils.Clamp(StartingRowForDrawing, 0, num3);
+		LastHighestChestRow = num3;
+		ItemSlot.PrepareForChest(chest);
+		for (int i = 0; i < num; i++)
 		{
-			for (int j = 0; j < 4; j++)
+			for (int j = 0; j < num2; j++)
 			{
-				int num = (int)(73f + (float)(i * 56) * Main.inventoryScale);
-				int num2 = (int)((float)Main.instance.invBottom + (float)(j * 56) * Main.inventoryScale);
-				int slot = i + j * 10;
-				new Color(100, 100, 100, 100);
-				if (Utils.FloatIntersect(Main.mouseX, Main.mouseY, 0f, 0f, num, num2, (float)TextureAssets.InventoryBack.Width() * Main.inventoryScale, (float)TextureAssets.InventoryBack.Height() * Main.inventoryScale) && !PlayerInput.IgnoreMouseInterface)
+				int num4 = i + j * num + StartingRowForDrawing * num;
+				if (num4 < item.Length)
 				{
-					player.mouseInterface = true;
-					ItemSlot.Handle(inv, context, slot);
+					int num5 = (int)(73f + (float)(i * 56) * Main.inventoryScale);
+					int num6 = (int)((float)Main.instance.invBottom + (float)(j * 56) * Main.inventoryScale);
+					new Color(100, 100, 100, 100);
+					if (Utils.FloatIntersect(Main.mouseX, Main.mouseY, 0f, 0f, num5, num6, (float)TextureAssets.InventoryBack.Width() * Main.inventoryScale, (float)TextureAssets.InventoryBack.Height() * Main.inventoryScale) && !PlayerInput.IgnoreMouseInterface)
+					{
+						player.mouseInterface = true;
+						ItemSlot.Handle(item, context, num4);
+					}
+					ItemSlot.Draw(spriteBatch, item, context, num4, new Vector2(num5, num6));
 				}
-				ItemSlot.Draw(spriteBatch, inv, context, slot, new Vector2((float)num, (float)num2));
 			}
 		}
 	}
 
 	public static void LootAll()
 	{
-		//IL_0051: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0056: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e2: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e7: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0155: Unknown result type (might be due to invalid IL or missing references)
-		//IL_015a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0246: Unknown result type (might be due to invalid IL or missing references)
-		//IL_024b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01dd: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01e2: Unknown result type (might be due to invalid IL or missing references)
-		GetItemSettings lootAllSettings = GetItemSettings.LootAllSettings;
 		Player player = Main.player[Main.myPlayer];
+		GetItemSettings settings = ((player.chest > -1) ? GetItemSettings.LootAllFromChest : GetItemSettings.LootAllFromBank);
 		if (player.chest > -1)
 		{
-			GetItemSettings lootAllSettingsRegularChest = GetItemSettings.LootAllSettingsRegularChest;
 			Chest chest = Main.chest[player.chest];
-			for (int i = 0; i < 40; i++)
+			for (int i = 0; i < chest.maxItems; i++)
 			{
 				if (chest.item[i].type > 0)
 				{
-					chest.item[i].position = player.Center;
-					chest.item[i] = player.GetItem(Main.myPlayer, chest.item[i], lootAllSettingsRegularChest);
+					Player.GetItemLogger.Start();
+					chest.item[i] = player.GetItem(chest.item[i], settings);
+					Player.GetItemLogger.Stop();
+					ItemSlot.DisplayTransfer_GetItem(chest.item, 3, i);
 					if (Main.netMode == 1)
 					{
 						NetMessage.SendData(32, -1, -1, null, player.chest, i);
 					}
+					CoinSlot.ForceSlotState(i, 3, chest.item[i]);
 				}
 			}
 			return;
 		}
 		if (player.chest == -3)
 		{
-			for (int j = 0; j < 40; j++)
+			for (int j = 0; j < player.bank2.maxItems; j++)
 			{
 				if (player.bank2.item[j].type > 0)
 				{
-					player.bank2.item[j].position = player.Center;
-					player.bank2.item[j] = player.GetItem(Main.myPlayer, player.bank2.item[j], lootAllSettings);
+					Player.GetItemLogger.Start();
+					player.bank2.item[j] = player.GetItem(player.bank2.item[j], settings);
+					Player.GetItemLogger.Stop();
+					ItemSlot.DisplayTransfer_GetItem(player.bank2.item, 4, j);
+					CoinSlot.ForceSlotState(j, 4, player.bank2.item[j]);
 				}
 			}
 			return;
 		}
 		if (player.chest == -4)
 		{
-			for (int k = 0; k < 40; k++)
+			for (int k = 0; k < player.bank3.maxItems; k++)
 			{
 				if (player.bank3.item[k].type > 0)
 				{
-					player.bank3.item[k].position = player.Center;
-					player.bank3.item[k] = player.GetItem(Main.myPlayer, player.bank3.item[k], lootAllSettings);
+					Player.GetItemLogger.Start();
+					player.bank3.item[k] = player.GetItem(player.bank3.item[k], settings);
+					Player.GetItemLogger.Stop();
+					ItemSlot.DisplayTransfer_GetItem(player.bank3.item, 4, k);
+					CoinSlot.ForceSlotState(k, 4, player.bank3.item[k]);
 				}
 			}
 			return;
 		}
 		if (player.chest == -5)
 		{
-			for (int l = 0; l < 40; l++)
+			for (int l = 0; l < player.bank4.maxItems; l++)
 			{
 				if (player.bank4.item[l].type > 0 && !player.bank4.item[l].favorited)
 				{
-					player.bank4.item[l].position = player.Center;
-					player.bank4.item[l] = player.GetItem(Main.myPlayer, player.bank4.item[l], lootAllSettings);
+					Player.GetItemLogger.Start();
+					player.bank4.item[l] = player.GetItem(player.bank4.item[l], settings);
+					Player.GetItemLogger.Stop();
+					ItemSlot.DisplayTransfer_GetItem(player.bank4.item, 32, l);
+					CoinSlot.ForceSlotState(l, 32, player.bank4.item[l]);
 				}
 			}
 			return;
 		}
-		for (int m = 0; m < 40; m++)
+		for (int m = 0; m < player.bank.maxItems; m++)
 		{
 			if (player.bank.item[m].type > 0)
 			{
-				player.bank.item[m].position = player.Center;
-				player.bank.item[m] = player.GetItem(Main.myPlayer, player.bank.item[m], lootAllSettings);
+				Player.GetItemLogger.Start();
+				player.bank.item[m] = player.GetItem(player.bank.item[m], settings);
+				Player.GetItemLogger.Stop();
+				ItemSlot.DisplayTransfer_GetItem(player.bank.item, 4, m);
+				CoinSlot.ForceSlotState(m, 4, player.bank.item[m]);
 			}
 		}
 	}
 
-	public static void DepositAll(ContainerTransferContext context)
+	private static void DepositAll_IntoWorldChest(Player player, Chest chest, int playerInventorySlot)
+	{
+		for (int i = 0; i < chest.maxItems; i++)
+		{
+			if (chest.item[i].stack >= chest.item[i].maxStack || !Item.CanStack(player.inventory[playerInventorySlot], chest.item[i]))
+			{
+				continue;
+			}
+			int num = player.inventory[playerInventorySlot].stack;
+			if (player.inventory[playerInventorySlot].stack + chest.item[i].stack > chest.item[i].maxStack)
+			{
+				num = chest.item[i].maxStack - chest.item[i].stack;
+			}
+			player.inventory[playerInventorySlot].stack -= num;
+			chest.item[i].stack += num;
+			SoundEngine.PlaySound(7);
+			if (player.inventory[playerInventorySlot].stack <= 0)
+			{
+				player.inventory[playerInventorySlot].SetDefaults(0);
+				if (Main.netMode == 1)
+				{
+					NetMessage.SendData(32, -1, -1, null, player.chest, i);
+				}
+				break;
+			}
+			if (chest.item[i].type == 0)
+			{
+				chest.item[i] = player.inventory[playerInventorySlot].Clone();
+				player.inventory[playerInventorySlot].SetDefaults(0);
+			}
+			if (Main.netMode == 1)
+			{
+				NetMessage.SendData(32, -1, -1, null, player.chest, i);
+			}
+		}
+	}
+
+	private static void DepositAll_IntoLocalChest(Player player, Chest chest, int p)
+	{
+		for (int i = 0; i < chest.maxItems; i++)
+		{
+			if (chest.item[i].stack < chest.item[i].maxStack && Item.CanStack(player.inventory[p], chest.item[i]))
+			{
+				int num = player.inventory[p].stack;
+				if (player.inventory[p].stack + chest.item[i].stack > chest.item[i].maxStack)
+				{
+					num = chest.item[i].maxStack - chest.item[i].stack;
+				}
+				player.inventory[p].stack -= num;
+				chest.item[i].stack += num;
+				SoundEngine.PlaySound(7);
+				if (player.inventory[p].stack <= 0)
+				{
+					player.inventory[p].SetDefaults(0);
+					break;
+				}
+				if (chest.item[i].type == 0)
+				{
+					chest.item[i] = player.inventory[p].Clone();
+					player.inventory[p].SetDefaults(0);
+				}
+			}
+		}
+	}
+
+	public static void DepositAll()
 	{
 		Player player = Main.player[Main.myPlayer];
 		if (player.chest > -1)
 		{
-			MoveCoins(player.inventory, Main.chest[player.chest].item, context);
+			MoveCoins(player.inventory, Main.chest[player.chest]);
 		}
 		else if (player.chest == -3)
 		{
-			MoveCoins(player.inventory, player.bank2.item, context);
+			MoveCoins(player.inventory, player.bank2);
 		}
 		else if (player.chest == -4)
 		{
-			MoveCoins(player.inventory, player.bank3.item, context);
+			MoveCoins(player.inventory, player.bank3);
 		}
 		else if (player.chest == -5)
 		{
-			MoveCoins(player.inventory, player.bank4.item, context);
+			MoveCoins(player.inventory, player.bank4);
 		}
 		else
 		{
-			MoveCoins(player.inventory, player.bank.item, context);
+			MoveCoins(player.inventory, player.bank);
 		}
 		for (int num = 49; num >= 10; num--)
 		{
@@ -542,151 +586,31 @@ public class ChestUI
 			{
 				if (player.inventory[num].maxStack > 1)
 				{
-					for (int i = 0; i < 40; i++)
+					Chest currentContainer = player.GetCurrentContainer();
+					if (player.chest > -1)
 					{
-						if (player.chest > -1)
-						{
-							Chest chest = Main.chest[player.chest];
-							if (chest.item[i].stack >= chest.item[i].maxStack || !player.inventory[num].IsTheSameAs(chest.item[i]))
-							{
-								continue;
-							}
-							int num2 = player.inventory[num].stack;
-							if (player.inventory[num].stack + chest.item[i].stack > chest.item[i].maxStack)
-							{
-								num2 = chest.item[i].maxStack - chest.item[i].stack;
-							}
-							player.inventory[num].stack -= num2;
-							chest.item[i].stack += num2;
-							SoundEngine.PlaySound(7);
-							if (player.inventory[num].stack <= 0)
-							{
-								player.inventory[num].SetDefaults();
-								if (Main.netMode == 1)
-								{
-									NetMessage.SendData(32, -1, -1, null, player.chest, i);
-								}
-								break;
-							}
-							if (chest.item[i].type == 0)
-							{
-								chest.item[i] = player.inventory[num].Clone();
-								player.inventory[num].SetDefaults();
-							}
-							if (Main.netMode == 1)
-							{
-								NetMessage.SendData(32, -1, -1, null, player.chest, i);
-							}
-						}
-						else if (player.chest == -3)
-						{
-							if (player.bank2.item[i].stack < player.bank2.item[i].maxStack && player.inventory[num].IsTheSameAs(player.bank2.item[i]))
-							{
-								int num3 = player.inventory[num].stack;
-								if (player.inventory[num].stack + player.bank2.item[i].stack > player.bank2.item[i].maxStack)
-								{
-									num3 = player.bank2.item[i].maxStack - player.bank2.item[i].stack;
-								}
-								player.inventory[num].stack -= num3;
-								player.bank2.item[i].stack += num3;
-								SoundEngine.PlaySound(7);
-								if (player.inventory[num].stack <= 0)
-								{
-									player.inventory[num].SetDefaults();
-									break;
-								}
-								if (player.bank2.item[i].type == 0)
-								{
-									player.bank2.item[i] = player.inventory[num].Clone();
-									player.inventory[num].SetDefaults();
-								}
-							}
-						}
-						else if (player.chest == -4)
-						{
-							if (player.bank3.item[i].stack < player.bank3.item[i].maxStack && player.inventory[num].IsTheSameAs(player.bank3.item[i]))
-							{
-								int num4 = player.inventory[num].stack;
-								if (player.inventory[num].stack + player.bank3.item[i].stack > player.bank3.item[i].maxStack)
-								{
-									num4 = player.bank3.item[i].maxStack - player.bank3.item[i].stack;
-								}
-								player.inventory[num].stack -= num4;
-								player.bank3.item[i].stack += num4;
-								SoundEngine.PlaySound(7);
-								if (player.inventory[num].stack <= 0)
-								{
-									player.inventory[num].SetDefaults();
-									break;
-								}
-								if (player.bank3.item[i].type == 0)
-								{
-									player.bank3.item[i] = player.inventory[num].Clone();
-									player.inventory[num].SetDefaults();
-								}
-							}
-						}
-						else if (player.chest == -5)
-						{
-							if (player.bank4.item[i].stack < player.bank4.item[i].maxStack && player.inventory[num].IsTheSameAs(player.bank4.item[i]))
-							{
-								int num5 = player.inventory[num].stack;
-								if (player.inventory[num].stack + player.bank4.item[i].stack > player.bank4.item[i].maxStack)
-								{
-									num5 = player.bank4.item[i].maxStack - player.bank4.item[i].stack;
-								}
-								player.inventory[num].stack -= num5;
-								player.bank4.item[i].stack += num5;
-								SoundEngine.PlaySound(7);
-								if (player.inventory[num].stack <= 0)
-								{
-									player.inventory[num].SetDefaults();
-									break;
-								}
-								if (player.bank4.item[i].type == 0)
-								{
-									player.bank4.item[i] = player.inventory[num].Clone();
-									player.inventory[num].SetDefaults();
-								}
-							}
-						}
-						else if (player.bank.item[i].stack < player.bank.item[i].maxStack && player.inventory[num].IsTheSameAs(player.bank.item[i]))
-						{
-							int num6 = player.inventory[num].stack;
-							if (player.inventory[num].stack + player.bank.item[i].stack > player.bank.item[i].maxStack)
-							{
-								num6 = player.bank.item[i].maxStack - player.bank.item[i].stack;
-							}
-							player.inventory[num].stack -= num6;
-							player.bank.item[i].stack += num6;
-							SoundEngine.PlaySound(7);
-							if (player.inventory[num].stack <= 0)
-							{
-								player.inventory[num].SetDefaults();
-								break;
-							}
-							if (player.bank.item[i].type == 0)
-							{
-								player.bank.item[i] = player.inventory[num].Clone();
-								player.inventory[num].SetDefaults();
-							}
-						}
+						DepositAll_IntoWorldChest(player, currentContainer, num);
+					}
+					else
+					{
+						DepositAll_IntoLocalChest(player, currentContainer, num);
 					}
 				}
 				if (player.inventory[num].stack > 0)
 				{
 					if (player.chest > -1)
 					{
-						for (int j = 0; j < 40; j++)
+						for (int i = 0; i < Main.chest[player.chest].maxItems; i++)
 						{
-							if (Main.chest[player.chest].item[j].stack == 0)
+							if (Main.chest[player.chest].item[i].stack == 0)
 							{
 								SoundEngine.PlaySound(7);
-								Main.chest[player.chest].item[j] = player.inventory[num].Clone();
-								player.inventory[num].SetDefaults();
+								Main.chest[player.chest].item[i] = player.inventory[num].Clone();
+								player.inventory[num].SetDefaults(0);
+								ItemSlot.DisplayTransfer_OneWay(player.inventory, 0, num, Main.chest[player.chest].item, 3, i, Main.chest[player.chest].item[i].stack);
 								if (Main.netMode == 1)
 								{
-									NetMessage.SendData(32, -1, -1, null, player.chest, j);
+									NetMessage.SendData(32, -1, -1, null, player.chest, i);
 								}
 								break;
 							}
@@ -694,142 +618,101 @@ public class ChestUI
 					}
 					else if (player.chest == -3)
 					{
-						for (int k = 0; k < 40; k++)
+						for (int j = 0; j < player.bank2.maxItems; j++)
 						{
-							if (player.bank2.item[k].stack == 0)
+							if (player.bank2.item[j].stack == 0)
 							{
 								SoundEngine.PlaySound(7);
-								player.bank2.item[k] = player.inventory[num].Clone();
-								player.inventory[num].SetDefaults();
+								player.bank2.item[j] = player.inventory[num].Clone();
+								player.inventory[num].SetDefaults(0);
+								ItemSlot.DisplayTransfer_OneWay(player.inventory, 0, num, player.bank2.item, 4, j, player.bank2.item[j].stack);
 								break;
 							}
 						}
 					}
 					else if (player.chest == -4)
 					{
-						for (int l = 0; l < 40; l++)
+						for (int k = 0; k < player.bank3.maxItems; k++)
 						{
-							if (player.bank3.item[l].stack == 0)
+							if (player.bank3.item[k].stack == 0)
 							{
 								SoundEngine.PlaySound(7);
-								player.bank3.item[l] = player.inventory[num].Clone();
-								player.inventory[num].SetDefaults();
+								player.bank3.item[k] = player.inventory[num].Clone();
+								player.inventory[num].SetDefaults(0);
+								ItemSlot.DisplayTransfer_OneWay(player.inventory, 0, num, player.bank3.item, 4, k, player.bank3.item[k].stack);
 								break;
 							}
 						}
 					}
 					else if (player.chest == -5)
 					{
-						for (int m = 0; m < 40; m++)
+						for (int l = 0; l < player.bank4.maxItems; l++)
 						{
-							if (player.bank4.item[m].stack == 0)
+							if (player.bank4.item[l].stack == 0)
 							{
 								SoundEngine.PlaySound(7);
-								player.bank4.item[m] = player.inventory[num].Clone();
-								player.inventory[num].SetDefaults();
+								player.bank4.item[l] = player.inventory[num].Clone();
+								player.inventory[num].SetDefaults(0);
+								ItemSlot.DisplayTransfer_OneWay(player.inventory, 0, num, player.bank4.item, 32, l, player.bank4.item[l].stack);
 								break;
 							}
 						}
 					}
 					else
 					{
-						for (int n = 0; n < 40; n++)
+						for (int m = 0; m < player.bank.maxItems; m++)
 						{
-							if (player.bank.item[n].stack == 0)
+							if (player.bank.item[m].stack == 0)
 							{
 								SoundEngine.PlaySound(7);
-								player.bank.item[n] = player.inventory[num].Clone();
-								player.inventory[num].SetDefaults();
+								player.bank.item[m] = player.inventory[num].Clone();
+								player.inventory[num].SetDefaults(0);
+								ItemSlot.DisplayTransfer_OneWay(player.inventory, 0, num, player.bank.item, 4, m, player.bank.item[m].stack);
 								break;
 							}
 						}
 					}
 				}
+				CoinSlot.ForceSlotState(num, 0, player.inventory[num]);
 			}
 		}
 	}
 
-	public static void QuickStack(ContainerTransferContext context, bool voidStack = false)
+	public static void QuickStack(bool voidStack = false)
 	{
-		//IL_0023: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0028: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0030: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0091: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0092: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0061: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0062: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00be: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00bf: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00eb: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ec: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0343: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0344: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0516: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0517: Unknown result type (might be due to invalid IL or missing references)
-		//IL_056f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0570: Unknown result type (might be due to invalid IL or missing references)
 		Player player = Main.player[Main.myPlayer];
 		Item[] array = player.inventory;
 		if (voidStack)
 		{
 			array = player.bank4.item;
 		}
-		Vector2 center = player.Center;
-		Vector2 containerWorldPosition = context.GetContainerWorldPosition();
-		bool canVisualizeTransfers = context.CanVisualizeTransfers;
+		_ = player.Center;
 		if (!voidStack && player.chest == -5)
 		{
-			long coinsMoved = MoveCoins(array, player.bank4.item, context);
-			if (canVisualizeTransfers)
-			{
-				Chest.VisualizeChestTransfer_CoinsBatch(center, containerWorldPosition, coinsMoved);
-			}
+			MoveCoins(array, player.bank4);
 		}
 		else if (player.chest == -4)
 		{
-			long coinsMoved2 = MoveCoins(array, player.bank3.item, context);
-			if (canVisualizeTransfers)
-			{
-				Chest.VisualizeChestTransfer_CoinsBatch(center, containerWorldPosition, coinsMoved2);
-			}
+			MoveCoins(array, player.bank3);
 		}
 		else if (player.chest == -3)
 		{
-			long coinsMoved3 = MoveCoins(array, player.bank2.item, context);
-			if (canVisualizeTransfers)
-			{
-				Chest.VisualizeChestTransfer_CoinsBatch(center, containerWorldPosition, coinsMoved3);
-			}
+			MoveCoins(array, player.bank2);
 		}
 		else if (player.chest == -2)
 		{
-			long coinsMoved4 = MoveCoins(array, player.bank.item, context);
-			if (canVisualizeTransfers)
-			{
-				Chest.VisualizeChestTransfer_CoinsBatch(center, containerWorldPosition, coinsMoved4);
-			}
+			MoveCoins(array, player.bank);
 		}
-		Item[] item = player.bank.item;
-		if (player.chest > -1)
+		Chest currentContainer = player.GetCurrentContainer();
+		Item[] item = currentContainer.item;
+		int toContext = 3;
+		if (voidStack || player.chest == -5)
 		{
-			item = Main.chest[player.chest].item;
+			toContext = 32;
 		}
-		else if (player.chest == -2)
+		else if (player.chest < -1)
 		{
-			item = player.bank.item;
-		}
-		else if (player.chest == -3)
-		{
-			item = player.bank2.item;
-		}
-		else if (player.chest == -4)
-		{
-			item = player.bank3.item;
-		}
-		else if (!voidStack && player.chest == -5)
-		{
-			item = player.bank4.item;
+			toContext = 4;
 		}
 		List<int> list = new List<int>();
 		List<int> list2 = new List<int>();
@@ -837,12 +720,12 @@ public class ChestUI
 		Dictionary<int, int> dictionary = new Dictionary<int, int>();
 		List<int> list4 = new List<int>();
 		bool[] array2 = new bool[item.Length];
-		for (int i = 0; i < 40; i++)
+		for (int i = 0; i < currentContainer.maxItems; i++)
 		{
 			if (item[i].type > 0 && item[i].stack > 0 && (item[i].type < 71 || item[i].type > 74))
 			{
 				list2.Add(i);
-				list.Add(item[i].netID);
+				list.Add(item[i].type);
 			}
 			if (item[i].type == 0 || item[i].stack <= 0)
 			{
@@ -858,22 +741,21 @@ public class ChestUI
 		if (voidStack)
 		{
 			num2 = 0;
-			num = 40;
+			num = player.bank4.maxItems;
 		}
 		for (int j = num2; j < num; j++)
 		{
-			if (list.Contains(array[j].netID) && !array[j].favorited)
+			if (list.Contains(array[j].type) && !array[j].favorited)
 			{
-				dictionary.Add(j, array[j].netID);
+				dictionary.Add(j, array[j].type);
 			}
 		}
 		for (int k = 0; k < list2.Count; k++)
 		{
 			int num3 = list2[k];
-			int netID = item[num3].netID;
 			foreach (KeyValuePair<int, int> item2 in dictionary)
 			{
-				if (item2.Value == netID && array[item2.Key].netID == netID)
+				if (Item.CanStack(array[item2.Key], item[num3]))
 				{
 					int num4 = array[item2.Key].stack;
 					int num5 = item[num3].maxStack - item[num3].stack;
@@ -886,15 +768,11 @@ public class ChestUI
 						num4 = num5;
 					}
 					SoundEngine.PlaySound(7);
-					if (canVisualizeTransfers)
-					{
-						Chest.VisualizeChestTransfer(center, containerWorldPosition, item[num3], num4);
-					}
 					item[num3].stack += num4;
 					array[item2.Key].stack -= num4;
 					if (array[item2.Key].stack == 0)
 					{
-						array[item2.Key].SetDefaults();
+						array[item2.Key].SetDefaults(0);
 					}
 					array2[num3] = true;
 				}
@@ -915,50 +793,38 @@ public class ChestUI
 		{
 			int num6 = list3[l];
 			bool flag = true;
-			int num7 = item[num6].netID;
-			if (num7 >= 71 && num7 <= 74)
-			{
-				continue;
-			}
 			foreach (KeyValuePair<int, int> item5 in dictionary)
 			{
-				if ((item5.Value != num7 || array[item5.Key].netID != num7) && (!flag || array[item5.Key].stack <= 0))
+				if (array[item5.Key].stack == 0 || (!flag && !Item.CanStack(array[item5.Key], item[num6])))
 				{
 					continue;
 				}
 				SoundEngine.PlaySound(7);
 				if (flag)
 				{
-					num7 = item5.Value;
 					item[num6] = array[item5.Key];
 					array[item5.Key] = new Item();
-					if (canVisualizeTransfers)
-					{
-						Chest.VisualizeChestTransfer(center, containerWorldPosition, item[num6], item[num6].stack);
-					}
+					ItemSlot.DisplayTransfer_OneWay(player.inventory, 0, item5.Key, item, toContext, num6);
 				}
 				else
 				{
-					int num8 = array[item5.Key].stack;
-					int num9 = item[num6].maxStack - item[num6].stack;
-					if (num9 == 0)
+					int num7 = array[item5.Key].stack;
+					int num8 = item[num6].maxStack - item[num6].stack;
+					if (num8 == 0)
 					{
 						break;
 					}
-					if (num8 > num9)
+					if (num7 > num8)
 					{
-						num8 = num9;
+						num7 = num8;
 					}
-					if (canVisualizeTransfers)
-					{
-						Chest.VisualizeChestTransfer(center, containerWorldPosition, item[num6], num8);
-					}
-					item[num6].stack += num8;
-					array[item5.Key].stack -= num8;
+					item[num6].stack += num7;
+					array[item5.Key].stack -= num7;
 					if (array[item5.Key].stack == 0)
 					{
 						array[item5.Key] = new Item();
 					}
+					ItemSlot.DisplayTransfer_OneWay(player.inventory, 0, item5.Key, item, toContext, num6);
 				}
 				array2[num6] = true;
 				flag = false;
@@ -1012,7 +878,7 @@ public class ChestUI
 				player.editedChestName = true;
 			}
 		}
-		Main.ResetCaret();
+		PlayerInput.JustSubmittedText = true;
 	}
 
 	public static void RenameChestCancel()
@@ -1022,7 +888,6 @@ public class ChestUI
 		Main.editChest = false;
 		Main.npcChatText = string.Empty;
 		Main.blockKey = ((object)(Keys)27/*cast due to constrained. prefix*/).ToString();
-		Main.ResetCaret();
 	}
 
 	public static void Restock()
@@ -1055,26 +920,27 @@ public class ChestUI
 		List<int> list2 = new List<int>();
 		for (int num = 57; num >= 0; num--)
 		{
-			if ((num < 50 || num >= 54) && (inventory[num].type < 71 || inventory[num].type > 74))
+			Item item2 = inventory[num];
+			if ((num < 50 || num >= 54) && (item2.type < 71 || item2.type > 74))
 			{
-				if (inventory[num].stack > 0 && inventory[num].maxStack > 1 && inventory[num].prefix == 0)
+				if (item2.stack == 0 || item2.type == 0 || item2.type == 0)
 				{
-					hashSet.Add(inventory[num].netID);
-					if (inventory[num].stack < inventory[num].maxStack)
+					list2.Add(num);
+				}
+				else if (item2.maxStack > 1 && (!item2.favorited || !item2.OnlyNeedOneInInventory()))
+				{
+					hashSet.Add(item2.type);
+					if (item2.stack < item2.maxStack)
 					{
 						list.Add(num);
 					}
-				}
-				else if (inventory[num].stack == 0 || inventory[num].netID == 0 || inventory[num].type == 0)
-				{
-					list2.Add(num);
 				}
 			}
 		}
 		bool flag = false;
 		for (int i = 0; i < item.Length; i++)
 		{
-			if (item[i].stack < 1 || item[i].prefix != 0 || !hashSet.Contains(item[i].netID))
+			if (item[i].stack < 1 || item[i].prefix != 0 || !hashSet.Contains(item[i].type))
 			{
 				continue;
 			}
@@ -1087,7 +953,7 @@ public class ChestUI
 				{
 					context = 2;
 				}
-				if (inventory[num2].netID != item[i].netID || ItemSlot.PickItemMovementAction(inventory, context, num2, item[i]) == -1)
+				if (!Item.CanStack(inventory[num2], item[i]) || ItemSlot.PickItemMovementAction(inventory, context, num2, item[i]) == -1)
 				{
 					continue;
 				}
@@ -1150,14 +1016,19 @@ public class ChestUI
 		}
 	}
 
-	public static long MoveCoins(Item[] pInv, Item[] cInv, ContainerTransferContext context)
+	public static long MoveCoins(Item[] pInv, Chest chest)
+	{
+		return MoveCoins(pInv, chest.item, chest.maxItems);
+	}
+
+	public static long MoveCoins(Item[] pInv, Item[] cInv, int chestMaxItems)
 	{
 		bool flag = false;
 		int[] array = new int[4];
 		List<int> list = new List<int>();
 		List<int> list2 = new List<int>();
 		bool flag2 = false;
-		int[] array2 = new int[40];
+		int[] array2 = new int[chestMaxItems];
 		long num = Utils.CoinsCount(out var overFlowing, pInv);
 		for (int i = 0; i < cInv.Length; i++)
 		{
@@ -1238,7 +1109,7 @@ public class ChestUI
 				array[k + 1]++;
 			}
 		}
-		for (int l = 0; l < 40; l++)
+		for (int l = 0; l < chestMaxItems; l++)
 		{
 			if (array2[l] < 0 || cInv[l].type != 0)
 			{
@@ -1263,7 +1134,7 @@ public class ChestUI
 			}
 			list2.Remove(num4);
 		}
-		for (int m = 0; m < 40; m++)
+		for (int m = 0; m < chestMaxItems; m++)
 		{
 			if (array2[m] < 0 || cInv[m].type != 0)
 			{
@@ -1357,109 +1228,86 @@ public class ChestUI
 		return num - num12;
 	}
 
-	public static bool TryPlacingInChest(Item I, bool justCheck, int itemSlotContext)
+	public static bool TryPlacingInChest(Item[] inv, int slot, bool justCheck, int itemSlotContext)
 	{
-		GetContainerUsageInfo(out var sync, out var chestinv);
-		if (IsBlockedFromTransferIntoChest(I, chestinv))
+		Item item = inv[slot];
+		bool flag = Main.LocalPlayer.chest > -1 && Main.netMode == 1;
+		Chest currentContainer = Main.LocalPlayer.GetCurrentContainer();
+		Item[] item2 = currentContainer.item;
+		if (IsBlockedFromTransferIntoChest(item, item2))
 		{
 			return false;
 		}
 		Player player = Main.player[Main.myPlayer];
-		bool flag = false;
-		if (I.maxStack > 1)
+		bool flag2 = false;
+		if (item.maxStack > 1)
 		{
-			for (int i = 0; i < 40; i++)
+			for (int i = 0; i < currentContainer.maxItems; i++)
 			{
-				if (chestinv[i].stack >= chestinv[i].maxStack || !I.IsTheSameAs(chestinv[i]))
+				if (item2[i].stack >= item2[i].maxStack || !Item.CanStack(item, item2[i]))
 				{
 					continue;
 				}
-				int num = I.stack;
-				if (I.stack + chestinv[i].stack > chestinv[i].maxStack)
+				int num = item.stack;
+				if (item.stack + item2[i].stack > item2[i].maxStack)
 				{
-					num = chestinv[i].maxStack - chestinv[i].stack;
+					num = item2[i].maxStack - item2[i].stack;
 				}
 				if (justCheck)
 				{
-					flag = flag || num > 0;
+					flag2 = flag2 || num > 0;
 					break;
 				}
-				I.stack -= num;
-				chestinv[i].stack += num;
+				item.stack -= num;
+				item2[i].stack += num;
 				SoundEngine.PlaySound(7);
-				if (I.stack <= 0)
+				if (item.stack <= 0)
 				{
-					I.SetDefaults();
-					if (sync)
+					item.SetDefaults(0);
+					if (flag)
 					{
 						NetMessage.SendData(32, -1, -1, null, player.chest, i);
 					}
 					break;
 				}
-				if (chestinv[i].type == 0)
+				if (item2[i].type == 0)
 				{
-					chestinv[i] = I.Clone();
-					I.SetDefaults();
+					item2[i] = item.Clone();
+					item.SetDefaults(0);
 				}
-				if (sync)
+				if (flag)
 				{
 					NetMessage.SendData(32, -1, -1, null, player.chest, i);
 				}
 			}
 		}
-		if (I.stack > 0)
+		if (item.stack > 0)
 		{
-			for (int j = 0; j < 40; j++)
+			int toContext = 3;
+			for (int j = 0; j < currentContainer.maxItems; j++)
 			{
-				if (chestinv[j].stack != 0)
+				if (item2[j].stack != 0)
 				{
 					continue;
 				}
 				if (justCheck)
 				{
-					flag = true;
+					flag2 = true;
 					break;
 				}
 				SoundEngine.PlaySound(7);
-				chestinv[j] = I.Clone();
-				I.SetDefaults();
-				ItemSlot.AnnounceTransfer(new ItemSlot.ItemTransferInfo(chestinv[j], 0, 3));
-				if (sync)
+				item2[j] = item.Clone();
+				item.SetDefaults(0);
+				ItemSlot.AnnounceTransfer(new ItemSlot.ItemTransferInfo(item2[j], itemSlotContext, toContext));
+				ItemSlot.DisplayTransfer_OneWay(inv, itemSlotContext, slot, item2, toContext, j, item2[j].stack);
+				if (flag)
 				{
 					NetMessage.SendData(32, -1, -1, null, player.chest, j);
 				}
 				break;
 			}
 		}
-		return flag;
-	}
-
-	public static void GetContainerUsageInfo(out bool sync, out Item[] chestinv)
-	{
-		sync = false;
-		Player player = Main.player[Main.myPlayer];
-		chestinv = player.bank.item;
-		if (player.chest > -1)
-		{
-			chestinv = Main.chest[player.chest].item;
-			sync = Main.netMode != 0;
-		}
-		else if (player.chest == -2)
-		{
-			chestinv = player.bank.item;
-		}
-		else if (player.chest == -3)
-		{
-			chestinv = player.bank2.item;
-		}
-		else if (player.chest == -4)
-		{
-			chestinv = player.bank3.item;
-		}
-		else if (player.chest == -5)
-		{
-			chestinv = player.bank4.item;
-		}
+		return flag2;
 	}
 
 	public static bool IsBlockedFromTransferIntoChest(Item item, Item[] container)

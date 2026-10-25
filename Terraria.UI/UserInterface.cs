@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Graphics;
 using Terraria.GameInput;
+using Terraria.UI.Gamepad;
 
 namespace Terraria.UI;
 
@@ -99,7 +101,7 @@ public class UserInterface
 
 	public bool IsVisible;
 
-	private UIState _currentState;
+	internal UIState _currentState;
 
 	public UIState CurrentState => _currentState;
 
@@ -109,9 +111,21 @@ public class UserInterface
 		RightMouse.Clear();
 	}
 
+	public bool MouseCaptured()
+	{
+		if (!LeftMouse.WasDown || LeftMouse.LastDown == null)
+		{
+			if (RightMouse.WasDown)
+			{
+				return RightMouse.LastDown != null;
+			}
+			return false;
+		}
+		return true;
+	}
+
 	public void ResetLasts()
 	{
-		//IL_0015: Unknown result type (might be due to invalid IL or missing references)
 		if (_lastElementHover != null)
 		{
 			_lastElementHover.MouseOut(new UIMouseEvent(_lastElementHover, MousePosition));
@@ -151,7 +165,7 @@ public class UserInterface
 
 	private void ResetState()
 	{
-		//IL_0028: Unknown result type (might be due to invalid IL or missing references)
+		UILinkPointNavigator.Shortcuts.BackButtonInUse = false;
 		if (!Main.dedServ)
 		{
 			GetMousePosition();
@@ -168,23 +182,26 @@ public class UserInterface
 
 	private void GetMousePosition()
 	{
-		//IL_000d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-		MousePosition = new Vector2((float)Main.mouseX, (float)Main.mouseY);
+		MousePosition = Main.MouseScreen;
+		if (PlayerInput.UsingGamepad)
+		{
+			MousePosition = UILinkPointNavigator.GetPosition(UILinkPointNavigator.CurrentPoint);
+		}
 	}
 
 	public void Update(GameTime time)
 	{
-		//IL_0020: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0083: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0098: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00f7: Unknown result type (might be due to invalid IL or missing references)
 		if (_currentState == null)
 		{
 			return;
 		}
+		bool flag = true;
+		if (!Main.gameMenu && PlayerInput.IgnoreMouseInterface)
+		{
+			flag = false;
+		}
 		GetMousePosition();
-		UIElement uIElement = (Main.hasFocus ? _currentState.GetElementAt(MousePosition) : null);
+		UIElement uIElement = (flag ? _currentState.GetElementAt(MousePosition) : null);
 		_clickDisabledTimeRemaining = Math.Max(0.0, _clickDisabledTimeRemaining - time.ElapsedGameTime.TotalMilliseconds);
 		bool num = _clickDisabledTimeRemaining > 0.0;
 		if (uIElement != _lastElementHover)
@@ -198,8 +215,8 @@ public class UserInterface
 		}
 		if (!num)
 		{
-			HandleClick(LeftMouse, time, Main.mouseLeft && Main.hasFocus, uIElement);
-			HandleClick(RightMouse, time, Main.mouseRight && Main.hasFocus, uIElement);
+			HandleClick(LeftMouse, time, Main.mouseLeft & flag, uIElement);
+			HandleClick(RightMouse, time, Main.mouseRight & flag, uIElement);
 		}
 		if (PlayerInput.ScrollWheelDeltaForUI != 0)
 		{
@@ -214,11 +231,6 @@ public class UserInterface
 
 	private void HandleClick(InputPointerCache cache, GameTime time, bool isDown, UIElement mouseElement)
 	{
-		//IL_002b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00b7: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00f0: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00cc: Unknown result type (might be due to invalid IL or missing references)
-		//IL_006f: Unknown result type (might be due to invalid IL or missing references)
 		if (isDown && !cache.WasDown && mouseElement != null)
 		{
 			cache.LastDown = mouseElement;
@@ -265,7 +277,6 @@ public class UserInterface
 
 	public void SetState(UIState state)
 	{
-		//IL_0031: Unknown result type (might be due to invalid IL or missing references)
 		if (state == _currentState)
 		{
 			return;
@@ -290,6 +301,7 @@ public class UserInterface
 			state.Activate();
 			state.Recalculate();
 		}
+		IsVisible = _currentState != null;
 	}
 
 	public void GoBack()
@@ -321,10 +333,6 @@ public class UserInterface
 
 	public CalculatedStyle GetDimensions()
 	{
-		//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0005: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0010: Unknown result type (might be due to invalid IL or missing references)
-		//IL_001c: Unknown result type (might be due to invalid IL or missing references)
 		Vector2 originalScreenSize = PlayerInput.OriginalScreenSize;
 		return new CalculatedStyle(0f, 0f, originalScreenSize.X / Main.UIScale, originalScreenSize.Y / Main.UIScale);
 	}
