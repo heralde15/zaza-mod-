@@ -5032,7 +5032,15 @@ internal static partial class HerosModPanel
             case ".helpall":
             case ".helpfull":
             case ".comandos":
-                commandConsoleOutput = ".hud [on/off] · .hudpos <0-5> · .hudinfo <conexion|rendimiento|vida|posicion|bioma|velocidad|inventario|conteos> [on/off] · .toggle <función> [on/off] · .report · .diagnostics · .buff <ID> [segundos] · .heal · .debuffclear · .clearhostiles · .server · .ping · .pos · .life · .mana · .world · .biome · .clock · .inventory · .buffs · .counts · .nearby · .players · .equipment · .status · .help2 · .help3";
+                commandConsoleOutput = "Ayuda por categorías: .help2 / .help3 · HUD: .hud .hudpos .hudinfo · informes: .report .diagnostics .status · jugador: .god .fly .heal .ghost .buff .debuffclear · mundo: .world .biome .clock .nearby .clearhostiles · datos: .server .ping .pos .life .mana .inventory .buffs .counts .players .equipment · funciones: .helpfeatures";
+                break;
+            case ".helpinfo":
+            case ".helpdatos":
+                commandConsoleOutput = "DATOS: .report = informe combinado del mundo/personaje · .diagnostics = rendimiento y entidades · .server = conexión y personaje · .ping = latencia disponible · .world = dificultad/progreso · .biome = biomas · .clock = hora/clima · .inventory = espacios/objeto equipado · .buffs = buffs activos · .counts = FPS y entidades · .players = jugadores visibles · .equipment = armadura/equipo · .status = estado de toggles.";
+                break;
+            case ".helpfeatures":
+            case ".helpfunciones":
+                commandConsoleOutput = "TOGGLES: .toggle god|fly|ghost|minions|lifelock|luck|antilag|effects|projectiles|fps|mute|shopfree [on/off] · .hud [on/off] · .hudpos 0-5 · .hudinfo <categoria> [on/off] · .buff <ID> [segundos] · .heal · .debuffclear · .clearhostiles. En multijugador el servidor puede revertir cambios locales.";
                 break;
             case ".hudinfo":
                 {
@@ -5048,7 +5056,6 @@ internal static partial class HerosModPanel
                         "off" or "0" or "false" or "desactivar" or "no" => false,
                         _ => null
                     } : null;
-                    bool ReadFlag() => value ?? false;
                     bool known = true;
                     switch (category)
                     {
