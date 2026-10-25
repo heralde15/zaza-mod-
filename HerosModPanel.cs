@@ -52,7 +52,7 @@ internal static partial class HerosModPanel
     private static bool commandConsoleVisible;
     private static bool commandConsolePreviousPanelVisible;
     private static string commandConsoleInput = string.Empty;
-    private static string commandConsoleOutput = "Consola de comandos. Ctrl derecho abre/cierra; Enter envía; Esc cierra.";
+    private static string commandConsoleOutput = "Consola: Ctrl derecho abre/cierra · Alt derecho o Enter ejecuta · Esc cierra.";
     private static int commandConsoleOutputTimer;
 
     private enum ServerMode { Comandos, Directo }
@@ -4698,7 +4698,7 @@ internal static partial class HerosModPanel
         sb.Draw(pixel, new Rectangle(x, y, width, 3), new Color(110, 220, 255));
         sb.Draw(pixel, new Rectangle(x + 1, y + 1, width - 2, height - 2), new Color(17, 22, 34, 245));
         Utils.DrawBorderString(sb, "CONSOLA · TERRARIA UNIFIED", new Vector2(x + 12, y + 10), new Color(110, 220, 255), 0.82f);
-        Utils.DrawBorderString(sb, "Ctrl derecho: cerrar  ·  Enter: ejecutar  ·  Esc: cerrar", new Vector2(x + 12, y + 34), Color.LightGray, 0.62f);
+        Utils.DrawBorderString(sb, "Ctrl derecho: cerrar  ·  Alt derecho/Enter: ejecutar  ·  Esc: cerrar", new Vector2(x + 12, y + 34), Color.LightGray, 0.62f);
         string output = commandConsoleOutput ?? string.Empty;
         var font = FontAssets.MouseText.Value;
         float maxOutputWidth = width - 24;
@@ -4728,7 +4728,8 @@ internal static partial class HerosModPanel
             return;
         }
 
-        if (!Main.inputTextEnter)
+        bool rightAltPressed = Main.keyState.IsKeyDown(Keys.RightAlt) && Main.oldKeyState.IsKeyUp(Keys.RightAlt);
+        if (!Main.inputTextEnter && !rightAltPressed)
             return;
 
         string command = (commandConsoleInput ?? string.Empty).Trim();
@@ -4773,7 +4774,7 @@ internal static partial class HerosModPanel
         {
             case ".help":
             case ".ayuda":
-                commandConsoleOutput = ".god [on/off] · .fly [on/off] · .heal · .ghost [on/off] · .minions [on/off] · .lifelock [on/off] · .luck [on/off] · .antilag [on/off] · .status";
+                commandConsoleOutput = ".god .fly .heal .ghost .minions .lifelock .luck .antilag .effects .projectiles .fps .mute .shopfree .buff ID [seg] .clearhostiles .status";
                 break;
             case ".god":
                 godmodeEnabled = Toggle(godmodeEnabled);
@@ -4842,8 +4843,57 @@ internal static partial class HerosModPanel
                 antiLagEnabled = Toggle(antiLagEnabled);
                 commandConsoleOutput = "Anti-Lag " + (antiLagEnabled ? "ACTIVADO." : "DESACTIVADO.");
                 break;
+            case ".effects":
+            case ".antieffects":
+                antiEffectsEnabled = Toggle(antiEffectsEnabled);
+                commandConsoleOutput = "Anti-efectos " + (antiEffectsEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".projectiles":
+            case ".antiprojectiles":
+                antiLagProjectilesEnabled = Toggle(antiLagProjectilesEnabled);
+                commandConsoleOutput = "Control de proyectiles " + (antiLagProjectilesEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".fps":
+                fpsStabilizerEnabled = Toggle(fpsStabilizerEnabled);
+                commandConsoleOutput = "Estabilizador FPS " + (fpsStabilizerEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".mute":
+                muteGameSoundsEnabled = Toggle(muteGameSoundsEnabled);
+                ApplySoundMuteSetting();
+                commandConsoleOutput = "Silencio del juego " + (muteGameSoundsEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".shopfree":
+                npcShopFreeEnabled = Toggle(npcShopFreeEnabled);
+                ApplyNpcShopFreeSetting();
+                commandConsoleOutput = "Precios gratis de tiendas NPC " + (npcShopFreeEnabled ? "ACTIVADOS localmente." : "DESACTIVADOS.");
+                break;
+            case ".buff":
+                if (parts.Length < 2 || !int.TryParse(parts[1], out int buffId) || buffId < 1 || buffId >= BuffLoader.BuffCount)
+                {
+                    commandConsoleOutput = "Uso: .buff ID [segundos] · ID válido: 1-" + (BuffLoader.BuffCount - 1);
+                    break;
+                }
+                int seconds = 600;
+                if (parts.Length > 2 && (!int.TryParse(parts[2], out seconds) || seconds < 1))
+                {
+                    commandConsoleOutput = "Duración inválida. Usa segundos positivos, por ejemplo .buff  buffID 600.";
+                    break;
+                }
+                seconds = Math.Min(seconds, 36000);
+                Main.LocalPlayer.AddBuff(buffId, seconds * 60);
+                commandConsoleOutput = $"Buff local aplicado: ID {buffId}, {seconds} s." + (Main.netMode == 1 ? " El servidor puede quitarlo." : string.Empty);
+                break;
+            case ".clearhostiles":
+                if (Main.netMode == 2)
+                {
+                    commandConsoleOutput = "Esta limpieza requiere un cliente con mundo cargado.";
+                    break;
+                }
+                RemovePanelHostileNpcs();
+                commandConsoleOutput = "Limpieza local de enemigos solicitada; el servidor puede restaurarlos.";
+                break;
             case ".status":
-                commandConsoleOutput = $"god={(godmodeEnabled ? "ON" : "OFF")} fly={(flyEnabled ? "ON" : "OFF")} ghost={(ghostModeEnabled ? "ON" : "OFF")} minions={(infiniteMinionsEnabled ? "ON" : "OFF")} lifelock={(lifeLockEnabled ? "ON" : "OFF")} luck={(luckBoostEnabled ? "ON" : "OFF")} antilag={(antiLagEnabled ? "ON" : "OFF")}";
+                commandConsoleOutput = $"god={(godmodeEnabled ? "ON" : "OFF")} fly={(flyEnabled ? "ON" : "OFF")} ghost={(ghostModeEnabled ? "ON" : "OFF")} minions={(infiniteMinionsEnabled ? "ON" : "OFF")} lifelock={(lifeLockEnabled ? "ON" : "OFF")} luck={(luckBoostEnabled ? "ON" : "OFF")} antilag={(antiLagEnabled ? "ON" : "OFF")} effects={(antiEffectsEnabled ? "ON" : "OFF")} projectiles={(antiLagProjectilesEnabled ? "ON" : "OFF")} fps={(fpsStabilizerEnabled ? "ON" : "OFF")} mute={(muteGameSoundsEnabled ? "ON" : "OFF")} shopfree={(npcShopFreeEnabled ? "ON" : "OFF")}";
                 break;
             default:
                 commandConsoleOutput = "Comando local desconocido: " + command + " · escribe .help";
