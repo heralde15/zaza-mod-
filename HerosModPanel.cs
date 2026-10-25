@@ -3439,16 +3439,30 @@ internal static partial class HerosModPanel
 
     private static void ApplyWorldEdit(string operation)
     {
-        if (!worldPos1.HasValue || !worldPos2.HasValue)
+        // Quitar bloques por ID no requiere POS1/POS2: trabaja en un área local
+        // centrada en el jugador para evitar escanear o borrar accidentalmente todo el mundo.
+        const int removeIdRadius = 40;
+        bool removeIdNearPlayer = operation == "removeid";
+        if (!removeIdNearPlayer && (!worldPos1.HasValue || !worldPos2.HasValue))
         {
             SetStatus("Marca POS1 y POS2 antes de editar.");
             return;
         }
 
-        int x1 = Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
-        int x2 = Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
-        int y1 = Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
-        int y2 = Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        int playerTileX = (int)(Main.LocalPlayer.Center.X / 16f);
+        int playerTileY = (int)(Main.LocalPlayer.Center.Y / 16f);
+        int x1 = removeIdNearPlayer
+            ? Math.Clamp(playerTileX - removeIdRadius, 1, Main.maxTilesX - 2)
+            : Math.Clamp(Math.Min(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int x2 = removeIdNearPlayer
+            ? Math.Clamp(playerTileX + removeIdRadius, 1, Main.maxTilesX - 2)
+            : Math.Clamp(Math.Max(worldPos1.Value.X, worldPos2.Value.X), 1, Main.maxTilesX - 2);
+        int y1 = removeIdNearPlayer
+            ? Math.Clamp(playerTileY - removeIdRadius, 1, Main.maxTilesY - 2)
+            : Math.Clamp(Math.Min(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
+        int y2 = removeIdNearPlayer
+            ? Math.Clamp(playerTileY + removeIdRadius, 1, Main.maxTilesY - 2)
+            : Math.Clamp(Math.Max(worldPos1.Value.Y, worldPos2.Value.Y), 1, Main.maxTilesY - 2);
         long selectedArea = (long)(x2 - x1 + 1) * (y2 - y1 + 1);
         if (selectedArea > 100000)
         {
@@ -3580,9 +3594,11 @@ internal static partial class HerosModPanel
             SetStatus("No hubo cambios en la selección.");
             return;
         }
-        SetStatus(liquidOperation
-            ? $"WorldEdit líquidos {operation}: {changed:N0} celdas procesadas. Undo disponible para la última operación."
-            : $"WorldEdit {operation}: {changed:N0} celdas modificadas. Undo disponible para la última operación.");
+        SetStatus(removeIdNearPlayer
+            ? $"WorldEdit quitar ID {replaceId}: {changed:N0} bloques eliminados en radio de {removeIdRadius} tiles alrededor del jugador. Undo disponible."
+            : liquidOperation
+                ? $"WorldEdit líquidos {operation}: {changed:N0} celdas procesadas. Undo disponible para la última operación."
+                : $"WorldEdit {operation}: {changed:N0} celdas modificadas. Undo disponible para la última operación.");
     }
 
     private static void UndoWorldEdit()
