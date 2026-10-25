@@ -48,6 +48,12 @@ internal static partial class HerosModPanel
 
     public static bool Visible { get; set; }
 
+    // Consola independiente del panel HERO. No concede permisos: el servidor decide qué comandos acepta.
+    private static bool commandConsoleVisible;
+    private static string commandConsoleInput = string.Empty;
+    private static string commandConsoleOutput = "Consola de comandos. Ctrl derecho abre/cierra; Enter envía; Esc cierra.";
+    private static int commandConsoleOutputTimer;
+
     private enum ServerMode { Comandos, Directo }
 
     /// <summary>
@@ -638,6 +644,14 @@ internal static partial class HerosModPanel
 
         var pixel = TextureAssets.MagicPixel.Value;
         DrawWorldSelectionOverlay(sb, pixel);
+
+        // Al abrir la consola se oculta visualmente HERO para que solo aparezca la consola.
+        if (commandConsoleVisible)
+        {
+            DrawCommandConsole(sb, pixel);
+            HandleCommandConsoleTyping();
+            return;
+        }
 
         if (!Visible)
             return;
@@ -4643,7 +4657,23 @@ internal static partial class HerosModPanel
 
     private static void HandleToggleKey()
     {
-        if (Main.drawingPlayerChat || activeField != 0)
+        if (!Main.drawingPlayerChat && Main.keyState.IsKeyDown(Keys.RightControl) && Main.oldKeyState.IsKeyUp(Keys.RightControl))
+        {
+            commandConsoleVisible = !commandConsoleVisible;
+            if (commandConsoleVisible)
+            {
+                activeField = 0;
+                Visible = false;
+                commandConsoleInput = string.Empty;
+                Main.clrInput();
+            }
+            else
+            {
+                Main.clrInput();
+            }
+        }
+
+        if (commandConsoleVisible || Main.drawingPlayerChat || activeField != 0)
             return;
 
         bool tilde = Main.keyState.IsKeyDown(Keys.OemTilde) && Main.oldKeyState.IsKeyUp(Keys.OemTilde);
@@ -4651,6 +4681,67 @@ internal static partial class HerosModPanel
         if (tilde || f8)
         {
             Visible = !Visible;
+        }
+    }
+
+    private static void DrawCommandConsole(SpriteBatch sb, Texture2D pixel)
+    {
+        int width = Math.Min(760, Main.screenWidth - 32);
+        int height = 150;
+        int x = Math.Max(16, (Main.screenWidth - width) / 2);
+        int y = Math.Max(24, Main.screenHeight - height - 70);
+        var panel = new Rectangle(x, y, width, height);
+        sb.Draw(pixel, panel, new Color(7, 9, 15, 245));
+        sb.Draw(pixel, new Rectangle(x, y, width, 3), new Color(110, 220, 255));
+        sb.Draw(pixel, new Rectangle(x + 1, y + 1, width - 2, height - 2), new Color(17, 22, 34, 245));
+        Utils.DrawBorderString(sb, "CONSOLA · TERRARIA UNIFIED", new Vector2(x + 12, y + 10), new Color(110, 220, 255), 0.82f);
+        Utils.DrawBorderString(sb, "Ctrl derecho: cerrar  ·  Enter: ejecutar  ·  Esc: cerrar", new Vector2(x + 12, y + 34), Color.LightGray, 0.62f);
+        string output = commandConsoleOutput ?? string.Empty;
+        var font = FontAssets.MouseText.Value;
+        float maxOutputWidth = width - 24;
+        while (output.Length > 1 && font.MeasureString(output).X * 0.68f > maxOutputWidth)
+            output = "…" + output.Substring(Math.Max(1, output.Length / 20));
+        Utils.DrawBorderString(sb, output, new Vector2(x + 12, y + 62), Color.White, 0.68f);
+        var inputRect = new Rectangle(x + 10, y + height - 38, width - 20, 27);
+        sb.Draw(pixel, inputRect, new Color(35, 43, 59));
+        string input = "> " + commandConsoleInput;
+        if (Main.timeForVisualEffects % 60 < 30) input += "|";
+        Utils.DrawBorderString(sb, input, new Vector2(inputRect.X + 7, inputRect.Y + 5), Color.White, 0.72f);
+        Main.LocalPlayer.mouseInterface = true;
+    }
+
+    private static void HandleCommandConsoleTyping()
+    {
+        PlayerInput.WritingText = true;
+        Main.instance.HandleIME();
+        commandConsoleInput = Main.GetInputText(commandConsoleInput ?? string.Empty);
+
+        if (Main.inputTextEscape)
+        {
+            commandConsoleVisible = false;
+            commandConsoleInput = string.Empty;
+            Main.clrInput();
+            return;
+        }
+
+        if (!Main.inputTextEnter)
+            return;
+
+        string command = (commandConsoleInput ?? string.Empty).Trim();
+        commandConsoleInput = string.Empty;
+        Main.clrInput();
+        if (command.Length == 0)
+            return;
+
+        if (Main.netMode == 1)
+        {
+            // Reutiliza el mismo canal de chat/comandos que HERO ya utiliza; el servidor valida permisos.
+            SendCmd(command.StartsWith("/", StringComparison.Ordinal) ? command : "/" + command);
+            commandConsoleOutput = "Enviado al servidor: " + command;
+        }
+        else
+        {
+            commandConsoleOutput = "No hay servidor remoto conectado. En un jugador, usa el chat/comandos integrados del juego.";
         }
     }
 
