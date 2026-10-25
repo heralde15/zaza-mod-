@@ -112,6 +112,7 @@ internal static partial class HerosModPanel
     private static string moderationTarget = "";
     private static string moderationReason = "";
     private static int toolsPage;
+    private static string toolSearchQuery = string.Empty;
     private static string editorSlot = "1";
     private static string schematicFileName = "construccion";
     private static string editorDamage = "";
@@ -3649,28 +3650,60 @@ internal static partial class HerosModPanel
 
     private static void DrawToolsTab(SpriteBatch sb, Texture2D pixel, Rectangle panel, ref int y, Point mouse)
     {
-        DrawSectionHeader(sb, panel, ref y, "Centro de herramientas · 200 acciones por categorías");
-        Utils.DrawBorderString(sb, "Objetivo (jugador/warp/región/clave):", new Vector2(panel.X + Pad, y), Color.White, 0.66f);
-        Utils.DrawBorderString(sb, "Motivo (kick/ban):", new Vector2(panel.X + 330, y), Color.White, 0.66f);
-        y += 18;
-        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, 300, 25), 4, moderationTarget, mouse, "Nombre exacto o argumento...");
-        DrawTextField(sb, pixel, new Rectangle(panel.X + 320, y, 300, 25), 5, moderationReason, mouse, "Motivo opcional...");
-        y += 32;
+        DrawSectionHeader(sb, panel, ref y, "Centro de herramientas · catálogo con búsqueda y páginas");
+        int fieldWidth = Math.Min(360, panel.Width - Pad * 2);
+        Utils.DrawBorderString(sb, "Buscar herramientas:", new Vector2(panel.X + Pad, y), Color.White, 0.66f);
+        y += 17;
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, fieldWidth, 25), 50, toolSearchQuery, mouse, "Buscar por nombre...");
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + fieldWidth + 8, y, 90, 25), "Limpiar", mouse))
+        {
+            toolSearchQuery = string.Empty;
+            activeField = 0;
+            toolsPage = 0;
+        }
+        y += 31;
 
-        int pageSize = 12;
+        Utils.DrawBorderString(sb, "Objetivo:", new Vector2(panel.X + Pad, y), Color.White, 0.62f);
+        Utils.DrawBorderString(sb, "Motivo:", new Vector2(panel.X + 330, y), Color.White, 0.62f);
+        y += 16;
+        int targetW = Math.Min(300, (panel.Width - Pad * 2 - 8) / 2);
+        int reasonX = panel.X + Pad + targetW + 8;
+        int reasonW = Math.Max(100, panel.Right - Pad - reasonX);
+        DrawTextField(sb, pixel, new Rectangle(panel.X + Pad, y, targetW, 24), 4, moderationTarget, mouse, "Nombre o argumento...");
+        DrawTextField(sb, pixel, new Rectangle(reasonX, y, reasonW, 24), 5, moderationReason, mouse, "Motivo opcional...");
+        y += 29;
+
+        var filtered = string.IsNullOrWhiteSpace(toolSearchQuery)
+            ? extraTools.Select((tool, index) => (tool, index)).ToArray()
+            : extraTools.Select((tool, index) => (tool, index))
+                .Where(entry => entry.tool.label.Contains(toolSearchQuery, StringComparison.OrdinalIgnoreCase)
+                    || entry.tool.command.Contains(toolSearchQuery, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+        int pageSize = 8;
+        int pageCount = Math.Max(1, (filtered.Length + pageSize - 1) / pageSize);
+        toolsPage = Math.Clamp(toolsPage, 0, pageCount - 1);
         int first = toolsPage * pageSize;
         int cols = 2;
-        int buttonW = (Width - Pad * 2 - 8) / cols;
+        int buttonW = (panel.Width - Pad * 2 - 8) / cols;
+        int rowStep = 27;
+        int availableBottom = panel.Bottom - 77;
+        int availableRows = Math.Max(1, Math.Min(4, (availableBottom - y) / rowStep));
+        pageSize = availableRows * cols;
+        pageCount = Math.Max(1, (filtered.Length + pageSize - 1) / pageSize);
+        toolsPage = Math.Clamp(toolsPage, 0, pageCount - 1);
+        first = toolsPage * pageSize;
+
         for (int localIndex = 0; localIndex < pageSize; localIndex++)
         {
-            int index = first + localIndex;
-            if (index >= extraTools.Length)
+            int filteredIndex = first + localIndex;
+            if (filteredIndex >= filtered.Length)
                 break;
-
+            var entry = filtered[filteredIndex];
             int col = localIndex % cols;
             int row = localIndex / cols;
-            var rect = new Rectangle(panel.X + Pad + col * (buttonW + 8), y + row * 29, buttonW, 25);
-            string toolLabel = extraTools[index].label;
+            var rect = new Rectangle(panel.X + Pad + col * (buttonW + 8), y + row * rowStep, buttonW, 23);
+            string toolLabel = entry.tool.label;
             Color color = toolLabel.StartsWith("MODERACIÓN") || toolLabel.StartsWith("USUARIOS") || toolLabel.StartsWith("REGIONES") ? new Color(112, 55, 62)
                 : toolLabel.StartsWith("TIEMPO") || toolLabel.StartsWith("CLIMA") || toolLabel.StartsWith("EVENTOS") || toolLabel.StartsWith("PROGRESIÓN") ? new Color(45, 86, 120)
                 : toolLabel.StartsWith("TELETRANSPORTE") || toolLabel.StartsWith("JUGADOR") ? new Color(48, 91, 75)
@@ -3678,20 +3711,24 @@ internal static partial class HerosModPanel
                 : toolLabel.StartsWith("SERVIDOR") || toolLabel.StartsWith("CONFIGURACIÓN") ? new Color(75, 75, 88)
                 : toolLabel.StartsWith("ECONOMÍA") ? new Color(92, 58, 112)
                 : new Color(50, 55, 68);
-            if (DrawButton(sb, pixel, rect, $"{index + 1:000}. {extraTools[index].label}", mouse, color))
-                RunExtraTool(index);
+            if (DrawButton(sb, pixel, rect, $"{entry.index + 1:000}. {entry.tool.label}", mouse, color))
+                RunExtraTool(entry.index);
         }
 
-        int navY = panel.Bottom - 73;
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, navY, 130, 23), "Anterior", mouse))
+        int navY = panel.Bottom - 70;
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, navY, 105, 22), "Anterior", mouse))
             toolsPage = Math.Max(0, toolsPage - 1);
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 138, navY, 130, 23), "Siguiente", mouse))
-            toolsPage = Math.Min((extraTools.Length - 1) / pageSize, toolsPage + 1);
-        Utils.DrawBorderString(sb, $"Página {toolsPage + 1}/{(extraTools.Length + pageSize - 1) / pageSize} · {extraTools.Length} acciones",
-            new Vector2(panel.X + Pad + 285, navY + 4), new Color(180, 205, 235), 0.72f);
-        Utils.DrawBorderString(sb, "Solo se envían comandos; el servidor y sus permisos deciden si se ejecutan.",
+        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad + 112, navY, 105, 22), "Siguiente", mouse))
+            toolsPage = Math.Min(pageCount - 1, toolsPage + 1);
+        string countText = string.IsNullOrWhiteSpace(toolSearchQuery)
+            ? $"{filtered.Length} herramientas"
+            : $"{filtered.Length} resultados";
+        Utils.DrawBorderString(sb, $"Página {toolsPage + 1}/{pageCount} · {countText}",
+            new Vector2(panel.X + Pad + 230, navY + 4), new Color(180, 205, 235), 0.65f);
+        Utils.DrawBorderString(sb, "Acciones de servidor requieren permisos y comandos compatibles.",
             new Vector2(panel.X + Pad, panel.Bottom - 43), new Color(235, 195, 120), 0.61f);
     }
+
 
     private static void RunExtraTool(int index)
     {
@@ -4923,6 +4960,8 @@ internal static partial class HerosModPanel
             editorSlot = Main.GetInputText(editorSlot);
         else if (activeField == 7)
             editorDamage = Main.GetInputText(editorDamage);
+        else if (activeField == 50)
+            toolSearchQuery = Main.GetInputText(toolSearchQuery ?? string.Empty);
         else if (activeField == 8)
             editorDefense = Main.GetInputText(editorDefense);
         else if (activeField == 9)
