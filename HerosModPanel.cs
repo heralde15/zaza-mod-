@@ -51,7 +51,7 @@ internal static partial class HerosModPanel
     // Consola independiente del panel HERO. No concede permisos: el servidor decide qué comandos acepta.
     private static bool commandConsoleVisible;
     // HUD superior opcional con información local de conexión, mundo y personaje.
-    private static bool serverHudEnabled = true;
+    private static bool serverHudEnabled = false;
     // Posición del HUD: 0 arriba-izquierda, 1 arriba-derecha, 2 abajo-izquierda, 3 abajo-derecha, 4 centro-arriba, 5 centro-abajo.
     private static int serverHudPosition = 0;
     // Categorías configurables del HUD; las cuatro originales siguen activadas por defecto.
@@ -763,9 +763,7 @@ internal static partial class HerosModPanel
         var pixel = TextureAssets.MagicPixel.Value;
         DrawWorldSelectionOverlay(sb, pixel);
 
-        // HUD superior independiente: permanece visible con el panel HERO cerrado.
-        if (serverHudEnabled)
-            DrawServerHud(sb, pixel);
+        // La HUD flotante queda desactivada; sus datos se consultan desde la categoría Información.
 
         // Al abrir la consola se oculta visualmente HERO para que solo aparezca la consola.
         if (commandConsoleVisible)
@@ -2451,58 +2449,17 @@ internal static partial class HerosModPanel
     {
         var p = Main.LocalPlayer;
         DrawSectionHeader(sb, panel, ref y, "Resumen del mundo y conexión");
-        Point mouse = new Point(Main.mouseX, Main.mouseY);
-        if (DrawButton(sb, pixel, new Rectangle(panel.X + Pad, y, 210, 27), serverHudEnabled ? "HUD superior: ACTIVADO" : "HUD superior: DESACTIVADO", mouse))
-        {
-            serverHudEnabled = !serverHudEnabled;
-            SetStatus("HUD superior " + (serverHudEnabled ? "activado." : "desactivado."));
-        }
-        y += 34;
-        DrawSectionHeader(sb, panel, ref y, "Posición del HUD");
-        string[] hudPositionLabels = { "Arriba izq.", "Arriba der.", "Abajo izq.", "Abajo der.", "Centro arriba", "Centro abajo" };
-        int hudButtonGap = 6;
-        int hudButtonWidth = (panel.Width - Pad * 2 - hudButtonGap * 2) / 3;
-        for (int i = 0; i < hudPositionLabels.Length; i++)
-        {
-            int col = i % 3;
-            int row = i / 3;
-            Rectangle hudButton = new Rectangle(panel.X + Pad + col * (hudButtonWidth + hudButtonGap), y + row * 29, hudButtonWidth, 25);
-            if (DrawButton(sb, pixel, hudButton, hudPositionLabels[i], mouse, serverHudPosition == i ? UiAccent : UiTabColor))
-            {
-                serverHudPosition = i;
-                SetStatus("Posición del HUD: " + hudPositionLabels[i] + ".");
-            }
-        }
-        y += 62;
-        DrawSectionHeader(sb, panel, ref y, "Información que muestra el HUD");
-        string[] hudInfoLabels = { "Conexión / mundo", "Ping / FPS / modo", "Vida / maná / defensa", "Coordenadas / hora", "Bioma", "Velocidad", "Inventario / objeto", "NPC / enemigos / proyectiles" };
-        bool[] hudInfoValues = { hudShowConnection, hudShowPerformance, hudShowVitals, hudShowPositionTime, hudShowBiome, hudShowVelocity, hudShowInventory, hudShowCounts };
-        int infoGap = 6;
-        int infoButtonWidth = (panel.Width - Pad * 2 - infoGap) / 2;
-        for (int i = 0; i < hudInfoLabels.Length; i++)
-        {
-            int col = i % 2;
-            int row = i / 2;
-            Rectangle infoButton = new Rectangle(panel.X + Pad + col * (infoButtonWidth + infoGap), y + row * 28, infoButtonWidth, 24);
-            if (DrawButton(sb, pixel, infoButton, hudInfoLabels[i] + (hudInfoValues[i] ? " ✓" : " —"), mouse, hudInfoValues[i] ? UiAccent : UiTabColor))
-            {
-                switch (i)
-                {
-                    case 0: hudShowConnection = !hudShowConnection; break;
-                    case 1: hudShowPerformance = !hudShowPerformance; break;
-                    case 2: hudShowVitals = !hudShowVitals; break;
-                    case 3: hudShowPositionTime = !hudShowPositionTime; break;
-                    case 4: hudShowBiome = !hudShowBiome; break;
-                    case 5: hudShowVelocity = !hudShowVelocity; break;
-                    case 6: hudShowInventory = !hudShowInventory; break;
-                    case 7: hudShowCounts = !hudShowCounts; break;
-                }
-                SetStatus("Configuración de información del HUD actualizada.");
-            }
-        }
-        y += 4 * 28 + 8;
+        // La información que antes aparecía en una HUD flotante se consulta aquí.
+        // Se evita dibujar una ventana independiente para no interferir con menús o conexiones.
         DrawInfoLine(sb, panel, ref y, "Conexión", Main.netMode == 0 ? "Un jugador" : Main.netMode == 1 ? "Multijugador cliente" : "Servidor dedicado");
         DrawInfoLine(sb, panel, ref y, "Ping", GetPingLabel());
+        DrawInfoLine(sb, panel, ref y, "FPS", Main.frameRate.ToString());
+        DrawInfoLine(sb, panel, ref y, "Velocidad", $"{p.velocity.Length():0.0} px/tick");
+        Item selectedInfoItem = p.inventory[Math.Clamp(p.selectedItem, 0, p.inventory.Length - 1)];
+        DrawInfoLine(sb, panel, ref y, "Objeto seleccionado", selectedInfoItem == null || selectedInfoItem.IsAir ? "Ninguno" : $"{selectedInfoItem.Name} (ID {selectedInfoItem.type})");
+        DrawInfoLine(sb, panel, ref y, "NPC activos", Main.npc.Count(n => n != null && n.active).ToString());
+        DrawInfoLine(sb, panel, ref y, "Enemigos", Main.npc.Count(n => n != null && n.active && n.damage > 0 && !n.friendly).ToString());
+        DrawInfoLine(sb, panel, ref y, "Proyectiles", Main.projectile.Count(pr => pr != null && pr.active).ToString());
         string mode = Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal";
         DrawInfoLine(sb, panel, ref y, "Mundo", string.IsNullOrWhiteSpace(Main.worldName) ? "(sin nombre)" : Main.worldName);
         DrawInfoLine(sb, panel, ref y, "TamaÃ±o", $"{Main.maxTilesX} x {Main.maxTilesY} tiles");
