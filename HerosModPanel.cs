@@ -4907,10 +4907,10 @@ internal static partial class HerosModPanel
         {
             case ".help":
             case ".ayuda":
-                commandConsoleOutput = ".hud .server .ping .pos .life .mana .god .fly .heal .ghost .minions .lifelock .luck .status · .help2 para más";
+                commandConsoleOutput = ".hud .server .ping .pos .life .mana .world .biome .clock .inventory .buffs .counts · .help2";
                 break;
             case ".help2":
-                commandConsoleOutput = ".antilag .effects .projectiles .fps .mute .shopfree .buff ID [seg] .clearhostiles · HUD: .hud on/off · info: .server/.ping/.pos/.life/.mana";
+                commandConsoleOutput = ".god .fly .heal .ghost .minions .lifelock .luck .debuffclear .nearby .players .equipment .help3";
                 break;
             case ".god":
                 godmodeEnabled = Toggle(godmodeEnabled);
@@ -5028,6 +5028,113 @@ internal static partial class HerosModPanel
                 RemovePanelHostileNpcs();
                 commandConsoleOutput = "Limpieza local de enemigos solicitada; el servidor puede restaurarlos.";
                 break;
+            case ".help3":
+                commandConsoleOutput = ".counts = partículas/proyectiles/NPCs · .nearby = enemigos cercanos · .players = jugadores locales · .inventory = resumen inventario · .buffs = buffs activos · .debuffclear = quitar debuffs locales";
+                break;
+            case ".world":
+                commandConsoleOutput = $"Mundo={Main.worldName} · Tamaño={Main.maxTilesX}x{Main.maxTilesY} tiles · Modo={(Main.masterMode ? "Maestro" : Main.expertMode ? "Experto" : "Normal")} · Hardmode={(Main.hardMode ? "Sí" : "No")} · Invasión={Main.invasionType}";
+                break;
+            case ".biome":
+                {
+                    var p = Main.LocalPlayer;
+                    if (p == null || !p.active) { commandConsoleOutput = "No hay personaje activo."; break; }
+                    var biomes = new List<string>();
+                    if (p.ZoneForest) biomes.Add("Bosque");
+                    if (p.ZoneDesert) biomes.Add("Desierto");
+                    if (p.ZoneJungle) biomes.Add("Jungla");
+                    if (p.ZoneSnow) biomes.Add("Nieve");
+                    if (p.ZoneBeach) biomes.Add("Playa");
+                    if (p.ZoneDungeon) biomes.Add("Mazmorra");
+                    if (p.ZoneUnderworldHeight) biomes.Add("Inframundo");
+                    if (p.ZoneCorrupt) biomes.Add("Corrupción");
+                    if (p.ZoneCrimson) biomes.Add("Carmesí");
+                    if (p.ZoneHallow) biomes.Add("Sagrado");
+                    if (p.ZoneGlowshroom) biomes.Add("Hongos brillantes");
+                    if (p.ZoneSkyHeight) biomes.Add("Cielo");
+                    commandConsoleOutput = "Biomas: " + (biomes.Count == 0 ? "Superficie/subsuelo u otro" : string.Join(", ", biomes));
+                    break;
+                }
+            case ".clock":
+                commandConsoleOutput = $"Hora del mundo: {(Main.dayTime ? "Día" : "Noche")} · tick={(long)Main.time} · lluvia={(Main.raining ? "Sí" : "No")} · viento={Main.windSpeedCurrent:0.00}";
+                break;
+            case ".inventory":
+                {
+                    var p = Main.LocalPlayer;
+                    if (p == null || !p.active) { commandConsoleOutput = "No hay personaje activo."; break; }
+                    int occupied = 0, empty = 0, stacks = 0;
+                    foreach (var item in p.inventory)
+                    {
+                        if (item != null && !item.IsAir) { occupied++; stacks += Math.Max(1, item.stack); }
+                        else empty++;
+                    }
+                    var held = p.HeldItem;
+                    commandConsoleOutput = $"Inventario: {occupied} espacios ocupados, {empty} vacíos, {stacks} objetos sumando stacks · equipado={(held == null || held.IsAir ? "mano vacía" : held.Name + " x" + held.stack)}";
+                    break;
+                }
+            case ".buffs":
+                {
+                    var p = Main.LocalPlayer;
+                    if (p == null || !p.active) { commandConsoleOutput = "No hay personaje activo."; break; }
+                    var activeBuffs = new List<string>();
+                    for (int i = 0; i < p.buffType.Length; i++)
+                        if (p.buffType[i] > 0 && p.buffTime[i] > 0) activeBuffs.Add(p.buffType[i] + "(" + (p.buffTime[i] / 60) + "s)");
+                    commandConsoleOutput = activeBuffs.Count == 0 ? "No tienes buffs activos." : "Buffs activos (ID y segundos): " + string.Join(", ", activeBuffs.Take(12)) + (activeBuffs.Count > 12 ? $" … +{activeBuffs.Count - 12}" : "");
+                    break;
+                }
+            case ".debuffclear":
+                {
+                    var p = Main.LocalPlayer;
+                    if (p == null || !p.active) { commandConsoleOutput = "No hay personaje activo."; break; }
+                    int removed = 0;
+                    for (int i = p.buffType.Length - 1; i >= 0; i--)
+                    {
+                        int id = p.buffType[i];
+                        if (id > 0 && id < Main.debuff.Length && Main.debuff[id]) { p.DelBuff(i); removed++; }
+                    }
+                    if (Main.netMode == 1) SyncSelf();
+                    commandConsoleOutput = $"Debuffs locales eliminados: {removed}. El servidor puede volver a aplicarlos.";
+                    break;
+                }
+            case ".nearby":
+                {
+                    var p = Main.LocalPlayer;
+                    if (p == null || !p.active) { commandConsoleOutput = "No hay personaje activo."; break; }
+                    int nearby = 0, bosses = 0;
+                    foreach (var npc in Main.npc)
+                    {
+                        if (npc == null || !npc.active || npc.friendly || npc.lifeMax <= 5) continue;
+                        if (Vector2.DistanceSquared(npc.Center, p.Center) <= 60f * 16f * 60f * 16f)
+                        {
+                            nearby++;
+                            if (npc.boss) bosses++;
+                        }
+                    }
+                    commandConsoleOutput = $"Enemigos a 60 tiles: {nearby} · jefes cercanos: {bosses}.";
+                    break;
+                }
+            case ".players":
+                {
+                    var online = Main.player.Where(p => p != null && p.active).Select(p => p.name).ToArray();
+                    commandConsoleOutput = "Jugadores visibles para este cliente (" + online.Length + "): " + (online.Length == 0 ? "ninguno" : string.Join(", ", online.Take(8))) + (online.Length > 8 ? $" … +{online.Length - 8}" : "");
+                    break;
+                }
+            case ".equipment":
+                {
+                    var p = Main.LocalPlayer;
+                    if (p == null || !p.active) { commandConsoleOutput = "No hay personaje activo."; break; }
+                    var worn = new List<string>();
+                    foreach (var item in p.armor)
+                        if (item != null && !item.IsAir) worn.Add(item.Name + " x" + item.stack);
+                    commandConsoleOutput = worn.Count == 0 ? "Equipo/armadura vacíos." : "Equipo: " + string.Join(", ", worn.Take(8)) + (worn.Count > 8 ? $" … +{worn.Count - 8}" : "");
+                    break;
+                }
+            case ".counts":
+                {
+                    int activeNpcs = Main.npc.Count(n => n != null && n.active);
+                    int activePlayers = Main.player.Count(p => p != null && p.active);
+                    commandConsoleOutput = $"FPS={Main.frameRate} · proyectiles={CountActiveProjectiles()} · polvo={CountActiveDust()} · gore={CountActiveGore()} · NPCs={activeNpcs} · jugadores={activePlayers}";
+                    break;
+                }
             case ".hud":
             case ".serverhud":
                 serverHudEnabled = requestedState ?? !serverHudEnabled;
