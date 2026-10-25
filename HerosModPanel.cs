@@ -4737,16 +4737,119 @@ internal static partial class HerosModPanel
         if (command.Length == 0)
             return;
 
+        // Los comandos con punto son funciones locales de HERO; no se envían al servidor.
+        if (command.StartsWith(".", StringComparison.Ordinal))
+        {
+            ExecuteLocalConsoleCommand(command);
+            return;
+        }
+
         if (Main.netMode == 1)
         {
-            // Reutiliza el mismo canal de chat/comandos que HERO ya utiliza; el servidor valida permisos.
+            // Los comandos normales usan el canal de chat existente; el servidor valida permisos.
             SendCmd(command.StartsWith("/", StringComparison.Ordinal) ? command : "/" + command);
             commandConsoleOutput = "Enviado al servidor: " + command;
         }
         else
         {
-            commandConsoleOutput = "No hay servidor remoto conectado. En un jugador, usa el chat/comandos integrados del juego.";
+            commandConsoleOutput = "Comandos locales: usa .help. Los comandos / requieren un servidor compatible.";
         }
+    }
+
+    private static void ExecuteLocalConsoleCommand(string rawCommand)
+    {
+        string[] parts = (rawCommand ?? string.Empty).Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        string command = parts.Length > 0 ? parts[0].ToLowerInvariant() : string.Empty;
+        string argument = parts.Length > 1 ? parts[1].ToLowerInvariant() : string.Empty;
+        bool? requestedState = argument switch
+        {
+            "on" or "1" or "true" or "activar" or "si" or "sí" => true,
+            "off" or "0" or "false" or "desactivar" or "no" => false,
+            _ => null
+        };
+
+        bool Toggle(bool current) => requestedState ?? !current;
+        switch (command)
+        {
+            case ".help":
+            case ".ayuda":
+                commandConsoleOutput = ".god [on/off] · .fly [on/off] · .heal · .ghost [on/off] · .minions [on/off] · .lifelock [on/off] · .luck [on/off] · .antilag [on/off] · .status";
+                break;
+            case ".god":
+                godmodeEnabled = Toggle(godmodeEnabled);
+                if (Main.LocalPlayer != null && Main.LocalPlayer.active)
+                {
+                    Main.LocalPlayer.creativeGodMode = godmodeEnabled;
+                    Main.LocalPlayer.immune = godmodeEnabled;
+                    Main.LocalPlayer.immuneTime = godmodeEnabled ? Math.Max(Main.LocalPlayer.immuneTime, 2) : 0;
+                }
+                commandConsoleOutput = "God Mode local " + (godmodeEnabled ? "ACTIVADO" : "DESACTIVADO") +
+                    (Main.netMode == 1 ? " · el servidor puede ignorarlo o revertirlo." : ".");
+                break;
+            case ".fly":
+                flyEnabled = Toggle(flyEnabled);
+                if (IsServer && flyEnabled)
+                {
+                    flyEnabled = false;
+                    commandConsoleOutput = "Vuelo bloqueado en modo COMANDOS: el servidor controla el movimiento. Usa solo donde esté permitido.";
+                }
+                else
+                    commandConsoleOutput = "Vuelo local " + (flyEnabled ? "ACTIVADO (WASD, Espacio sube, Shift baja)." : "DESACTIVADO.");
+                break;
+            case ".heal":
+            case ".curar":
+                if (Main.LocalPlayer != null && Main.LocalPlayer.active)
+                {
+                    Main.LocalPlayer.statLife = Main.LocalPlayer.statLifeMax2;
+                    Main.LocalPlayer.statMana = Main.LocalPlayer.statManaMax2;
+                    Main.LocalPlayer.HealEffect(Main.LocalPlayer.statLifeMax2);
+                    Main.LocalPlayer.ManaEffect(Main.LocalPlayer.statManaMax2);
+                    if (Main.netMode == 1) SyncSelf();
+                    commandConsoleOutput = "Vida y maná restaurados localmente; el servidor puede sobrescribirlos.";
+                }
+                else commandConsoleOutput = "No hay personaje activo.";
+                break;
+            case ".ghost":
+            case ".fantasma":
+                ghostModeEnabled = Toggle(ghostModeEnabled);
+                if (Main.LocalPlayer != null && Main.LocalPlayer.active)
+                    Main.LocalPlayer.ghost = ghostModeEnabled;
+                commandConsoleOutput = "Modo fantasma local " + (ghostModeEnabled ? "ACTIVADO." : "DESACTIVADO.") +
+                    (Main.netMode == 1 ? " El servidor puede corregirlo." : string.Empty);
+                break;
+            case ".minions":
+                infiniteMinionsEnabled = Toggle(infiniteMinionsEnabled);
+                if (Main.LocalPlayer != null && Main.LocalPlayer.active && infiniteMinionsEnabled)
+                    Main.LocalPlayer.maxMinions = 9999;
+                commandConsoleOutput = "Límite local de minions " + (infiniteMinionsEnabled ? "elevado." : "restauración desactivada.") +
+                    (Main.netMode == 1 ? " El servidor puede rechazarlo." : string.Empty);
+                break;
+            case ".lifelock":
+                if (IsServer && requestedState != false)
+                {
+                    commandConsoleOutput = "Vida infinita bloqueada en modo COMANDOS porque el servidor controla la vida.";
+                    break;
+                }
+                lifeLockEnabled = Toggle(lifeLockEnabled);
+                commandConsoleOutput = "Restauración continua de vida/maná " + (lifeLockEnabled ? "ACTIVADA." : "DESACTIVADA.");
+                break;
+            case ".luck":
+                luckBoostEnabled = Toggle(luckBoostEnabled);
+                commandConsoleOutput = "Aumento de suerte local " + (luckBoostEnabled ? "ACTIVADO." : "DESACTIVADO.") +
+                    (Main.netMode == 1 ? " Puede ser sobrescrito por el servidor." : string.Empty);
+                break;
+            case ".antilag":
+                antiLagEnabled = Toggle(antiLagEnabled);
+                commandConsoleOutput = "Anti-Lag " + (antiLagEnabled ? "ACTIVADO." : "DESACTIVADO.");
+                break;
+            case ".status":
+                commandConsoleOutput = $"god={(godmodeEnabled ? "ON" : "OFF")} fly={(flyEnabled ? "ON" : "OFF")} ghost={(ghostModeEnabled ? "ON" : "OFF")} minions={(infiniteMinionsEnabled ? "ON" : "OFF")} lifelock={(lifeLockEnabled ? "ON" : "OFF")} luck={(luckBoostEnabled ? "ON" : "OFF")} antilag={(antiLagEnabled ? "ON" : "OFF")}";
+                break;
+            default:
+                commandConsoleOutput = "Comando local desconocido: " + command + " · escribe .help";
+                break;
+        }
+    }
     }
 
     private static void HandleTyping()
